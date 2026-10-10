@@ -1,0 +1,28 @@
+import { useState, useEffect, useCallback } from 'react';
+
+function useFetch(fetchFn, deps = [], options = {}) {
+  const [data, setData] = useState(options.initialData || null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const result = await fetchFn();
+      setData(result);
+    } catch (err) {
+      setError(err.message || 'An error occurred');
+    } finally {
+      setLoading(false);
+    }
+  }, deps);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  return { data, loading, error, refetch: load };
+}
+
+export default useFetch;
