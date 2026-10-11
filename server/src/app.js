@@ -29,16 +29,44 @@ const auditRoutes = require('./routes/auditRoutes');
 
 const app = express();
 
+// Render terminates TLS at its proxy; without this, req.ip is the proxy IP
+// and every user shares one rate-limit bucket.
+app.set('trust proxy', 1);
+
+// Build the allowed-origins list once at startup.
+//   - split on commas
+//   - trim whitespace
+//   - strip trailing slashes (browsers send origins without them)
+//   - drop empty entries
+const allowedOrigins = (process.env.CORS_ORIGIN || 'http://localhost:5173')
+  .split(',')
+  .map((o) => o.trim().replace(/\/+$/, ''))
+  .filter(Boolean);
+
 // Security and utility middleware
 app.use(helmet({ crossOriginResourcePolicy: false }));
 app.use(compression());
 app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
+
+// CORS must run before the rate limiter and every route so that
+// preflight (OPTIONS) and error responses (404, 429) also carry the headers.
 app.use(
   cors({
-    origin: process.env.CORS_ORIGIN?.split(',') || 'http://localhost:3000',
+    origin: (origin, callback) => {
+      // Allow no-origin requests: curl, Postman, health checks, server-to-server.
+      if (!origin) return callback(null, true);
+      if (allowedOrigins.includes(origin)) return callback(null, true);
+      // Do NOT throw — just don't set CORS headers.
+      return callback(null, false);
+    },
     credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    exposedHeaders: ['Content-Disposition'],
+    maxAge: 86400,
   })
 );
+
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(cookieParser());
@@ -71,6 +99,7 @@ app.use('/api/verification', verificationRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/references', referenceRoutes);
 app.use('/api/audit', auditRoutes);
+
 // 404 handler
 app.use((req, res) => {
   res.status(404).json({ message: 'Route not found' });
