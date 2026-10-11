@@ -2,6 +2,20 @@ const authService = require('../services/authService');
 const userRepository = require('../repositories/userRepository');
 const { signToken } = require('../utils/jwt');
 
+// Cookie options shared by login and any future auth endpoints.
+// Cross-origin (Vercel <-> Render) REQUIRES sameSite:'none' + secure:true,
+// otherwise the browser silently drops the cookie and every subsequent
+// request 401s.
+const isProduction = process.env.NODE_ENV === 'production';
+
+const authCookieOptions = {
+  httpOnly: true,
+  secure: isProduction,
+  sameSite: isProduction ? 'none' : 'lax',
+  maxAge: 8 * 60 * 60 * 1000,
+  path: '/',
+};
+
 async function register(req, res, next) {
   try {
     const user = await authService.register(req.body);
@@ -16,13 +30,7 @@ async function login(req, res, next) {
     const { username, password, role } = req.body;
     const result = await authService.login({ username, password, expectedRoleGroup: role });
 
-    // Set token as HTTP-only cookie
-    res.cookie('token', result.token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 8 * 60 * 60 * 1000,
-    });
+    res.cookie('token', result.token, authCookieOptions);
 
     res.json(result);
   } catch (err) {
@@ -42,7 +50,14 @@ async function adminLogin(req, res, next) {
 }
 
 async function logout(req, res) {
-  res.clearCookie('token');
+  // clearCookie must match the same options (except maxAge) for the browser
+  // to actually remove the cookie.
+  res.clearCookie('token', {
+    httpOnly: true,
+    secure: isProduction,
+    sameSite: isProduction ? 'none' : 'lax',
+    path: '/',
+  });
   res.json({ message: 'Logged out successfully' });
 }
 
@@ -58,7 +73,6 @@ async function getSession(req, res, next) {
 
 async function forgotPassword(req, res, next) {
   try {
-    // Placeholder — in production, send a reset email
     res.json({ message: 'If the email exists, a reset link has been sent.' });
   } catch (err) {
     next(err);
