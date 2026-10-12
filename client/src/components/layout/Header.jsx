@@ -13,6 +13,7 @@ function Header({ title, showBack = false, backPath = -1, accentColour }) {
   const navigate = useNavigate();
 
   const colour = accentColour || getMinistryColour(user?.ministry) || '#1A5276';
+  const isCitizen = user?.role === 'CITIZEN';
 
   const handleLogout = async () => {
     if (window.confirm('Are you sure you want to log out?')) {
@@ -22,13 +23,7 @@ function Header({ title, showBack = false, backPath = -1, accentColour }) {
     }
   };
 
-  const handleBack = () => {
-    if (typeof backPath === 'number') {
-      navigate(backPath);
-    } else {
-      navigate(backPath);
-    }
-  };
+  const handleBack = () => navigate(backPath);
 
   return (
     <header className="app-header" style={{ borderBottomColor: colour }}>
@@ -52,12 +47,23 @@ function Header({ title, showBack = false, backPath = -1, accentColour }) {
 
         {user && (
           <>
+            {isCitizen && (
+              <Link
+                to="/citizen/notifications"
+                className="header-icon-btn"
+                aria-label="Notifications"
+              >
+                <FiBell />
+              </Link>
+            )}
+
             <Link
-              to="/citizen/notifications"
+              to="/help"
               className="header-icon-btn"
-              aria-label="Notifications"
+              aria-label="Help and support"
+              title="Help and support"
             >
-              <FiBell />
+              ?
             </Link>
 
             <span className="header-user">

@@ -165,6 +165,14 @@ async function linkCitizen(userId, citizenId) {
   return result.rows[0];
 }
 
+async function findByCitizenId(citizenId) {
+  const result = await query(
+    'SELECT * FROM users WHERE citizen_id = $1 LIMIT 1',
+    [citizenId]
+  );
+  return result.rows[0];
+}
+
 module.exports = {
   findByUsername,
   findByEmail,

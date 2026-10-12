@@ -97,6 +97,16 @@ import LanguageConfig from '../pages/admin/LanguageConfig';
 import LogoUpload from '../pages/admin/LogoUpload';
 import BiometricConfig from '../pages/admin/BiometricConfig';
 
+// Help
+import HelpHome from '../pages/help/HelpHome';
+import HelpGettingStarted from '../pages/help/GettingStarted';
+import HelpVerification from '../pages/help/Verification';
+import HelpServices from '../pages/help/Services';
+import HelpDocuments from '../pages/help/Documents';
+import HelpOffices from '../pages/help/Offices';
+import HelpAccessibility from '../pages/help/Accessibility';
+
+
 function AppRoutes() {
   return (
     <Routes>
@@ -199,6 +209,15 @@ function AppRoutes() {
       <Route path="/admin/settings/languages" element={<RoleRoute roles={['ADMIN']}><LanguageConfig /></RoleRoute>} />
       <Route path="/admin/settings/logo" element={<RoleRoute roles={['ADMIN']}><LogoUpload /></RoleRoute>} />
       <Route path="/admin/settings/biometrics" element={<RoleRoute roles={['ADMIN']}><BiometricConfig /></RoleRoute>} />
+
+      {/* Help — public, no login required */}
+      <Route path="/help" element={<HelpHome />} />
+      <Route path="/help/getting-started" element={<HelpGettingStarted />} />
+      <Route path="/help/verification" element={<HelpVerification />} />
+      <Route path="/help/services" element={<HelpServices />} />
+      <Route path="/help/documents" element={<HelpDocuments />} />
+      <Route path="/help/offices" element={<HelpOffices />} />
+      <Route path="/help/accessibility" element={<HelpAccessibility />} />
 
       {/* Fallback */}
       <Route path="*" element={<Navigate to="/" replace />} />

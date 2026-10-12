@@ -1,7 +1,15 @@
 const pensionRepository = require('../repositories/pensionRepository');
 const pensionVerificationRepository = require('../repositories/pensionVerificationRepository');
 const deathCertificateRepository = require('../repositories/deathCertificateRepository');
+const notificationService = require('./notificationService');
+const userRepository = require('../repositories/userRepository');
 const auditService = require('./auditService');
+
+async function notifyCitizen(citizenId, title, message) {
+  if (!citizenId) return;
+  const user = await userRepository.findByCitizenId(citizenId);
+  if (user) await notificationService.notify(user.id, title, message);
+}
 
 async function getPensionInfo(citizenId) {
   return pensionRepository.findByCitizen(citizenId);
@@ -31,6 +39,12 @@ async function verifyExistence(citizenId, user) {
     result: 'SUCCESS',
   });
 
+  await notifyCitizen(
+    citizenId,
+    'Existence verification successful',
+    'Your pension existence check has been recorded.'
+  );
+
   return verification;
 }
 
@@ -54,6 +68,10 @@ async function processVerification(id, action, staffUser) {
 }
 
 module.exports = {
-  getPensionInfo, checkDeathCertificate, verifyExistence,
-  getVerificationHistory, getStaffVerifications, processVerification,
+  getPensionInfo,
+  checkDeathCertificate,
+  verifyExistence,
+  getVerificationHistory,
+  getStaffVerifications,
+  processVerification,
 };

@@ -3,6 +3,12 @@ const applicationRepository = require('../repositories/applicationRepository');
 const documentService = require('../services/documentService');
 const notificationService = require('../services/notificationService');
 
+// Helper — prefer the session flag (step-up auth), fall back to the JWT
+// citizenId (account link created by Home Affairs).
+function citizenIdFrom(req) {
+  return req.session?.verifiedCitizenId || req.user?.citizenId || null;
+}
+
 async function getProfile(req, res, next) {
   try {
     const profile = await citizenService.getProfile(req.user.userId);
@@ -32,9 +38,9 @@ async function changePassword(req, res, next) {
 
 async function getApplications(req, res, next) {
   try {
-    const apps = await applicationRepository.findByCitizen(
-      req.session.verifiedCitizenId
-    );
+    const citizenId = citizenIdFrom(req);
+    if (!citizenId) return res.json([]);
+    const apps = await applicationRepository.findByCitizen(citizenId);
     res.json(apps);
   } catch (err) {
     next(err);
@@ -43,8 +49,9 @@ async function getApplications(req, res, next) {
 
 async function getApplicationByRef(req, res, next) {
   try {
+    const citizenId = citizenIdFrom(req);
     const app = await applicationRepository.findByReference(req.params.ref);
-    if (!app || app.citizen_id !== req.session.verifiedCitizenId) {
+    if (!app || (citizenId && app.citizen_id !== citizenId)) {
       return res.status(404).json({ message: 'Application not found' });
     }
     const history = await applicationRepository.getStatusHistory(app.id);
@@ -56,9 +63,9 @@ async function getApplicationByRef(req, res, next) {
 
 async function getDocuments(req, res, next) {
   try {
-    const docs = await documentService.findByCitizen(
-      req.session.verifiedCitizenId
-    );
+    const citizenId = citizenIdFrom(req);
+    if (!citizenId) return res.json([]);
+    const docs = await documentService.findByCitizen(citizenId);
     res.json(docs);
   } catch (err) {
     next(err);

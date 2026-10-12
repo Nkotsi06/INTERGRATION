@@ -1,6 +1,8 @@
 // Sidebar link definitions per role.
 // The sidebar reads this file and renders whatever it finds.
 
+const HELP_LINK = { to: '/help', label: 'Help & Support' };
+
 export const SIDEBAR_BY_ROLE = {
   CITIZEN: {
     label: 'Citizen workspace',
@@ -10,6 +12,7 @@ export const SIDEBAR_BY_ROLE = {
       { to: '/citizen/applications',  label: 'My Applications' },
       { to: '/citizen/documents',     label: 'My Documents' },
       { to: '/citizen/notifications', label: 'Notifications' },
+      HELP_LINK,
     ],
   },
 
@@ -20,15 +23,16 @@ export const SIDEBAR_BY_ROLE = {
       { to: '/admin/users',      label: 'User Management' },
       { to: '/admin/audit-logs', label: 'Audit Logs' },
 
-      // Settings group — every route defined in AppRoutes.jsx
-      { to: '/admin/settings',                       label: 'System Settings' },
-      { to: '/admin/settings/ministries',            label: 'Ministries' },
-      { to: '/admin/settings/document-types',        label: 'Document Types' },
-      { to: '/admin/settings/statuses',              label: 'Status Types' },
-      { to: '/admin/settings/reference-formats',     label: 'Reference Formats' },
-      { to: '/admin/settings/languages',             label: 'Languages' },
-      { to: '/admin/settings/logo',                  label: 'System Logo' },
-      { to: '/admin/settings/biometrics',            label: 'Biometrics' },
+      { to: '/admin/settings',                   label: 'System Settings' },
+      { to: '/admin/settings/ministries',        label: 'Ministries' },
+      { to: '/admin/settings/document-types',    label: 'Document Types' },
+      { to: '/admin/settings/statuses',          label: 'Status Types' },
+      { to: '/admin/settings/reference-formats', label: 'Reference Formats' },
+      { to: '/admin/settings/languages',         label: 'Languages' },
+      { to: '/admin/settings/logo',              label: 'System Logo' },
+      { to: '/admin/settings/biometrics',        label: 'Biometrics' },
+
+      HELP_LINK,
     ],
   },
 
@@ -39,6 +43,7 @@ export const SIDEBAR_BY_ROLE = {
       { to: '/home-affairs/registrations', label: 'New Registrations' },
       { to: '/home-affairs/search',        label: 'Citizen Search' },
       { to: '/home-affairs/reports',       label: 'Reports' },
+      HELP_LINK,
     ],
   },
 
@@ -47,6 +52,7 @@ export const SIDEBAR_BY_ROLE = {
     links: [
       { to: '/traffic/staff',      label: 'Dashboard' },
       { to: '/traffic/processing', label: 'Process Applications' },
+      HELP_LINK,
     ],
   },
 
@@ -55,6 +61,7 @@ export const SIDEBAR_BY_ROLE = {
     links: [
       { to: '/police/staff',  label: 'Dashboard' },
       { to: '/police/manage', label: 'Manage Cases' },
+      HELP_LINK,
     ],
   },
 
@@ -63,6 +70,7 @@ export const SIDEBAR_BY_ROLE = {
     links: [
       { to: '/finance/staff',      label: 'Dashboard' },
       { to: '/finance/processing', label: 'Process Registrations' },
+      HELP_LINK,
     ],
   },
 
@@ -71,6 +79,7 @@ export const SIDEBAR_BY_ROLE = {
     links: [
       { to: '/pensions/staff',   label: 'Dashboard' },
       { to: '/pensions/process', label: 'Process Verifications' },
+      HELP_LINK,
     ],
   },
 
@@ -80,6 +89,7 @@ export const SIDEBAR_BY_ROLE = {
       { to: '/passport/staff',   label: 'Dashboard' },
       { to: '/passport/process', label: 'Process Applications' },
       { to: '/passport/history', label: 'Application History' },
+      HELP_LINK,
     ],
   },
 };

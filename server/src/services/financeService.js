@@ -2,10 +2,17 @@ const taxRecordRepository = require('../repositories/taxRecordRepository');
 const taxPaymentRepository = require('../repositories/taxPaymentRepository');
 const taxClearanceRepository = require('../repositories/taxClearanceRepository');
 const applicationRepository = require('../repositories/applicationRepository');
+const notificationService = require('./notificationService');
+const userRepository = require('../repositories/userRepository');
 const { generateReference } = require('../utils/referenceGenerator');
 const { generateTaxClearancePDF } = require('../utils/pdfGenerator');
 const auditService = require('./auditService');
-const { v4: uuidv4 } = require('uuid');
+
+async function notifyCitizen(citizenId, title, message) {
+  if (!citizenId) return;
+  const user = await userRepository.findByCitizenId(citizenId);
+  if (user) await notificationService.notify(user.id, title, message);
+}
 
 async function getTaxProfile(citizenId) {
   return taxRecordRepository.findByCitizen(citizenId);
@@ -20,6 +27,7 @@ async function registerTax(citizenId, data, user) {
     incomeSource: data.incomeSource,
     taxYear: data.taxYear,
   });
+
   await auditService.log({
     userId: user.userId,
     username: user.username,
@@ -28,6 +36,13 @@ async function registerTax(citizenId, data, user) {
     recordId: record.id,
     result: 'SUCCESS',
   });
+
+  await notifyCitizen(
+    citizenId,
+    'Tax registration received',
+    `Your tax registration has been received (${taxId}).`
+  );
+
   return record;
 }
 
@@ -44,7 +59,10 @@ async function makePayment(citizenId, data, user) {
     paymentMethod: data.method,
   });
 
-  const newBalance = Math.max(0, parseFloat(taxRecord.outstanding_balance || 0) - parseFloat(data.amount));
+  const newBalance = Math.max(
+    0,
+    parseFloat(taxRecord.outstanding_balance || 0) - parseFloat(data.amount)
+  );
   await taxRecordRepository.updateBalance(taxRecord.id, newBalance);
 
   await auditService.log({
@@ -55,6 +73,12 @@ async function makePayment(citizenId, data, user) {
     recordId: payment.id,
     result: 'SUCCESS',
   });
+
+  await notifyCitizen(
+    citizenId,
+    'Payment received',
+    `Your payment ${referenceNumber} has been received.`
+  );
 
   return {
     referenceNumber,
@@ -73,7 +97,9 @@ async function generateTaxClearance(citizenId, user) {
   if (!taxRecord) throw new Error('No tax record found');
 
   const certificateId = `TC-${Date.now()}`;
-  const validUntil = new Date(Date.now() + 180 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+  const validUntil = new Date(Date.now() + 180 * 24 * 60 * 60 * 1000)
+    .toISOString()
+    .slice(0, 10);
   const verificationUrl = `https://gov.ls/verify/${certificateId}`;
 
   const cert = await taxClearanceRepository.create({
@@ -116,9 +142,23 @@ async function processRegistration(id, action, staffUser) {
     recordId: id,
     result: 'SUCCESS',
   });
+
+  const record = await taxRecordRepository.findById(id);
+  if (record) {
+    await notifyCitizen(
+      record.citizen_id,
+      'Tax registration update',
+      `Your tax registration has been ${action.toLowerCase()}d.`
+    );
+  }
 }
 
 module.exports = {
-  getTaxProfile, registerTax, makePayment, getPayments,
-  generateTaxClearance, getStaffRegistrations, processRegistration,
+  getTaxProfile,
+  registerTax,
+  makePayment,
+  getPayments,
+  generateTaxClearance,
+  getStaffRegistrations,
+  processRegistration,
 };

@@ -1,7 +1,15 @@
 const passportApplicationRepository = require('../repositories/passportApplicationRepository');
 const applicationRepository = require('../repositories/applicationRepository');
+const notificationService = require('./notificationService');
+const userRepository = require('../repositories/userRepository');
 const { generateReference } = require('../utils/referenceGenerator');
 const auditService = require('./auditService');
+
+async function notifyCitizen(citizenId, title, message) {
+  if (!citizenId) return;
+  const user = await userRepository.findByCitizenId(citizenId);
+  if (user) await notificationService.notify(user.id, title, message);
+}
 
 async function applyForPassport(citizenId, data, user) {
   const referenceNumber = await generateReference('PASSPORT_APPLICATION');
@@ -29,6 +37,12 @@ async function applyForPassport(citizenId, data, user) {
     result: 'SUCCESS',
   });
 
+  await notifyCitizen(
+    citizenId,
+    'Passport application received',
+    `Your application ${referenceNumber} has been received.`
+  );
+
   return { referenceNumber, application };
 }
 
@@ -49,8 +63,11 @@ async function getStaffApplications(filters) {
 }
 
 async function processApplication(id, action, staffUser) {
-  const status = action === 'APPROVE' ? 'APPROVED' : action === 'REJECT' ? 'REJECTED' : 'UNDER_REVIEW';
+  const status =
+    action === 'APPROVE' ? 'APPROVED' : action === 'REJECT' ? 'REJECTED' : 'UNDER_REVIEW';
+
   await applicationRepository.updateStatus(id, status, staffUser.userId, action);
+
   await auditService.log({
     userId: staffUser.userId,
     username: staffUser.username,
@@ -59,6 +76,21 @@ async function processApplication(id, action, staffUser) {
     recordId: id,
     result: 'SUCCESS',
   });
+
+  const app = await applicationRepository.findById(id);
+  if (app) {
+    await notifyCitizen(
+      app.citizen_id,
+      'Passport application update',
+      `Your application ${app.reference_number} is now ${status.toLowerCase()}.`
+    );
+  }
 }
 
-module.exports = { applyForPassport, getMyApplications, getApplicationByRef, getStaffApplications, processApplication };
+module.exports = {
+  applyForPassport,
+  getMyApplications,
+  getApplicationByRef,
+  getStaffApplications,
+  processApplication,
+};
