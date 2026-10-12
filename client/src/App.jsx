@@ -12,11 +12,11 @@ function App() {
       <SettingsProvider>
         <LanguageProvider>
           <NotificationProvider>
-            <AuthProvider>
-              <SessionProvider>
+            <SessionProvider>
+              <AuthProvider>
                 <AppRoutes />
-              </SessionProvider>
-            </AuthProvider>
+              </AuthProvider>
+            </SessionProvider>
           </NotificationProvider>
         </LanguageProvider>
       </SettingsProvider>
