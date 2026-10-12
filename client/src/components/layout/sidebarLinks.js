@@ -1,6 +1,3 @@
-// Sidebar link definitions per role.
-// The sidebar reads this file and renders whatever it finds.
-
 const HELP_LINK = { to: '/help', label: 'Help & Support' };
 
 export const SIDEBAR_BY_ROLE = {
@@ -22,6 +19,7 @@ export const SIDEBAR_BY_ROLE = {
       { to: '/admin/dashboard',  label: 'Dashboard' },
       { to: '/admin/users',      label: 'User Management' },
       { to: '/admin/audit-logs', label: 'Audit Logs' },
+      { to: '/admin/branches',   label: 'Branches' },
 
       { to: '/admin/settings',                   label: 'System Settings' },
       { to: '/admin/settings/ministries',        label: 'Ministries' },

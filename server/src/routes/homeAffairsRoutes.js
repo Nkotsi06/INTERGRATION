@@ -21,6 +21,12 @@ router.post('/citizen/:id/verify', controller.verify);
 router.get('/citizen/:id/documents', controller.getDocuments);
 router.get('/citizen/:id/biometrics', controller.getBiometrics);
 
+// Certificates
+router.get('/citizen/:id/certificates', controller.getCertificates);
+router.post('/citizen/:id/certificates/birth', controller.issueBirthCertificate);
+router.post('/citizen/:id/certificates/death', controller.issueDeathCertificate);
+router.post('/citizen/:id/certificates/marriage', controller.issueMarriageCertificate);
+
 // Dashboard and reports
 router.get('/stats', controller.getStats);
 router.get('/reports', controller.getReports);

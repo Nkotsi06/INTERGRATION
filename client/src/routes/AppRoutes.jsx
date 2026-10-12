@@ -33,6 +33,8 @@ import HACitizenSearch from '../pages/homeAffairs/CitizenSearch';
 import HACitizenProfile from '../pages/homeAffairs/CitizenProfileStaff';
 import HAVerifyCitizen from '../pages/homeAffairs/VerifyCitizen';
 import HAReports from '../pages/homeAffairs/Reports';
+import HACertificates from '../pages/homeAffairs/Certificates';
+import HAIssueCertificate from '../pages/homeAffairs/IssueCertificate';
 
 // Traffic
 import TrafficDashboard from '../pages/traffic/TrafficDashboard';
@@ -96,6 +98,7 @@ import ReferenceFormatConfig from '../pages/admin/ReferenceFormatConfig';
 import LanguageConfig from '../pages/admin/LanguageConfig';
 import LogoUpload from '../pages/admin/LogoUpload';
 import BiometricConfig from '../pages/admin/BiometricConfig';
+import BranchManagement from '../pages/admin/BranchManagement';
 
 // Help
 import HelpHome from '../pages/help/HelpHome';
@@ -105,7 +108,6 @@ import HelpServices from '../pages/help/Services';
 import HelpDocuments from '../pages/help/Documents';
 import HelpOffices from '../pages/help/Offices';
 import HelpAccessibility from '../pages/help/Accessibility';
-
 
 function AppRoutes() {
   return (
@@ -119,7 +121,7 @@ function AppRoutes() {
       <Route path="/admin/login" element={<AdminLogin />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
 
-      {/* Citizen (requires auth) */}
+      {/* Citizen */}
       <Route path="/citizen/dashboard" element={<ProtectedRoute><CitizenDashboard /></ProtectedRoute>} />
       <Route path="/citizen/verify" element={<ProtectedRoute><IdentityVerification /></ProtectedRoute>} />
       <Route path="/citizen/verify/success" element={<ProtectedRoute><VerificationSuccess /></ProtectedRoute>} />
@@ -141,6 +143,8 @@ function AppRoutes() {
       <Route path="/home-affairs/citizen/:id" element={<RoleRoute roles={['HOME_AFFAIRS']}><HACitizenProfile /></RoleRoute>} />
       <Route path="/home-affairs/verify/:id" element={<RoleRoute roles={['HOME_AFFAIRS']}><HAVerifyCitizen /></RoleRoute>} />
       <Route path="/home-affairs/reports" element={<RoleRoute roles={['HOME_AFFAIRS']}><HAReports /></RoleRoute>} />
+      <Route path="/home-affairs/citizen/:id/certificates" element={<RoleRoute roles={['HOME_AFFAIRS']}><HACertificates /></RoleRoute>} />
+      <Route path="/home-affairs/citizen/:id/certificates/new" element={<RoleRoute roles={['HOME_AFFAIRS']}><HAIssueCertificate /></RoleRoute>} />
 
       {/* Traffic — citizen */}
       <Route path="/traffic/dashboard" element={<ProtectedRoute><TrafficDashboard /></ProtectedRoute>} />
@@ -209,8 +213,9 @@ function AppRoutes() {
       <Route path="/admin/settings/languages" element={<RoleRoute roles={['ADMIN']}><LanguageConfig /></RoleRoute>} />
       <Route path="/admin/settings/logo" element={<RoleRoute roles={['ADMIN']}><LogoUpload /></RoleRoute>} />
       <Route path="/admin/settings/biometrics" element={<RoleRoute roles={['ADMIN']}><BiometricConfig /></RoleRoute>} />
+      <Route path="/admin/branches" element={<RoleRoute roles={['ADMIN']}><BranchManagement /></RoleRoute>} />
 
-      {/* Help — public, no login required */}
+      {/* Help — public */}
       <Route path="/help" element={<HelpHome />} />
       <Route path="/help/getting-started" element={<HelpGettingStarted />} />
       <Route path="/help/verification" element={<HelpVerification />} />

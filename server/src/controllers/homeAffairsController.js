@@ -2,9 +2,11 @@ const homeAffairsService = require('../services/homeAffairsService');
 const citizenService = require('../services/citizenService');
 const documentService = require('../services/documentService');
 const biometricService = require('../services/biometricService');
-const path = require('path');
 const fs = require('fs');
 
+// ─────────────────────────────────────────────────────────────────────
+// Search & read
+// ─────────────────────────────────────────────────────────────────────
 async function search(req, res, next) {
   try {
     const citizen = await homeAffairsService.searchByQuery({
@@ -27,6 +29,9 @@ async function getById(req, res, next) {
   }
 }
 
+// ─────────────────────────────────────────────────────────────────────
+// Registration queue
+// ─────────────────────────────────────────────────────────────────────
 async function getRegistrations(req, res, next) {
   try {
     const registrations = await homeAffairsService.getRegistrations(req.query);
@@ -72,6 +77,9 @@ async function completeRecord(req, res, next) {
   }
 }
 
+// ─────────────────────────────────────────────────────────────────────
+// Verification
+// ─────────────────────────────────────────────────────────────────────
 async function verify(req, res, next) {
   try {
     const updated = await homeAffairsService.verifyCitizen(
@@ -85,6 +93,9 @@ async function verify(req, res, next) {
   }
 }
 
+// ─────────────────────────────────────────────────────────────────────
+// Update
+// ─────────────────────────────────────────────────────────────────────
 async function update(req, res, next) {
   try {
     const updated = await homeAffairsService.updateCitizen(
@@ -98,6 +109,9 @@ async function update(req, res, next) {
   }
 }
 
+// ─────────────────────────────────────────────────────────────────────
+// Documents and biometrics
+// ─────────────────────────────────────────────────────────────────────
 async function getDocuments(req, res, next) {
   try {
     const docs = await documentService.findByCitizen(req.params.id);
@@ -117,8 +131,7 @@ async function getBiometrics(req, res, next) {
 }
 
 // ─────────────────────────────────────────────────────────────────────
-// getCitizenPhoto — same photo logic as the citizen endpoint, but for
-// any citizen. Guarded by roleMiddleware on the route.
+// Photo — serves the citizen's passport photo or biometric facial image.
 // ─────────────────────────────────────────────────────────────────────
 async function getCitizenPhoto(req, res, next) {
   try {
@@ -147,6 +160,62 @@ async function getCitizenPhoto(req, res, next) {
   }
 }
 
+// ─────────────────────────────────────────────────────────────────────
+// Certificates
+// ─────────────────────────────────────────────────────────────────────
+async function getCertificates(req, res, next) {
+  try {
+    const result = await homeAffairsService.getCertificatesForCitizen(
+      req.params.id
+    );
+    res.json(result);
+  } catch (err) {
+    next(err);
+  }
+}
+
+async function issueBirthCertificate(req, res, next) {
+  try {
+    const result = await homeAffairsService.issueBirthCertificate(
+      req.params.id,
+      req.body,
+      req.user
+    );
+    res.status(201).json(result);
+  } catch (err) {
+    next(err);
+  }
+}
+
+async function issueDeathCertificate(req, res, next) {
+  try {
+    const result = await homeAffairsService.issueDeathCertificate(
+      req.params.id,
+      req.body,
+      req.user
+    );
+    res.status(201).json(result);
+  } catch (err) {
+    next(err);
+  }
+}
+
+async function issueMarriageCertificate(req, res, next) {
+  try {
+    const result = await homeAffairsService.issueMarriageCertificate(
+      req.params.id,
+      req.body,
+      req.user
+    );
+    res.status(201).json(result);
+  } catch (err) {
+    next(err);
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// Dashboard stats and reports
+// ─────────────────────────────────────────────────────────────────────
 async function getStats(req, res, next) {
   try {
     const stats = await homeAffairsService.getDashboardStats();
@@ -176,6 +245,10 @@ module.exports = {
   getDocuments,
   getBiometrics,
   getCitizenPhoto,
+  getCertificates,
+  issueBirthCertificate,
+  issueDeathCertificate,
+  issueMarriageCertificate,
   getStats,
   getReports,
 };

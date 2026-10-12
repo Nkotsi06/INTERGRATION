@@ -2,6 +2,7 @@ const router = require('express').Router();
 const authMiddleware = require('../middleware/authMiddleware');
 const roleMiddleware = require('../middleware/roleMiddleware');
 const adminController = require('../controllers/adminController');
+const branchController = require('../controllers/branchController');
 const { logoUpload } = require('../middleware/uploadMiddleware');
 
 router.use(authMiddleware, roleMiddleware(['ADMIN']));
@@ -26,8 +27,13 @@ router.delete('/users/:id', adminController.deleteUser);
 // System settings
 router.get('/settings', adminController.getSettings);
 router.put('/settings', adminController.updateSettings);
-
-// Logo upload — dedicated handler (was incorrectly routed to updateSettings)
 router.post('/settings/logo', logoUpload.single('logo'), adminController.uploadLogo);
+
+// Branches
+router.get('/branches', branchController.list);
+router.get('/branches/:id', branchController.getOne);
+router.post('/branches', branchController.create);
+router.put('/branches/:id', branchController.update);
+router.delete('/branches/:id', branchController.remove);
 
 module.exports = router;
