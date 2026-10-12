@@ -2845,3 +2845,27 @@ textarea:focus-visible,
     border-color: #CCCCCC !important;
   }
 }
+
+.signature-canvas {
+  display: block;
+  width: 100%;
+  height: 200px;
+  touch-action: none;
+  cursor: crosshair;
+}
+
+.signature-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: center;
+  width: 100%;
+}
+
+.signature-image {
+  max-width: 300px;
+  border: 1px solid var(--colour-border);
+  border-radius: var(--radius-md);
+  background-color: #FFFFFF;
+  padding: 4px;
+}

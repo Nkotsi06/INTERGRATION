@@ -61,9 +61,7 @@ function CompleteCitizenRecord() {
           postalAddress: data.postalAddress || '',
         }));
       } catch (err) {
-        if (!cancelled) {
-          setServerError('Could not load this registration.');
-        }
+        if (!cancelled) setServerError('Could not load this registration.');
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -88,10 +86,9 @@ function CompleteCitizenRecord() {
     return Object.keys(next).length === 0;
   };
 
-  const biometricsReady =
-    biometrics &&
-    biometrics.facialImage &&
-    Object.keys(biometrics.fingerprints || {}).length === 4;
+  // ─── FIX: fingerprints optional, facial mandatory ────────────────────
+  const biometricsReady = !!biometrics?.facialImage;
+  // ─────────────────────────────────────────────────────────────────────
 
   const handleSave = async () => {
     setServerError(null);
@@ -99,9 +96,7 @@ function CompleteCitizenRecord() {
     if (!validate()) return;
 
     if (!biometricsReady) {
-      setServerError(
-        'Capture all four fingerprints and a facial photo before saving.'
-      );
+      setServerError('Capture a facial photo before saving.');
       return;
     }
 
@@ -289,8 +284,8 @@ function CompleteCitizenRecord() {
       <div className="form-section">
         <h3 className="form-section-title">Biometric enrollment</h3>
         <p className="text-muted">
-          Capture the citizen's fingerprints and a facial photograph. This
-          step is required before saving.
+          Capture a facial photograph. Fingerprints are optional for this
+          prototype.
         </p>
         <BiometricEnrollment onComplete={setBiometrics} />
       </div>
@@ -299,8 +294,8 @@ function CompleteCitizenRecord() {
         <div className="card card-flat" style={{ marginBottom: 16 }}>
           <h3 style={{ marginTop: 0 }}>Ready to save</h3>
           <p className="text-muted" style={{ margin: 0 }}>
-            {Object.keys(biometrics.fingerprints || {}).length} of 4
-            fingerprints captured
+            {Object.keys(biometrics.fingerprints || {}).length} fingerprints
+            captured
             {biometrics.facialImage ? ' · facial photo captured' : ''}
           </p>
         </div>
@@ -309,7 +304,7 @@ function CompleteCitizenRecord() {
       {!biometricsReady && (
         <Alert
           type="info"
-          message="Capture all four fingerprints and a facial photo before saving."
+          message="Capture a facial photo before saving."
         />
       )}
 

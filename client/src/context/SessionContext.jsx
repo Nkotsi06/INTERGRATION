@@ -2,9 +2,11 @@ import {
   createContext,
   useContext,
   useState,
+  useEffect,
   useCallback,
   useMemo,
 } from 'react';
+import { getSession } from '../api/authApi';
 
 const SessionContext = createContext(null);
 
@@ -17,6 +19,30 @@ const INITIAL_SESSION = {
 
 export function SessionProvider({ children }) {
   const [session, setSession] = useState(INITIAL_SESSION);
+
+  // Hydrate from the backend — the JWT is the source of truth.
+  useEffect(() => {
+    let cancelled = false;
+
+    async function hydrate() {
+      try {
+        const data = await getSession();
+        if (cancelled || !data) return;
+        setSession((prev) => ({
+          ...prev,
+          identityVerified: !!data.identityVerified,
+          verifiedCitizenId: data.verifiedCitizenId || null,
+        }));
+      } catch {
+        // Not logged in — silent.
+      }
+    }
+
+    hydrate();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const verifyIdentity = useCallback((citizenId) => {
     setSession((prev) => ({

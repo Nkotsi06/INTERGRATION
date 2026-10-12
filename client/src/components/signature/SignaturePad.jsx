@@ -1,20 +1,37 @@
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import SignatureCanvas from 'react-signature-canvas';
 import { FiTrash2 } from 'react-icons/fi';
+import SignaturePreview from './SignaturePreview';
 
 function SignaturePad({ onSave, onClear }) {
   const sigPadRef = useRef(null);
+  const [saved, setSaved] = useState(null);
 
   const clear = () => {
-    sigPadRef.current.clear();
+    if (sigPadRef.current) sigPadRef.current.clear();
+    setSaved(null);
     if (onClear) onClear();
   };
 
   const save = () => {
-    if (sigPadRef.current.isEmpty()) return;
+    if (!sigPadRef.current || sigPadRef.current.isEmpty()) return;
     const dataUrl = sigPadRef.current.getCanvas().toDataURL('image/png');
+    setSaved(dataUrl);
     onSave(dataUrl);
   };
+
+  if (saved) {
+    return (
+      <div className="signature-pad">
+        <SignaturePreview signatureData={saved} />
+        <div className="signature-actions">
+          <button type="button" className="btn btn-secondary" onClick={clear}>
+            <FiTrash2 /> Clear
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="signature-pad">
@@ -30,10 +47,10 @@ function SignaturePad({ onSave, onClear }) {
         />
       </div>
       <div className="signature-actions">
-        <button className="btn btn-secondary" onClick={clear}>
+        <button type="button" className="btn btn-secondary" onClick={clear}>
           <FiTrash2 /> Clear
         </button>
-        <button className="btn btn-primary" onClick={save}>
+        <button type="button" className="btn btn-primary" onClick={save}>
           Save Signature
         </button>
       </div>

@@ -6,10 +6,6 @@ const documentService = require('./documentService');
 const { generateNationalId } = require('../utils/referenceGenerator');
 const logger = require('../utils/logger');
 
-// -------------------------------------------------------------
-// Read operations
-// -------------------------------------------------------------
-
 async function searchByQuery({ query }) {
   if (!query) return null;
   const citizen = await citizenRepository.findByAny(query);
@@ -27,10 +23,6 @@ async function getRegistrations(filters = {}) {
 async function getRegistrationById(id) {
   return citizenRepository.findRegistrationById(id);
 }
-
-// -------------------------------------------------------------
-// Complete a citizen record
-// -------------------------------------------------------------
 
 async function completeRecord(registrationId, data, staffUser) {
   const registration = await citizenRepository.findRegistrationById(registrationId);
@@ -68,10 +60,8 @@ async function completeRecord(registrationId, data, staffUser) {
   const firstName = nameParts[0] || '';
   const lastName = nameParts.slice(1).join(' ') || '';
 
-  // Step 3 — Compose address from grouped fields
-  const addressParts = [data.village, data.district, data.postalAddress].filter(
-    Boolean
-  );
+  // Step 3 — Compose address
+  const addressParts = [data.village, data.district, data.postalAddress].filter(Boolean);
   const address = addressParts.join(', ');
 
   // Step 4 — Create the citizen
@@ -92,11 +82,10 @@ async function completeRecord(registrationId, data, staffUser) {
     `Citizen record created for ${registration.username}: National ID ${nationalId}`
   );
 
-  // Step 5 — Link the account to the citizen.
-  //   `registration.id` is the USER's UUID (there is no `user_id` column).
+  // Step 5 — Link account to citizen
   await userRepository.linkCitizen(registration.id, citizen.id);
 
-  // Step 5.5 — Re-link any documents uploaded against the registration
+  // Step 5.5 — Re-link documents
   try {
     await documentService.relinkRegistrationDocuments(
       registration.id,
@@ -111,11 +100,17 @@ async function completeRecord(registrationId, data, staffUser) {
     );
   }
 
-  // Step 6 — Save biometrics
+  // Step 6 — Biometrics (facial required, fingerprints optional)
   if (data.biometrics && typeof data.biometrics === 'object') {
     try {
       const fingerprints = data.biometrics.fingerprints || {};
       const facialImage = data.biometrics.facialImage || null;
+
+      if (!facialImage) {
+        const err = new Error('Facial photo is required');
+        err.statusCode = 400;
+        throw err;
+      }
 
       if (Object.keys(fingerprints).length > 0) {
         await biometricService.enrollFingerprints(
@@ -128,14 +123,14 @@ async function completeRecord(registrationId, data, staffUser) {
         );
       }
 
-      if (facialImage) {
-        await biometricService.enrollFacial(citizen.id, facialImage, staffUser);
-        logger.info(`Facial photo enrolled for citizen ${citizen.id}`);
-      }
+      await biometricService.enrollFacial(citizen.id, facialImage, staffUser);
+      logger.info(`Facial photo enrolled for citizen ${citizen.id}`);
     } catch (err) {
       logger.error(
         `Biometric enrollment failed for citizen ${citizen.id}: ${err.message}`
       );
+      // Surface facial-photo requirement errors to the caller.
+      if (err.statusCode === 400) throw err;
     }
   }
 
@@ -149,7 +144,6 @@ async function completeRecord(registrationId, data, staffUser) {
     result: 'SUCCESS',
   });
 
-  // Step 8 — Return the fields the frontend needs
   return {
     citizenId: citizen.id,
     nationalId: citizen.national_id,
@@ -157,10 +151,6 @@ async function completeRecord(registrationId, data, staffUser) {
     dateOfBirth: citizen.date_of_birth,
   };
 }
-
-// -------------------------------------------------------------
-// Verification
-// -------------------------------------------------------------
 
 async function verifyCitizen(citizenId, { checks, notes }, staffUser) {
   const citizen = await citizenRepository.findById(citizenId);
@@ -197,10 +187,6 @@ async function updateCitizen(citizenId, data, staffUser) {
   );
   return updated;
 }
-
-// -------------------------------------------------------------
-// Dashboard and reports
-// -------------------------------------------------------------
 
 async function getDashboardStats() {
   return citizenRepository.getDashboardStats();

@@ -1,8 +1,13 @@
 const passportService = require('../services/passportService');
+const signatureService = require('../services/signatureService');
 
 async function apply(req, res, next) {
   try {
-    const result = await passportService.applyForPassport(req.session.verifiedCitizenId, req.body, req.user);
+    const result = await passportService.applyForPassport(
+      req.session.verifiedCitizenId,
+      req.body,
+      req.user
+    );
     res.status(201).json(result);
   } catch (err) { next(err); }
 }
@@ -15,7 +20,10 @@ async function getMyApplications(req, res, next) {
 
 async function getApplicationByRef(req, res, next) {
   try {
-    const app = await passportService.getApplicationByRef(req.params.ref, req.session.verifiedCitizenId);
+    const app = await passportService.getApplicationByRef(
+      req.params.ref,
+      req.session.verifiedCitizenId
+    );
     if (!app) return res.status(404).json({ message: 'Application not found' });
     res.json(app);
   } catch (err) { next(err); }
@@ -34,10 +42,35 @@ async function processApplication(req, res, next) {
   } catch (err) { next(err); }
 }
 
+// ─── FIX: persist the signature ─────────────────────────────────────────
 async function issuePassport(req, res, next) {
   try {
+    const { id } = req.params;
+    const { signature } = req.body;
+
+    if (!signature) {
+      return res.status(400).json({ message: 'Signature is required.' });
+    }
+
+    await signatureService.save(
+      {
+        citizenId: id,
+        documentTypeCode: 'PASSPORT',
+        signatureData: signature,
+      },
+      req.user
+    );
+
     res.json({ message: 'Passport issued successfully' });
   } catch (err) { next(err); }
 }
+// ────────────────────────────────────────────────────────────────────────
 
-module.exports = { apply, getMyApplications, getApplicationByRef, getStaffApplications, processApplication, issuePassport };
+module.exports = {
+  apply,
+  getMyApplications,
+  getApplicationByRef,
+  getStaffApplications,
+  processApplication,
+  issuePassport,
+};

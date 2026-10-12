@@ -26,6 +26,8 @@ router.delete('/users/:id', adminController.deleteUser);
 // System settings
 router.get('/settings', adminController.getSettings);
 router.put('/settings', adminController.updateSettings);
-router.post('/settings/logo', logoUpload.single('logo'), adminController.updateSettings);
+
+// Logo upload — dedicated handler (was incorrectly routed to updateSettings)
+router.post('/settings/logo', logoUpload.single('logo'), adminController.uploadLogo);
 
 module.exports = router;

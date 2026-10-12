@@ -1,20 +1,5 @@
 const authService = require('../services/authService');
-const userRepository = require('../repositories/userRepository');
-const { signToken } = require('../utils/jwt');
-
-// Cookie options shared by login and any future auth endpoints.
-// Cross-origin (Vercel <-> Render) REQUIRES sameSite:'none' + secure:true,
-// otherwise the browser silently drops the cookie and every subsequent
-// request 401s.
-const isProduction = process.env.NODE_ENV === 'production';
-
-const authCookieOptions = {
-  httpOnly: true,
-  secure: isProduction,
-  sameSite: isProduction ? 'none' : 'lax',
-  maxAge: 8 * 60 * 60 * 1000,
-  path: '/',
-};
+const { authCookieOptions } = require('../utils/authCookies');
 
 async function register(req, res, next) {
   try {
@@ -28,7 +13,11 @@ async function register(req, res, next) {
 async function login(req, res, next) {
   try {
     const { username, password, role } = req.body;
-    const result = await authService.login({ username, password, expectedRoleGroup: role });
+    const result = await authService.login({
+      username,
+      password,
+      expectedRoleGroup: role,
+    });
 
     res.cookie('token', result.token, authCookieOptions);
 
@@ -50,13 +39,11 @@ async function adminLogin(req, res, next) {
 }
 
 async function logout(req, res) {
-  // clearCookie must match the same options (except maxAge) for the browser
-  // to actually remove the cookie.
   res.clearCookie('token', {
-    httpOnly: true,
-    secure: isProduction,
-    sameSite: isProduction ? 'none' : 'lax',
-    path: '/',
+    httpOnly: authCookieOptions.httpOnly,
+    secure: authCookieOptions.secure,
+    sameSite: authCookieOptions.sameSite,
+    path: authCookieOptions.path,
   });
   res.json({ message: 'Logged out successfully' });
 }
@@ -65,7 +52,12 @@ async function getSession(req, res, next) {
   try {
     const session = await authService.getSession(req.user.userId);
     if (!session) return res.status(404).json({ message: 'Session not found' });
-    res.json(session);
+
+    res.json({
+      ...session,
+      identityVerified: req.session?.identityVerified || false,
+      verifiedCitizenId: req.session?.verifiedCitizenId || null,
+    });
   } catch (err) {
     next(err);
   }
@@ -79,4 +71,12 @@ async function forgotPassword(req, res, next) {
   }
 }
 
-module.exports = { register, login, staffLogin, adminLogin, logout, getSession, forgotPassword };
+module.exports = {
+  register,
+  login,
+  staffLogin,
+  adminLogin,
+  logout,
+  getSession,
+  forgotPassword,
+};

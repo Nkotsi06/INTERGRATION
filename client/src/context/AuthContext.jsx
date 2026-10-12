@@ -7,23 +7,21 @@ import {
   useMemo,
 } from 'react';
 import { login as apiLogin, logout as apiLogout, getSession } from '../api/authApi';
+import { useSession } from './SessionContext';
 
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const { clearVerification } = useSession();
 
   const checkSession = useCallback(async () => {
     try {
       const session = await getSession();
-      if (session?.user) {
-        setUser(session.user);
-      } else {
-        setUser(null);
-      }
-    } catch (error) {
-      // 401 is expected when not logged in — silent
+      if (session?.user) setUser(session.user);
+      else setUser(null);
+    } catch {
       setUser(null);
     } finally {
       setLoading(false);
@@ -45,8 +43,9 @@ export function AuthProvider({ children }) {
       await apiLogout();
     } finally {
       setUser(null);
+      clearVerification();
     }
-  }, []);
+  }, [clearVerification]);
 
   const value = useMemo(
     () => ({ user, setUser, login, logout, loading, checkSession }),

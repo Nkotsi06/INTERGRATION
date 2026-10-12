@@ -1,4 +1,5 @@
 const verificationService = require('../services/verificationService');
+const { authCookieOptions } = require('../utils/authCookies');
 
 async function confirm(req, res, next) {
   try {
@@ -10,12 +11,7 @@ async function confirm(req, res, next) {
     });
 
     if (result.success && result.token) {
-      res.cookie('token', result.token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-        maxAge: 8 * 60 * 60 * 1000,
-      });
+      res.cookie('token', result.token, authCookieOptions);
     }
 
     res.json(result);

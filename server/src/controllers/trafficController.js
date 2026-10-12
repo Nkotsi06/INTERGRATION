@@ -1,4 +1,5 @@
 const trafficService = require('../services/trafficService');
+const signatureService = require('../services/signatureService');
 
 async function getLicence(req, res, next) {
   try {
@@ -15,7 +16,11 @@ async function renewLicence(req, res, next) {
 
 async function bookDrivingTest(req, res, next) {
   try {
-    const booking = await trafficService.bookDrivingTest(req.session.verifiedCitizenId, req.body, req.user);
+    const booking = await trafficService.bookDrivingTest(
+      req.session.verifiedCitizenId,
+      req.body,
+      req.user
+    );
     res.status(201).json(booking);
   } catch (err) { next(err); }
 }
@@ -46,10 +51,37 @@ async function processApplication(req, res, next) {
   } catch (err) { next(err); }
 }
 
+// ─── FIX: persist the signature ─────────────────────────────────────────
 async function issueLicence(req, res, next) {
   try {
+    const { id } = req.params;
+    const { signature } = req.body;
+
+    if (!signature) {
+      return res.status(400).json({ message: 'Signature is required.' });
+    }
+
+    await signatureService.save(
+      {
+        citizenId: id,
+        documentTypeCode: 'DRIVERS_LICENCE',
+        signatureData: signature,
+      },
+      req.user
+    );
+
     res.json({ message: 'Licence issued successfully' });
   } catch (err) { next(err); }
 }
+// ────────────────────────────────────────────────────────────────────────
 
-module.exports = { getLicence, renewLicence, bookDrivingTest, getAppointments, cancelAppointment, getStaffApplications, processApplication, issueLicence };
+module.exports = {
+  getLicence,
+  renewLicence,
+  bookDrivingTest,
+  getAppointments,
+  cancelAppointment,
+  getStaffApplications,
+  processApplication,
+  issueLicence,
+};

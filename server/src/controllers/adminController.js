@@ -1,4 +1,5 @@
 const adminService = require('../services/adminService');
+const logoService = require('../services/logoService');
 
 async function getStats(req, res, next) {
   try { res.json(await adminService.getDashboardStats()); } catch (e) { next(e); }
@@ -77,6 +78,16 @@ async function updateSettings(req, res, next) {
   } catch (e) { next(e); }
 }
 
+// ─── FIX: dedicated logo upload ─────────────────────────────────────────
+async function uploadLogo(req, res, next) {
+  try {
+    if (!req.file) return res.status(400).json({ message: 'No logo file provided' });
+    const result = await logoService.updateLogo(req.file, req.user);
+    res.json(result);
+  } catch (e) { next(e); }
+}
+// ────────────────────────────────────────────────────────────────────────
+
 module.exports = {
   getStats,
   getHealth,
@@ -91,4 +102,5 @@ module.exports = {
   deleteUser,
   getSettings,
   updateSettings,
+  uploadLogo,
 };

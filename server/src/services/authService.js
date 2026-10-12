@@ -39,21 +39,38 @@ async function login({ username, password, expectedRoleGroup }) {
   if (expectedRoleGroup === 'CITIZEN' && user.role !== 'CITIZEN') {
     throw new Error('Please use the staff login for staff accounts');
   }
-  if (expectedRoleGroup === 'STAFF' && !['HOME_AFFAIRS', 'TRAFFIC', 'POLICE', 'FINANCE', 'PENSIONS', 'PASSPORT'].includes(user.role)) {
+  if (
+    expectedRoleGroup === 'STAFF' &&
+    !['HOME_AFFAIRS', 'TRAFFIC', 'POLICE', 'FINANCE', 'PENSIONS', 'PASSPORT'].includes(
+      user.role
+    )
+  ) {
     throw new Error('Please use the correct login for your account type');
   }
   if (expectedRoleGroup === 'ADMIN' && user.role !== 'ADMIN') {
     throw new Error('Administrator access only');
   }
 
-  // Session-based identity verification always starts as false
+  // ─── FIX: reflect DB verification state at login ─────────────────────
+  let identityVerified = false;
+  let verifiedCitizenId = null;
+
+  if (user.citizen_id) {
+    const citizen = await citizenRepository.findById(user.citizen_id);
+    if (citizen && citizen.is_verified) {
+      identityVerified = true;
+      verifiedCitizenId = citizen.id;
+    }
+  }
+  // ─────────────────────────────────────────────────────────────────────
+
   const token = signToken({
     userId: user.id,
     username: user.username,
     role: user.role,
     citizenId: user.citizen_id || null,
-    identityVerified: false,
-    verifiedCitizenId: null,
+    identityVerified,
+    verifiedCitizenId,
   });
 
   return {

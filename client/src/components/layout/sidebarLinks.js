@@ -16,10 +16,19 @@ export const SIDEBAR_BY_ROLE = {
   ADMIN: {
     label: 'Administration',
     links: [
-      { to: '/admin/dashboard',    label: 'Dashboard' },
-      { to: '/admin/users',        label: 'User Management' },
-      { to: '/admin/audit-logs',   label: 'Audit Logs' },
-      { to: '/admin/settings',     label: 'System Settings' },
+      { to: '/admin/dashboard',  label: 'Dashboard' },
+      { to: '/admin/users',      label: 'User Management' },
+      { to: '/admin/audit-logs', label: 'Audit Logs' },
+
+      // Settings group — every route defined in AppRoutes.jsx
+      { to: '/admin/settings',                       label: 'System Settings' },
+      { to: '/admin/settings/ministries',            label: 'Ministries' },
+      { to: '/admin/settings/document-types',        label: 'Document Types' },
+      { to: '/admin/settings/statuses',              label: 'Status Types' },
+      { to: '/admin/settings/reference-formats',     label: 'Reference Formats' },
+      { to: '/admin/settings/languages',             label: 'Languages' },
+      { to: '/admin/settings/logo',                  label: 'System Logo' },
+      { to: '/admin/settings/biometrics',            label: 'Biometrics' },
     ],
   },
 

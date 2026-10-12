@@ -6,6 +6,7 @@ import FormActions from '../../components/common/FormActions';
 import Input from '../../components/common/Input';
 import Alert from '../../components/common/Alert';
 import StatusBadge from '../../components/common/StatusBadge';
+import Button from '../../components/common/Button';
 import useFetch from '../../hooks/useFetch';
 import { getLicence, renewLicence } from '../../api/trafficApi';
 import { useNotification } from '../../context/NotificationContext';
@@ -118,16 +119,10 @@ function RenewLicence() {
             <span className="reference-value">{confirmation.referenceNumber}</span>
           </div>
           <div className="result-actions">
-            <Button
-              variant="secondary"
-              onClick={() => window.print()}
-            >
+            <Button variant="secondary" onClick={() => window.print()}>
               Download receipt
             </Button>
-            <Button
-              variant="primary"
-              onClick={() => navigate('/traffic/licence')}
-            >
+            <Button variant="primary" onClick={() => navigate('/traffic/licence')}>
               View driving licence
             </Button>
           </div>
