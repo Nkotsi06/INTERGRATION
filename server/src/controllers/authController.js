@@ -18,9 +18,7 @@ async function login(req, res, next) {
       password,
       expectedRoleGroup: role,
     });
-
     res.cookie('token', result.token, authCookieOptions);
-
     res.json(result);
   } catch (err) {
     err.statusCode = 401;
@@ -48,11 +46,16 @@ async function logout(req, res) {
   res.json({ message: 'Logged out successfully' });
 }
 
+// ─────────────────────────────────────────────────────────────────────
+// THIS IS THE FIX. The response MUST include identityVerified and
+// verifiedCitizenId, or SessionContext stays "not verified" forever.
+// ─────────────────────────────────────────────────────────────────────
 async function getSession(req, res, next) {
   try {
     const session = await authService.getSession(req.user.userId);
-    if (!session) return res.status(404).json({ message: 'Session not found' });
-
+    if (!session) {
+      return res.status(404).json({ message: 'Session not found' });
+    }
     res.json({
       ...session,
       identityVerified: req.session?.identityVerified || false,

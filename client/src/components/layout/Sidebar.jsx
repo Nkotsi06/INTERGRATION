@@ -29,8 +29,6 @@ function Sidebar({ collapsed = false, onNavigate }) {
           </NavLink>
         ))}
       </nav>
-
-      <span className="app-sidebar-footer">Integrated Government Services</span>
     </aside>
   );
 }
