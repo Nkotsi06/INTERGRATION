@@ -2,7 +2,7 @@ const jwt = require('jsonwebtoken');
 
 function signToken(payload) {
   return jwt.sign(payload, process.env.JWT_SECRET, {
-    expiresIn: process.env.JWT_EXPIRY || '8h',
+    expiresIn: process.env.JWT_EXPIRY || '90d',
   });
 }
 
