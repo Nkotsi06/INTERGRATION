@@ -1,8 +1,5 @@
 const { query } = require('../config/database');
 
-// -------------------------------------------------------------
-// Create
-// -------------------------------------------------------------
 async function create(doc) {
   const result = await query(
     `INSERT INTO citizen_documents (
@@ -31,9 +28,6 @@ async function create(doc) {
   return result.rows[0];
 }
 
-// -------------------------------------------------------------
-// Read
-// -------------------------------------------------------------
 async function findById(id) {
   const result = await query('SELECT * FROM citizen_documents WHERE id = $1', [id]);
   return result.rows[0];
@@ -47,9 +41,18 @@ async function findByCitizen(citizenId) {
   return result.rows;
 }
 
-// -------------------------------------------------------------
-// Verify
-// -------------------------------------------------------------
+// New: latest document of a specific type for a citizen.
+async function findLatestByType(citizenId, documentTypeCode) {
+  const result = await query(
+    `SELECT * FROM citizen_documents
+     WHERE citizen_id = $1 AND document_type_code = $2
+     ORDER BY uploaded_at DESC
+     LIMIT 1`,
+    [citizenId, documentTypeCode]
+  );
+  return result.rows[0];
+}
+
 async function verify(id, data) {
   const result = await query(
     `UPDATE citizen_documents
@@ -64,11 +67,8 @@ async function verify(id, data) {
   return result.rows[0];
 }
 
-// -------------------------------------------------------------
-// Delete
-// -------------------------------------------------------------
 async function remove(id) {
   await query('DELETE FROM citizen_documents WHERE id = $1', [id]);
 }
 
-module.exports = { create, findById, findByCitizen, verify, remove };
+module.exports = { create, findById, findByCitizen, findLatestByType, verify, remove };

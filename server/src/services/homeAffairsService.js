@@ -6,14 +6,37 @@ const documentService = require('./documentService');
 const { generateNationalId } = require('../utils/referenceGenerator');
 const logger = require('../utils/logger');
 
+// Fields the officer may edit after the citizen is created.
+const EDITABLE_FIELDS = [
+  'first_name',
+  'last_name',
+  'place_of_birth',
+  'address',
+  'phone',
+  'email',
+];
+
 async function searchByQuery({ query }) {
   if (!query) return null;
   const citizen = await citizenRepository.findByAny(query);
   return citizen || null;
 }
 
+// ─────────────────────────────────────────────────────────────────────
+// getById — returns the raw citizen plus its registrationId so the UI's
+// "Edit record" button always has the right id.
+// ─────────────────────────────────────────────────────────────────────
 async function getById(id) {
-  return citizenRepository.findById(id);
+  const citizen = await citizenRepository.findById(id);
+  if (!citizen) return null;
+
+  // Look up the linked user row by citizen_id.
+  const owner = await userRepository.findByCitizenId(citizen.id);
+
+  return {
+    ...citizen,
+    registrationId: owner ? owner.id : null,
+  };
 }
 
 async function getRegistrations(filters = {}) {
@@ -33,7 +56,8 @@ async function completeRecord(registrationId, data, staffUser) {
   }
 
   if (registration.citizen_id) {
-    const err = new Error('This registration already has a citizen record');
+    // Already completed. Do not generate a second National ID.
+    const err = new Error('This registration already has a citizen record.');
     err.statusCode = 409;
     throw err;
   }
@@ -42,7 +66,6 @@ async function completeRecord(registrationId, data, staffUser) {
   let nationalId;
   let attempts = 0;
   const maxAttempts = 10;
-
   do {
     nationalId = await generateNationalId(data.dateOfBirth, data.gender);
     const existing = await citizenRepository.findByNationalId(nationalId);
@@ -54,7 +77,7 @@ async function completeRecord(registrationId, data, staffUser) {
     throw new Error('Could not generate a unique National ID. Please try again.');
   }
 
-  // Step 2 — Split full name into first and last
+  // Step 2 — Split name
   const fullName = (data.fullName || '').trim();
   const nameParts = fullName.split(/\s+/);
   const firstName = nameParts[0] || '';
@@ -64,7 +87,7 @@ async function completeRecord(registrationId, data, staffUser) {
   const addressParts = [data.village, data.district, data.postalAddress].filter(Boolean);
   const address = addressParts.join(', ');
 
-  // Step 4 — Create the citizen
+  // Step 4 — Create citizen
   const citizen = await citizenRepository.create({
     nationalId,
     firstName,
@@ -82,15 +105,12 @@ async function completeRecord(registrationId, data, staffUser) {
     `Citizen record created for ${registration.username}: National ID ${nationalId}`
   );
 
-  // Step 5 — Link account to citizen
+  // Step 5 — Link user to citizen
   await userRepository.linkCitizen(registration.id, citizen.id);
 
-  // Step 5.5 — Re-link documents
+  // Step 5.5 — Re-link documents captured during registration
   try {
-    await documentService.relinkRegistrationDocuments(
-      registration.id,
-      citizen.id
-    );
+    await documentService.relinkRegistrationDocuments(registration.id, citizen.id);
     logger.info(
       `Documents re-linked for registration ${registration.id} → citizen ${citizen.id}`
     );
@@ -113,11 +133,7 @@ async function completeRecord(registrationId, data, staffUser) {
       }
 
       if (Object.keys(fingerprints).length > 0) {
-        await biometricService.enrollFingerprints(
-          citizen.id,
-          fingerprints,
-          staffUser
-        );
+        await biometricService.enrollFingerprints(citizen.id, fingerprints, staffUser);
         logger.info(
           `Fingerprints enrolled for citizen ${citizen.id} (${Object.keys(fingerprints).length} prints)`
         );
@@ -129,12 +145,11 @@ async function completeRecord(registrationId, data, staffUser) {
       logger.error(
         `Biometric enrollment failed for citizen ${citizen.id}: ${err.message}`
       );
-      // Surface facial-photo requirement errors to the caller.
       if (err.statusCode === 400) throw err;
     }
   }
 
-  // Step 7 — Audit entry
+  // Step 7 — Audit
   await auditService.log({
     userId: staffUser.userId,
     username: staffUser.username,
@@ -179,12 +194,36 @@ async function verifyCitizen(citizenId, { checks, notes }, staffUser) {
   return updated;
 }
 
+// ─────────────────────────────────────────────────────────────────────
+// updateCitizen — accepts only editable fields. Records each change in
+// citizen_edit_history via the repository.
+// ─────────────────────────────────────────────────────────────────────
 async function updateCitizen(citizenId, data, staffUser) {
+  const patch = {};
+  for (const key of EDITABLE_FIELDS) {
+    if (data[key] !== undefined) patch[key] = data[key];
+  }
+  if (Object.keys(patch).length === 0) {
+    const err = new Error('No editable fields supplied.');
+    err.statusCode = 400;
+    throw err;
+  }
+
   const updated = await citizenRepository.updateWithHistory(
     citizenId,
-    data,
+    patch,
     staffUser.userId
   );
+
+  await auditService.log({
+    userId: staffUser.userId,
+    username: staffUser.username,
+    action: 'CITIZEN_UPDATED',
+    recordType: 'CITIZEN',
+    recordId: citizenId,
+    result: 'SUCCESS',
+  });
+
   return updated;
 }
 

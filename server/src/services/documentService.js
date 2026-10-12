@@ -4,21 +4,10 @@ const auditService = require('./auditService');
 const { deleteFile, getPublicUrl } = require('../utils/fileStorage');
 const { query } = require('../config/database');
 
-// -------------------------------------------------------------
-// Upload
-// -------------------------------------------------------------
-async function upload(
-  citizenId,
-  file,
-  documentTypeCode,
-  user,
-  registrationId = null
-) {
+async function upload(citizenId, file, documentTypeCode, user, registrationId = null) {
   const documentType = await documentTypeRepository.findByCode(documentTypeCode);
   if (!documentType) throw new Error('Invalid document type');
 
-  // When the citizen does not exist yet, attach a marker to the file path
-  // so the record can be re-linked after the citizen is created.
   const filePath = registrationId
     ? `${file.path}#registration-${registrationId}`
     : file.path;
@@ -45,9 +34,6 @@ async function upload(
   return { ...doc, fileUrl: getPublicUrl(doc.file_path) };
 }
 
-// -------------------------------------------------------------
-// Read
-// -------------------------------------------------------------
 async function findByCitizen(citizenId) {
   if (!citizenId) return [];
   const docs = await documentRepository.findByCitizen(citizenId);
@@ -60,9 +46,6 @@ async function findById(id) {
   return { ...doc, fileUrl: getPublicUrl(doc.file_path) };
 }
 
-// -------------------------------------------------------------
-// Verify
-// -------------------------------------------------------------
 async function verify(id, action, reason, staffUser) {
   const status = action === 'APPROVE' ? 'VERIFIED' : 'REJECTED';
   const updated = await documentRepository.verify(id, {
@@ -81,9 +64,6 @@ async function verify(id, action, reason, staffUser) {
   return updated;
 }
 
-// -------------------------------------------------------------
-// Delete — ownership enforced for citizens, staff and admin can delete any
-// -------------------------------------------------------------
 async function remove(id, user) {
   const doc = await documentRepository.findById(id);
   if (!doc) return;
@@ -112,9 +92,6 @@ async function remove(id, user) {
   });
 }
 
-// -------------------------------------------------------------
-// Re-link documents captured against a registration to the new citizen
-// -------------------------------------------------------------
 async function relinkRegistrationDocuments(registrationId, citizenId) {
   if (!registrationId || !citizenId) return;
 

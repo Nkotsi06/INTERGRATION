@@ -2,9 +2,9 @@ const citizenService = require('../services/citizenService');
 const applicationRepository = require('../repositories/applicationRepository');
 const documentService = require('../services/documentService');
 const notificationService = require('../services/notificationService');
+const path = require('path');
+const fs = require('fs');
 
-// Helper — prefer the session flag (step-up auth), fall back to the JWT
-// citizenId (account link created by Home Affairs).
 function citizenIdFrom(req) {
   return req.session?.verifiedCitizenId || req.user?.citizenId || null;
 }
@@ -51,7 +51,8 @@ async function getApplicationByRef(req, res, next) {
   try {
     const citizenId = citizenIdFrom(req);
     const app = await applicationRepository.findByReference(req.params.ref);
-    if (!app || (citizenId && app.citizen_id !== citizenId)) {
+    // Deny unless the app exists, the citizen is known, and it belongs to them.
+    if (!app || !citizenId || app.citizen_id !== citizenId) {
       return res.status(404).json({ message: 'Application not found' });
     }
     const history = await applicationRepository.getStatusHistory(app.id);
@@ -67,6 +68,40 @@ async function getDocuments(req, res, next) {
     if (!citizenId) return res.json([]);
     const docs = await documentService.findByCitizen(citizenId);
     res.json(docs);
+  } catch (err) {
+    next(err);
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// Photo — serves the citizen's own passport photo (or facial image).
+// ─────────────────────────────────────────────────────────────────────
+async function getPhoto(req, res, next) {
+  try {
+    const citizenId = citizenIdFrom(req);
+    if (!citizenId) return res.status(404).json({ message: 'No photo' });
+
+    const photo = await citizenService.findPhotoForCitizen(citizenId);
+    if (!photo) return res.status(404).json({ message: 'No photo' });
+
+    if (photo.kind === 'dataurl') {
+      // Biometric facial image is a data URL. Decode and stream.
+      const match = photo.dataUrl.match(/^data:(.+?);base64,(.*)$/);
+      if (!match) return res.status(404).json({ message: 'No photo' });
+      const [, mime, b64] = match;
+      res.setHeader('Content-Type', mime);
+      res.setHeader('Cache-Control', 'private, max-age=300');
+      return res.send(Buffer.from(b64, 'base64'));
+    }
+
+    // Document on disk.
+    const filePath = String(photo.filePath).split('#')[0];
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ message: 'Photo file missing' });
+    }
+    res.setHeader('Content-Type', photo.fileType || 'image/jpeg');
+    res.setHeader('Cache-Control', 'private, max-age=300');
+    fs.createReadStream(filePath).pipe(res);
   } catch (err) {
     next(err);
   }
@@ -106,6 +141,7 @@ module.exports = {
   getApplications,
   getApplicationByRef,
   getDocuments,
+  getPhoto,
   getNotifications,
   deleteNotification,
   markNotificationRead,

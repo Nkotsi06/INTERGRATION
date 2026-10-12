@@ -10,13 +10,17 @@ import DocumentUpload from '../../components/documents/DocumentUpload';
 import BiometricEnrollment from '../../components/biometrics/BiometricEnrollment';
 import {
   getRegistrationById,
+  getCitizenById,
   completeRecord,
+  updateCitizen,
 } from '../../api/homeAffairsApi';
 import { uploadDocument } from '../../api/documentApi';
 import { useNotification } from '../../context/NotificationContext';
 
-const initialForm = {
+const emptyForm = {
   fullName: '',
+  firstName: '',
+  lastName: '',
   dateOfBirth: '',
   gender: '',
   placeOfBirth: '',
@@ -34,38 +38,67 @@ function CompleteCitizenRecord() {
   const { success } = useNotification();
 
   const [registration, setRegistration] = useState(null);
-  const [form, setForm] = useState(initialForm);
+  const [existingCitizenId, setExistingCitizenId] = useState(null);
+  const [nationalId, setNationalId] = useState('');
+  const [form, setForm] = useState(emptyForm);
   const [biometrics, setBiometrics] = useState(null);
   const [errors, setErrors] = useState({});
   const [serverError, setServerError] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
+  const isEditMode = !!existingCitizenId;
+
   useEffect(() => {
     let cancelled = false;
+
     async function load() {
       try {
-        const data = await getRegistrationById(id);
+        // 1. Try to load this as a pending registration (user id).
+        const reg = await getRegistrationById(id);
         if (cancelled) return;
-        setRegistration(data);
+
+        // If the registration is already linked to a citizen, we're in edit mode.
+        if (reg && reg.citizen_id) {
+          const c = await getCitizenById(reg.citizen_id);
+          if (cancelled) return;
+          setRegistration(reg);
+          setExistingCitizenId(c.id);
+          setNationalId(c.national_id || '');
+          setForm({
+            firstName: c.first_name || '',
+            lastName: c.last_name || '',
+            fullName: `${c.first_name || ''} ${c.last_name || ''}`.trim(),
+            dateOfBirth: c.date_of_birth || '',
+            gender: c.gender || '',
+            placeOfBirth: c.place_of_birth || '',
+            nationality: c.nationality || 'Mosotho',
+            phone: c.phone || '',
+            email: c.email || '',
+            village: '',
+            district: '',
+            postalAddress: c.address || '',
+          });
+          return;
+        }
+
+        // Otherwise, this is a fresh registration.
+        setRegistration(reg || {});
         setForm((prev) => ({
           ...prev,
-          fullName: data.fullName || '',
-          dateOfBirth: data.dateOfBirth || '',
-          gender: data.gender || '',
-          placeOfBirth: data.placeOfBirth || '',
-          phone: data.phone || '',
-          email: data.email || '',
-          village: data.village || '',
-          district: data.district || '',
-          postalAddress: data.postalAddress || '',
+          fullName: reg?.fullName || '',
+          dateOfBirth: reg?.dateOfBirth || '',
+          gender: reg?.gender || '',
         }));
       } catch (err) {
-        if (!cancelled) setServerError('Could not load this registration.');
+        if (!cancelled) {
+          setServerError('Could not load this record.');
+        }
       } finally {
         if (!cancelled) setLoading(false);
       }
     }
+
     load();
     return () => {
       cancelled = true;
@@ -79,36 +112,49 @@ function CompleteCitizenRecord() {
 
   const validate = () => {
     const next = {};
-    if (!form.fullName.trim()) next.fullName = 'Full name is required.';
+    if (!form.fullName.trim() && !isEditMode) {
+      next.fullName = 'Full name is required.';
+    }
     if (!form.dateOfBirth) next.dateOfBirth = 'Date of birth is required.';
     if (!form.gender) next.gender = 'Gender is required.';
     setErrors(next);
     return Object.keys(next).length === 0;
   };
 
-  // ─── FIX: fingerprints optional, facial mandatory ────────────────────
-  const biometricsReady = !!biometrics?.facialImage;
-  // ─────────────────────────────────────────────────────────────────────
+  // In edit mode, no biometric capture is required.
+  const biometricsReady = isEditMode || !!biometrics?.facialImage;
 
   const handleSave = async () => {
     setServerError(null);
-
     if (!validate()) return;
 
-    if (!biometricsReady) {
+    if (!isEditMode && !biometrics?.facialImage) {
       setServerError('Capture a facial photo before saving.');
       return;
     }
 
     setSaving(true);
     try {
-      const result = await completeRecord(id, { ...form, biometrics });
+      if (isEditMode) {
+        // Save editable fields only. Server ignores anything else.
+        await updateCitizen(existingCitizenId, {
+          first_name: form.firstName || undefined,
+          last_name: form.lastName || undefined,
+          place_of_birth: form.placeOfBirth || undefined,
+          address: form.postalAddress || undefined,
+          phone: form.phone || undefined,
+          email: form.email || undefined,
+        });
+        success('Record updated');
+        navigate(`/home-affairs/citizen/${existingCitizenId}`);
+        return;
+      }
 
+      const result = await completeRecord(id, { ...form, biometrics });
       if (!result?.citizenId) {
         setServerError('Server did not return a citizen ID.');
         return;
       }
-
       success('Record saved');
       navigate(`/home-affairs/record/${result.citizenId}/saved`, {
         state: { citizen: result },
@@ -136,12 +182,12 @@ function CompleteCitizenRecord() {
 
   return (
     <PageWrapper
-      title="Complete Citizen Record"
+      title={isEditMode ? 'Edit Citizen Record' : 'Complete Citizen Record'}
       showBack
       backPath="/home-affairs/registrations"
       accentColour="#1A5276"
     >
-      <h1>Complete citizen record</h1>
+      <h1>{isEditMode ? 'Edit citizen record' : 'Complete citizen record'}</h1>
 
       <div className="card card-flat" style={{ marginBottom: 24 }}>
         <div className="form-grid">
@@ -154,13 +200,15 @@ function CompleteCitizenRecord() {
           <div className="form-field">
             <label className="form-label">Date registered</label>
             <div className="form-input form-input-readonly">
-              {registration?.dateRegistered}
+              {registration?.date_registered || registration?.dateRegistered}
             </div>
           </div>
           <div className="form-field form-grid-full">
             <label className="form-label">National ID</label>
             <div className="form-input form-input-readonly">
-              Generated automatically when you save
+              {isEditMode && nationalId
+                ? nationalId
+                : 'Generated automatically when you save'}
             </div>
           </div>
         </div>
@@ -171,20 +219,37 @@ function CompleteCitizenRecord() {
       <div className="form-section">
         <h3 className="form-section-title">Personal information</h3>
         <div className="form-grid">
-          <Input
-            label="Full name"
-            value={form.fullName}
-            onChange={(e) => update('fullName', e.target.value)}
-            required
-            error={errors.fullName}
-            autoComplete="name"
-          />
+          {isEditMode ? (
+            <>
+              <Input
+                label="First name"
+                value={form.firstName}
+                onChange={(e) => update('firstName', e.target.value)}
+              />
+              <Input
+                label="Last name"
+                value={form.lastName}
+                onChange={(e) => update('lastName', e.target.value)}
+              />
+            </>
+          ) : (
+            <Input
+              label="Full name"
+              value={form.fullName}
+              onChange={(e) => update('fullName', e.target.value)}
+              required
+              error={errors.fullName}
+              autoComplete="name"
+            />
+          )}
+
           <DatePicker
             label="Date of birth"
             value={form.dateOfBirth}
             onChange={(e) => update('dateOfBirth', e.target.value)}
             required
             error={errors.dateOfBirth}
+            disabled={isEditMode}
           />
           <Select
             label="Gender"
@@ -197,6 +262,7 @@ function CompleteCitizenRecord() {
             ]}
             required
             error={errors.gender}
+            disabled={isEditMode}
           />
           <Input
             label="Place of birth"
@@ -246,70 +312,62 @@ function CompleteCitizenRecord() {
         </div>
       </div>
 
-      <div className="form-section">
-        <h3 className="form-section-title">Documents</h3>
-        <Alert
-          type="info"
-          message="Documents uploaded now will be linked to the citizen when you save the record."
-        />
-        <DocumentUpload
-          documentType="NATIONAL_ID"
-          label="Identity document"
-          onUpload={async (formData) => {
-            formData.append('registrationId', id);
-            await uploadDocument(formData);
-            success('Document uploaded');
-          }}
-        />
-        <DocumentUpload
-          documentType="BIRTH_CERTIFICATE"
-          label="Birth certificate"
-          onUpload={async (formData) => {
-            formData.append('registrationId', id);
-            await uploadDocument(formData);
-            success('Document uploaded');
-          }}
-        />
-        <DocumentUpload
-          documentType="PASSPORT_PHOTO"
-          label="Passport photograph"
-          onUpload={async (formData) => {
-            formData.append('registrationId', id);
-            await uploadDocument(formData);
-            success('Document uploaded');
-          }}
-        />
-      </div>
+      {!isEditMode && (
+        <>
+          <div className="form-section">
+            <h3 className="form-section-title">Documents</h3>
+            <Alert
+              type="info"
+              message="Documents uploaded now will be linked to the citizen when you save the record."
+            />
+            <DocumentUpload
+              documentType="NATIONAL_ID"
+              label="Identity document"
+              onUpload={async (formData) => {
+                formData.append('registrationId', id);
+                await uploadDocument(formData);
+                success('Document uploaded');
+              }}
+            />
+            <DocumentUpload
+              documentType="BIRTH_CERTIFICATE"
+              label="Birth certificate"
+              onUpload={async (formData) => {
+                formData.append('registrationId', id);
+                await uploadDocument(formData);
+                success('Document uploaded');
+              }}
+            />
+            <DocumentUpload
+              documentType="PASSPORT_PHOTO"
+              label="Passport photograph"
+              onUpload={async (formData) => {
+                formData.append('registrationId', id);
+                await uploadDocument(formData);
+                success('Document uploaded');
+              }}
+            />
+          </div>
 
-      <div className="form-section">
-        <h3 className="form-section-title">Biometric enrollment</h3>
-        <p className="text-muted">
-          Capture a facial photograph. Fingerprints are optional for this
-          prototype.
-        </p>
-        <BiometricEnrollment onComplete={setBiometrics} />
-      </div>
+          <div className="form-section">
+            <h3 className="form-section-title">Biometric enrollment</h3>
+            <p className="text-muted">
+              Capture a facial photograph. Fingerprints are optional.
+            </p>
+            <BiometricEnrollment onComplete={setBiometrics} />
+          </div>
 
-      {biometrics && (
-        <div className="card card-flat" style={{ marginBottom: 16 }}>
-          <h3 style={{ marginTop: 0 }}>Ready to save</h3>
-          <p className="text-muted" style={{ margin: 0 }}>
-            {Object.keys(biometrics.fingerprints || {}).length} fingerprints
-            captured
-            {biometrics.facialImage ? ' · facial photo captured' : ''}
-          </p>
-        </div>
-      )}
-
-      {!biometricsReady && (
-        <Alert
-          type="info"
-          message="Capture a facial photo before saving."
-        />
+          {!biometricsReady && (
+            <Alert
+              type="info"
+              message="Capture a facial photo before saving."
+            />
+          )}
+        </>
       )}
 
       <FormActions
-        primaryLabel="Save record"
+        primaryLabel={isEditMode ? 'Save changes' : 'Save record'}
         onPrimary={handleSave}
         primaryLoading={saving}
         primaryDisabled={!biometricsReady}

@@ -10,6 +10,9 @@ export const getApplicationByRef = (ref) =>
 export const getDocuments = () => apiClient.get('/citizen/documents');
 export const getBiometrics = () => apiClient.get('/citizen/biometrics');
 
+export const getPhotoBlob = () =>
+  apiClient.get('/citizen/photo', { responseType: 'blob' });
+
 export const getNotifications = () => apiClient.get('/citizen/notifications');
 export const deleteNotification = (id) =>
   apiClient.delete(`/citizen/notifications/${id}`);

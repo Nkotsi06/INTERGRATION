@@ -3,17 +3,12 @@ const authMiddleware = require('../middleware/authMiddleware');
 const roleMiddleware = require('../middleware/roleMiddleware');
 const controller = require('../controllers/homeAffairsController');
 
-// TEMPORARY DEBUG — remove after diagnosing 401/403
-router.use((req, res, next) => {
-  console.log('[homeAffairsRouter]', req.method, req.originalUrl);
-  next();
-});
-
 router.use(authMiddleware, roleMiddleware(['HOME_AFFAIRS']));
 
 // Search & read
 router.get('/search', controller.search);
 router.get('/citizen/:id', controller.getById);
+router.get('/citizens/:id/photo', controller.getCitizenPhoto);
 
 // Registration queue
 router.get('/registrations', controller.getRegistrations);

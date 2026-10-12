@@ -1,7 +1,5 @@
 const { query } = require('../config/database');
 
-// --- Read ---
-
 async function findByNationalId(nationalId) {
   const result = await query('SELECT * FROM citizens WHERE national_id = $1', [nationalId]);
   return result.rows[0];
@@ -39,8 +37,6 @@ async function findAll(filters = {}) {
   const result = await query(sql, params);
   return result.rows;
 }
-
-// --- Registration queue ---
 
 async function findRegistrations(filters = {}) {
   let sql = `
@@ -90,13 +86,11 @@ async function findRegistrationById(id) {
   return result.rows[0];
 }
 
-// --- Write ---
-
 async function create(citizen) {
   const result = await query(
     `INSERT INTO citizens (national_id, first_name, last_name, date_of_birth, gender,
-      place_of_birth, address, phone, email, is_verified)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING *`,
+      place_of_birth, address, phone, email, nationality, is_verified)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING *`,
     [
       citizen.nationalId,
       citizen.firstName,
@@ -107,6 +101,7 @@ async function create(citizen) {
       citizen.address,
       citizen.phone,
       citizen.email,
+      citizen.nationality || 'Mosotho',
       citizen.isVerified || false,
     ]
   );
@@ -124,16 +119,19 @@ async function createFromRegistration(reg) {
     address: reg.address,
     phone: reg.phone,
     email: reg.email,
+    nationality: reg.nationality || 'Mosotho',
     isVerified: false,
   });
 }
 
+// Include nationality in the updatable set.
+const UPDATEABLE_FIELDS = ['first_name', 'last_name', 'address', 'phone', 'email', 'place_of_birth', 'nationality'];
+
 async function update(id, data) {
-  const allowed = ['first_name', 'last_name', 'address', 'phone', 'email'];
   const fields = [];
   const params = [];
   Object.keys(data).forEach((key) => {
-    if (allowed.includes(key)) {
+    if (UPDATEABLE_FIELDS.includes(key)) {
       params.push(data[key]);
       fields.push(`${key} = $${params.length}`);
     }
@@ -152,13 +150,12 @@ async function updateWithHistory(id, data, changedBy) {
   const before = await findById(id);
   if (!before) throw new Error('Citizen not found');
 
-  const allowed = ['first_name', 'last_name', 'address', 'phone', 'email'];
   const fields = [];
   const params = [];
   const changes = [];
 
   Object.keys(data).forEach((key) => {
-    if (allowed.includes(key) && data[key] !== before[key]) {
+    if (UPDATEABLE_FIELDS.includes(key) && data[key] !== before[key]) {
       changes.push({ field: key, from: before[key], to: data[key] });
       params.push(data[key]);
       fields.push(`${key} = $${params.length}`);
@@ -197,8 +194,6 @@ async function markVerified(id, { verifiedBy, notes }) {
   return result.rows[0];
 }
 
-// --- Stats ---
-
 async function getStats() {
   const result = await query(`
     SELECT
@@ -229,8 +224,6 @@ async function getDashboardStats() {
     updatedToday: parseInt(row.updated_today, 10),
   };
 }
-
-// --- Reports ---
 
 async function getReports({ type, fromDate, toDate }) {
   const result = await query(`

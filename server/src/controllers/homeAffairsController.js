@@ -1,10 +1,9 @@
 const homeAffairsService = require('../services/homeAffairsService');
+const citizenService = require('../services/citizenService');
 const documentService = require('../services/documentService');
 const biometricService = require('../services/biometricService');
-
-// -------------------------------------------------------------
-// Search & read
-// -------------------------------------------------------------
+const path = require('path');
+const fs = require('fs');
 
 async function search(req, res, next) {
   try {
@@ -27,10 +26,6 @@ async function getById(req, res, next) {
     next(err);
   }
 }
-
-// -------------------------------------------------------------
-// Registration queue
-// -------------------------------------------------------------
 
 async function getRegistrations(req, res, next) {
   try {
@@ -55,10 +50,6 @@ async function getRegistrationById(req, res, next) {
   }
 }
 
-// -------------------------------------------------------------
-// Complete record — accepts biometrics payload
-// -------------------------------------------------------------
-
 async function completeRecord(req, res, next) {
   try {
     const result = await homeAffairsService.completeRecord(
@@ -81,10 +72,6 @@ async function completeRecord(req, res, next) {
   }
 }
 
-// -------------------------------------------------------------
-// Verification
-// -------------------------------------------------------------
-
 async function verify(req, res, next) {
   try {
     const updated = await homeAffairsService.verifyCitizen(
@@ -98,10 +85,6 @@ async function verify(req, res, next) {
   }
 }
 
-// -------------------------------------------------------------
-// Update
-// -------------------------------------------------------------
-
 async function update(req, res, next) {
   try {
     const updated = await homeAffairsService.updateCitizen(
@@ -114,10 +97,6 @@ async function update(req, res, next) {
     next(err);
   }
 }
-
-// -------------------------------------------------------------
-// Documents and biometrics
-// -------------------------------------------------------------
 
 async function getDocuments(req, res, next) {
   try {
@@ -137,9 +116,36 @@ async function getBiometrics(req, res, next) {
   }
 }
 
-// -------------------------------------------------------------
-// Dashboard stats and reports
-// -------------------------------------------------------------
+// ─────────────────────────────────────────────────────────────────────
+// getCitizenPhoto — same photo logic as the citizen endpoint, but for
+// any citizen. Guarded by roleMiddleware on the route.
+// ─────────────────────────────────────────────────────────────────────
+async function getCitizenPhoto(req, res, next) {
+  try {
+    const citizenId = req.params.id;
+    const photo = await citizenService.findPhotoForCitizen(citizenId);
+    if (!photo) return res.status(404).json({ message: 'No photo' });
+
+    if (photo.kind === 'dataurl') {
+      const match = photo.dataUrl.match(/^data:(.+?);base64,(.*)$/);
+      if (!match) return res.status(404).json({ message: 'No photo' });
+      const [, mime, b64] = match;
+      res.setHeader('Content-Type', mime);
+      res.setHeader('Cache-Control', 'private, max-age=300');
+      return res.send(Buffer.from(b64, 'base64'));
+    }
+
+    const filePath = String(photo.filePath).split('#')[0];
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ message: 'Photo file missing' });
+    }
+    res.setHeader('Content-Type', photo.fileType || 'image/jpeg');
+    res.setHeader('Cache-Control', 'private, max-age=300');
+    fs.createReadStream(filePath).pipe(res);
+  } catch (err) {
+    next(err);
+  }
+}
 
 async function getStats(req, res, next) {
   try {
@@ -169,6 +175,7 @@ module.exports = {
   update,
   getDocuments,
   getBiometrics,
+  getCitizenPhoto,
   getStats,
   getReports,
 };
