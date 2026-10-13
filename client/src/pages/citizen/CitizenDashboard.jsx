@@ -39,7 +39,12 @@ function CitizenDashboard() {
   // goes directly to that ministry's dashboard. The ministry itself
   // decides which actions are available to an unverified citizen.
   const handleServiceClick = (ministry) => {
-    navigate(`/${ministry.routePrefix}/dashboard`);
+    const routePrefix = ministry.code.toLowerCase().replace(/_/g, '-');
+    navigate(
+      ministry.code === 'HOME_AFFAIRS'
+        ? '/citizen/verify'
+        : `/${routePrefix}/dashboard`
+    );
   };
 
   return (
