@@ -55,13 +55,16 @@ function HACitizenProfile() {
     );
   }
 
-  const statusVariant = citizen.isVerified
+  const isVerified = !!citizen.is_verified;
+  const nationalId = citizen.national_id;
+  const fullName =
+    `${citizen.first_name || ''} ${citizen.last_name || ''}`.trim();
+
+  const statusVariant = isVerified
     ? 'verified'
-    : citizen.nationalId
+    : nationalId
     ? 'captured'
     : 'awaiting';
-
-  const fullName = `${citizen.first_name || ''} ${citizen.last_name || ''}`.trim();
 
   return (
     <PageWrapper
@@ -76,14 +79,19 @@ function HACitizenProfile() {
           <h1 className="profile-header-name">{fullName}</h1>
           <StatusBadge variant={statusVariant} />
           <p className="profile-header-meta">
-            {citizen.national_id ? `National ID: ${citizen.national_id}` : ''}
+            {nationalId ? `National ID: ${nationalId}` : ''}
           </p>
+          {isVerified && citizen.verified_at && (
+            <p className="profile-header-meta">
+              Verified on {formatDate(citizen.verified_at)}
+            </p>
+          )}
         </div>
       </div>
 
       <div className="card card-flat" style={{ marginTop: 16 }}>
         <div className="form-grid">
-          <ReadOnly label="National ID" value={citizen.national_id || '—'} />
+          <ReadOnly label="National ID" value={nationalId || '—'} />
           <ReadOnly
             label="Date of birth"
             value={formatDate(citizen.date_of_birth)}
@@ -102,7 +110,7 @@ function HACitizenProfile() {
 
       <div className="form-actions">
         <div className="form-actions-primary-group">
-          {!citizen.isVerified && (
+          {!isVerified && (
             <Button
               variant="success"
               onClick={() => navigate(`/home-affairs/verify/${id}`)}
