@@ -2,6 +2,10 @@ const driverLicenceRepository = require('../repositories/driverLicenceRepository
 const drivingTestRepository = require('../repositories/drivingTestRepository');
 const applicationRepository = require('../repositories/applicationRepository');
 const vehicleRepository = require('../repositories/vehicleRepository');
+const vehicleInspectionRepository = require('../repositories/vehicleInspectionRepository');
+const vehicleLicenceRepository = require('../repositories/vehicleLicenceRepository');
+const transportPermitRepository = require('../repositories/transportPermitRepository');
+const licenceApplicationRepository = require('../repositories/licenceApplicationRepository');
 const notificationService = require('./notificationService');
 const userRepository = require('../repositories/userRepository');
 const { generateReference } = require('../utils/referenceGenerator');
@@ -13,6 +17,18 @@ async function notifyCitizen(citizenId, title, message) {
   if (user) await notificationService.notify(user.id, title, message);
 }
 
+function badRequest(message) {
+  const err = new Error(message);
+  err.statusCode = 400;
+  return err;
+}
+function notFound(message) {
+  const err = new Error(message);
+  err.statusCode = 404;
+  return err;
+}
+
+// ─── Licence + appointments ──────────────────────────────────────────
 async function getLicence(citizenId) {
   return driverLicenceRepository.findByCitizen(citizenId);
 }
@@ -23,16 +39,13 @@ async function renewLicence(citizenId, user) {
     referenceNumber, citizenId, service: 'TRAFFIC',
     data: { type: 'LICENCE_RENEWAL' },
   });
-
   await auditService.log({
     userId: user.userId, username: user.username,
     action: 'LICENCE_RENEWAL_SUBMITTED',
     recordType: 'APPLICATION', recordId: application.id, result: 'SUCCESS',
   });
-
   await notifyCitizen(citizenId, 'Licence renewal received',
     `Your renewal request ${referenceNumber} has been received.`);
-
   return { referenceNumber, application };
 }
 
@@ -41,8 +54,7 @@ async function bookDrivingTest(citizenId, data, user) {
   const conflict = existing.find(
     (t) => t.test_date === data.date && t.time_slot === data.time && t.status === 'BOOKED'
   );
-  if (conflict) throw new Error('You already have a booking at this time');
-
+  if (conflict) throw badRequest('You already have a booking at this time');
   const booking = await drivingTestRepository.create({ ...data, citizenId });
   await auditService.log({
     userId: user.userId, username: user.username,
@@ -61,7 +73,7 @@ async function getAppointments(citizenId) {
 async function cancelAppointment(id, citizenId) {
   const appointments = await drivingTestRepository.findByCitizen(citizenId);
   const found = appointments.find((a) => a.id === id);
-  if (!found) throw new Error('Appointment not found');
+  if (!found) throw notFound('Appointment not found');
   await drivingTestRepository.cancel(id);
 }
 
@@ -70,7 +82,8 @@ async function getStaffApplications(filters) {
 }
 
 async function processApplication(applicationId, action, staffUser) {
-  const status = action === 'APPROVE' ? 'APPROVED' : action === 'REJECT' ? 'REJECTED' : 'UNDER_REVIEW';
+  const status =
+    action === 'APPROVE' ? 'APPROVED' : action === 'REJECT' ? 'REJECTED' : 'UNDER_REVIEW';
   await applicationRepository.updateStatus(applicationId, status, staffUser.userId, action);
   await auditService.log({
     userId: staffUser.userId, username: staffUser.username,
@@ -84,7 +97,7 @@ async function processApplication(applicationId, action, staffUser) {
   }
 }
 
-// ─── Vehicle registration ────────────────────────────────────────────
+// ─── Vehicles ────────────────────────────────────────────────────────
 async function getVehicles(citizenId) {
   return vehicleRepository.findByCitizen(citizenId);
 }
@@ -108,25 +121,23 @@ async function registerVehicle(citizenId, data, user) {
     colour: data.colour,
     vin: data.vin,
     engineNumber: data.engineNumber,
+    origin: data.origin || 'NEW',
+    previousCountry: data.previousCountry,
+    previousRegistration: data.previousRegistration,
   });
-
   await auditService.log({
     userId: user.userId, username: user.username,
     action: 'VEHICLE_REGISTERED',
     recordType: 'VEHICLE', recordId: created.id, result: 'SUCCESS',
   });
-
   await notifyCitizen(citizenId, 'Vehicle registered',
     `Your vehicle ${created.registration_number} has been registered.`);
-
   return created;
 }
 
 async function updateVehicle(citizenId, id, data, user) {
   const vehicle = await vehicleRepository.findById(id);
-  if (!vehicle || vehicle.citizen_id !== citizenId) {
-    throw notFound('Vehicle not found');
-  }
+  if (!vehicle || vehicle.citizen_id !== citizenId) throw notFound('Vehicle not found');
   const updated = await vehicleRepository.update(id, data);
   await auditService.log({
     userId: user.userId, username: user.username,
@@ -138,9 +149,7 @@ async function updateVehicle(citizenId, id, data, user) {
 
 async function deleteVehicle(citizenId, id, user) {
   const vehicle = await vehicleRepository.findById(id);
-  if (!vehicle || vehicle.citizen_id !== citizenId) {
-    throw notFound('Vehicle not found');
-  }
+  if (!vehicle || vehicle.citizen_id !== citizenId) throw notFound('Vehicle not found');
   await vehicleRepository.remove(id);
   await auditService.log({
     userId: user.userId, username: user.username,
@@ -149,27 +158,229 @@ async function deleteVehicle(citizenId, id, user) {
   });
 }
 
-function badRequest(message) {
-  const err = new Error(message);
-  err.statusCode = 400;
-  return err;
+// ─── Vehicle inspections ─────────────────────────────────────────────
+async function bookInspection(citizenId, data, user) {
+  if (!data.inspectionType) throw badRequest('Inspection type is required.');
+  if (!data.inspectionDate) throw badRequest('Inspection date is required.');
+
+  const referenceNumber = await generateReference('VEHICLE_INSPECTION');
+  const created = await vehicleInspectionRepository.create({
+    citizenId,
+    vehicleId: data.vehicleId || null,
+    referenceNumber,
+    inspectionType: data.inspectionType,
+    inspectionDate: data.inspectionDate,
+    timeSlot: data.timeSlot,
+    location: data.location,
+  });
+
+  await auditService.log({
+    userId: user.userId, username: user.username,
+    action: 'VEHICLE_INSPECTION_BOOKED',
+    recordType: 'VEHICLE_INSPECTION', recordId: created.id, result: 'SUCCESS',
+  });
+  await notifyCitizen(citizenId, 'Inspection booked',
+    `Your ${data.inspectionType.toLowerCase()} inspection is booked for ${data.inspectionDate}.`);
+  return created;
 }
-function notFound(message) {
-  const err = new Error(message);
-  err.statusCode = 404;
-  return err;
+
+async function getInspections(citizenId) {
+  return vehicleInspectionRepository.findByCitizen(citizenId);
+}
+
+async function cancelInspection(citizenId, id) {
+  const inspection = await vehicleInspectionRepository.findById(id);
+  if (!inspection || inspection.citizen_id !== citizenId) throw notFound('Inspection not found');
+  await vehicleInspectionRepository.cancel(id);
+}
+
+async function getStaffInspections(filters) {
+  return vehicleInspectionRepository.findAll(filters);
+}
+
+async function processInspection(id, data, staffUser) {
+  const inspection = await vehicleInspectionRepository.findById(id);
+  if (!inspection) throw notFound('Inspection not found');
+
+  let certificateNumber = null;
+  let certificateExpiry = null;
+
+  if (data.result === 'PASSED') {
+    certificateNumber = `CF-${Date.now()}`;
+    certificateExpiry = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000)
+      .toISOString().slice(0, 10);
+  }
+
+  const updated = await vehicleInspectionRepository.complete(id, {
+    result: data.result,
+    notes: data.notes,
+    certificateNumber,
+    certificateExpiry,
+  });
+
+  await auditService.log({
+    userId: staffUser.userId, username: staffUser.username,
+    action: `VEHICLE_INSPECTION_${data.result}`,
+    recordType: 'VEHICLE_INSPECTION', recordId: id, result: 'SUCCESS',
+  });
+
+  await notifyCitizen(inspection.citizen_id, 'Inspection result',
+    `Your inspection is ${data.result.toLowerCase()}.${certificateNumber ? ` Certificate: ${certificateNumber}` : ''}`);
+
+  return updated;
+}
+
+// ─── Vehicle licensing ────────────────────────────────────────────────
+async function applyVehicleLicence(citizenId, data, user) {
+  if (!data.vehicleId) throw badRequest('Vehicle is required.');
+  const referenceNumber = await generateReference('VEHICLE_LICENCE');
+  const feeAmount = data.feeAmount || 150.00;
+
+  const created = await vehicleLicenceRepository.create({
+    citizenId,
+    vehicleId: data.vehicleId,
+    referenceNumber,
+    feeAmount,
+    expiryDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000)
+      .toISOString().slice(0, 10),
+  });
+
+  await auditService.log({
+    userId: user.userId, username: user.username,
+    action: 'VEHICLE_LICENCE_APPLIED',
+    recordType: 'VEHICLE_LICENCE', recordId: created.id, result: 'SUCCESS',
+  });
+  await notifyCitizen(citizenId, 'Vehicle licence application received',
+    `Your vehicle licence application ${referenceNumber} has been received.`);
+  return created;
+}
+
+async function getVehicleLicences(citizenId) {
+  return vehicleLicenceRepository.findByCitizen(citizenId);
+}
+
+// ─── Transport permits ────────────────────────────────────────────────
+async function applyTransportPermit(citizenId, data, user) {
+  if (!data.permitCategory) throw badRequest('Permit category is required.');
+  if (!data.permitType) throw badRequest('Permit type is required.');
+  if (!data.validFrom) throw badRequest('Valid-from date is required.');
+  if (!data.validUntil) throw badRequest('Valid-until date is required.');
+
+  const referenceNumber = await generateReference('TRANSPORT_PERMIT');
+  const created = await transportPermitRepository.create({
+    citizenId,
+    referenceNumber,
+    permitCategory: data.permitCategory,
+    permitType: data.permitType,
+    vehicleId: data.vehicleId,
+    routeDescription: data.routeDescription,
+    validFrom: data.validFrom,
+    validUntil: data.validUntil,
+  });
+
+  await auditService.log({
+    userId: user.userId, username: user.username,
+    action: 'TRANSPORT_PERMIT_APPLIED',
+    recordType: 'TRANSPORT_PERMIT', recordId: created.id, result: 'SUCCESS',
+  });
+  await notifyCitizen(citizenId, 'Transport permit application received',
+    `Your application ${referenceNumber} has been submitted.`);
+  return created;
+}
+
+async function getTransportPermits(citizenId) {
+  return transportPermitRepository.findByCitizen(citizenId);
+}
+
+async function getStaffTransportPermits(filters) {
+  return transportPermitRepository.findAll(filters);
+}
+
+async function processTransportPermit(id, action, staffUser) {
+  const updated = await transportPermitRepository.process(id, action, staffUser);
+  await auditService.log({
+    userId: staffUser.userId, username: staffUser.username,
+    action: `TRANSPORT_PERMIT_${action}`,
+    recordType: 'TRANSPORT_PERMIT', recordId: id, result: 'SUCCESS',
+  });
+  await notifyCitizen(updated.citizen_id, 'Transport permit update',
+    `Your transport permit application is now ${updated.status.toLowerCase()}.`);
+  return updated;
+}
+
+// ─── Licence applications (learner's, driving, PDP) ──────────────────
+async function applyForLearnersLicence(citizenId, data, user) {
+  if (!data.dateOfBirth) throw badRequest('Date of birth is required.');
+  const referenceNumber = await generateReference('LEARNERS_LICENCE');
+  const app = await licenceApplicationRepository.create({
+    referenceNumber, citizenId, subType: 'LEARNERS_LICENCE',
+    data: { dateOfBirth: data.dateOfBirth, idNumber: data.idNumber, address: data.address, examCentre: data.examCentre },
+  });
+  await auditService.log({
+    userId: user.userId, username: user.username,
+    action: 'LEARNERS_LICENCE_APPLIED',
+    recordType: 'APPLICATION', recordId: app.id, result: 'SUCCESS',
+  });
+  await notifyCitizen(citizenId, "Learner's licence application received",
+    `Your application ${referenceNumber} has been submitted.`);
+  return app;
+}
+
+async function applyForDrivingLicence(citizenId, data, user) {
+  if (!data.licenceType) throw badRequest('Licence type is required.');
+  if (!data.testReference) throw badRequest('Test reference number is required.');
+  const referenceNumber = await generateReference('DRIVING_LICENCE');
+  const app = await licenceApplicationRepository.create({
+    referenceNumber, citizenId, subType: 'DRIVING_LICENCE',
+    data: { licenceType: data.licenceType, testReference: data.testReference, address: data.address },
+  });
+  await auditService.log({
+    userId: user.userId, username: user.username,
+    action: 'DRIVING_LICENCE_APPLIED',
+    recordType: 'APPLICATION', recordId: app.id, result: 'SUCCESS',
+  });
+  await notifyCitizen(citizenId, 'Driving licence application received',
+    `Your application ${referenceNumber} has been submitted.`);
+  return app;
+}
+
+async function applyForPublicDrivingPermit(citizenId, data, user) {
+  if (!data.purpose) throw badRequest('Purpose is required.');
+  if (!data.testReference) throw badRequest('Test reference number is required.');
+  const referenceNumber = await generateReference('PUBLIC_DRIVING_PERMIT');
+  const app = await licenceApplicationRepository.create({
+    referenceNumber, citizenId, subType: 'PUBLIC_DRIVING_PERMIT',
+    data: { purpose: data.purpose, testReference: data.testReference, address: data.address, licenceNumber: data.licenceNumber },
+  });
+  await auditService.log({
+    userId: user.userId, username: user.username,
+    action: 'PUBLIC_DRIVING_PERMIT_APPLIED',
+    recordType: 'APPLICATION', recordId: app.id, result: 'SUCCESS',
+  });
+  await notifyCitizen(citizenId, 'Public driving permit received',
+    `Your application ${referenceNumber} has been submitted.`);
+  return app;
+}
+
+async function getMyApplications(citizenId) {
+  return licenceApplicationRepository.findByCitizen(citizenId);
+}
+
+async function getApplicationByReference(referenceNumber, citizenId) {
+  const app = await licenceApplicationRepository.findByReference(referenceNumber);
+  if (!app) return null;
+  if (citizenId && app.citizen_id !== citizenId) return null;
+  const history = await licenceApplicationRepository.getHistory(app.id);
+  return { ...app, history };
 }
 
 module.exports = {
-  getLicence,
-  renewLicence,
-  bookDrivingTest,
-  getAppointments,
-  cancelAppointment,
-  getStaffApplications,
-  processApplication,
-  getVehicles,
-  registerVehicle,
-  updateVehicle,
-  deleteVehicle,
+  getLicence, renewLicence, bookDrivingTest, getAppointments, cancelAppointment,
+  getStaffApplications, processApplication,
+  getVehicles, registerVehicle, updateVehicle, deleteVehicle,
+  bookInspection, getInspections, cancelInspection, getStaffInspections, processInspection,
+  applyVehicleLicence, getVehicleLicences,
+  applyTransportPermit, getTransportPermits, getStaffTransportPermits, processTransportPermit,
+  applyForLearnersLicence, applyForDrivingLicence, applyForPublicDrivingPermit,
+  getMyApplications, getApplicationByReference,
 };

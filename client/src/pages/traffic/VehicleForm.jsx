@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import PageWrapper from '../../components/layout/PageWrapper';
 import Input from '../../components/common/Input';
+import Select from '../../components/common/Select';
 import FormActions from '../../components/common/FormActions';
 import Alert from '../../components/common/Alert';
 import useFetch from '../../hooks/useFetch';
@@ -16,7 +17,18 @@ const emptyForm = {
   colour: '',
   vin: '',
   engineNumber: '',
+  origin: 'NEW',
+  previousCountry: '',
+  previousRegistration: '',
 };
+
+const ORIGIN_OPTIONS = [
+  { value: 'NEW',             label: 'New vehicle' },
+  { value: 'IMPORTED',        label: 'Imported' },
+  { value: 'SECOND_HAND_LS',  label: 'Second-hand (bought in Lesotho)' },
+  { value: 'SECOND_HAND_ZA',  label: 'Second-hand (bought in South Africa)' },
+  { value: 'SADC',            label: 'From a SADC country' },
+];
 
 function VehicleForm() {
   const { id } = useParams();
@@ -46,6 +58,9 @@ function VehicleForm() {
             colour: found.colour || '',
             vin: found.vin || '',
             engineNumber: found.engine_number || '',
+            origin: found.origin || 'NEW',
+            previousCountry: found.previous_country || '',
+            previousRegistration: found.previous_registration || '',
           });
         }
       } catch (err) {
@@ -67,26 +82,30 @@ function VehicleForm() {
 
     setSaving(true);
     try {
+      const payload = {
+        registrationNumber: form.registrationNumber.trim(),
+        make: form.make.trim(),
+        model: form.model.trim(),
+        year: form.year ? parseInt(form.year, 10) : null,
+        colour: form.colour.trim() || null,
+        vin: form.vin.trim() || null,
+        engineNumber: form.engineNumber.trim() || null,
+        origin: form.origin,
+        previousCountry: form.previousCountry.trim() || null,
+        previousRegistration: form.previousRegistration.trim() || null,
+      };
       if (isEdit) {
         await updateVehicle(id, {
-          make: form.make.trim(),
-          model: form.model.trim(),
-          year: form.year ? parseInt(form.year, 10) : null,
-          colour: form.colour.trim() || null,
-          vin: form.vin.trim() || null,
-          engine_number: form.engineNumber.trim() || null,
+          make: payload.make,
+          model: payload.model,
+          year: payload.year,
+          colour: payload.colour,
+          vin: payload.vin,
+          engine_number: payload.engineNumber,
         });
         success('Vehicle updated');
       } else {
-        await registerVehicle({
-          registrationNumber: form.registrationNumber.trim(),
-          make: form.make.trim(),
-          model: form.model.trim(),
-          year: form.year ? parseInt(form.year, 10) : null,
-          colour: form.colour.trim() || null,
-          vin: form.vin.trim() || null,
-          engineNumber: form.engineNumber.trim() || null,
-        });
+        await registerVehicle(payload);
         success('Vehicle registered');
       }
       navigate('/traffic/vehicles');
@@ -123,14 +142,38 @@ function VehicleForm() {
           onChange={(e) => update('registrationNumber', e.target.value)}
           required
           disabled={isEdit}
-          helpText={isEdit ? 'Cannot be changed' : 'e.g. A1234'}
         />
         <Input label="Make" value={form.make} onChange={(e) => update('make', e.target.value)} required />
         <Input label="Model" value={form.model} onChange={(e) => update('model', e.target.value)} required />
         <Input label="Year" type="number" value={form.year} onChange={(e) => update('year', e.target.value)} />
         <Input label="Colour" value={form.colour} onChange={(e) => update('colour', e.target.value)} />
         <Input label="VIN" value={form.vin} onChange={(e) => update('vin', e.target.value)} />
-        <Input label="Engine number" value={form.engineNumber} onChange={(e) => update('engineNumber', e.target.value)} full />
+        <Input label="Engine number" value={form.engineNumber} onChange={(e) => update('engineNumber', e.target.value)} />
+        {!isEdit && (
+          <>
+            <Select
+              label="Origin"
+              value={form.origin}
+              onChange={(e) => update('origin', e.target.value)}
+              options={ORIGIN_OPTIONS}
+              required
+            />
+            {form.origin !== 'NEW' && (
+              <>
+                <Input
+                  label="Previous country"
+                  value={form.previousCountry}
+                  onChange={(e) => update('previousCountry', e.target.value)}
+                />
+                <Input
+                  label="Previous registration number"
+                  value={form.previousRegistration}
+                  onChange={(e) => update('previousRegistration', e.target.value)}
+                />
+              </>
+            )}
+          </>
+        )}
       </div>
 
       <FormActions

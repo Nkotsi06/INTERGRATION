@@ -47,6 +47,16 @@ import TrafficApplicationProcessing from '../pages/traffic/ApplicationProcessing
 import IssueLicence from '../pages/traffic/IssueLicence';
 import MyVehicles from '../pages/traffic/MyVehicles';
 import VehicleForm from '../pages/traffic/VehicleForm';
+import ApplyLearnersLicence from '../pages/traffic/ApplyLearnersLicence';
+import ApplyDrivingLicence from '../pages/traffic/ApplyDrivingLicence';
+import ApplyPublicDrivingPermit from '../pages/traffic/ApplyPublicDrivingPermit';
+import MyTrafficApplications from '../pages/traffic/MyTrafficApplications';
+import MyInspections from '../pages/traffic/MyInspections';
+import BookInspection from '../pages/traffic/BookInspection';
+import MyVehicleLicences from '../pages/traffic/MyVehicleLicences';
+import ApplyVehicleLicence from '../pages/traffic/ApplyVehicleLicence';
+import MyTransportPermits from '../pages/traffic/MyTransportPermits';
+import ApplyTransportPermit from '../pages/traffic/ApplyTransportPermit';
 
 // Police
 import PoliceDashboard from '../pages/police/PoliceDashboard';
@@ -153,12 +163,30 @@ function AppRoutes() {
       {/* Traffic — citizen */}
       <Route path="/traffic/dashboard" element={<ProtectedRoute><TrafficDashboard /></ProtectedRoute>} />
       <Route path="/traffic/licence" element={<ProtectedRoute><ViewLicence /></ProtectedRoute>} />
+      <Route path="/traffic/licence/learners" element={<ProtectedRoute><ApplyLearnersLicence /></ProtectedRoute>} />
+      <Route path="/traffic/licence/driving" element={<ProtectedRoute><ApplyDrivingLicence /></ProtectedRoute>} />
+      <Route path="/traffic/licence/pdp" element={<ProtectedRoute><ApplyPublicDrivingPermit /></ProtectedRoute>} />
       <Route path="/traffic/renew" element={<ProtectedRoute><RenewLicence /></ProtectedRoute>} />
       <Route path="/traffic/book-test" element={<ProtectedRoute><BookDrivingTest /></ProtectedRoute>} />
       <Route path="/traffic/appointments" element={<ProtectedRoute><MyAppointments /></ProtectedRoute>} />
+      <Route path="/traffic/applications" element={<ProtectedRoute><MyTrafficApplications /></ProtectedRoute>} />
+
+      {/* Traffic — vehicles */}
       <Route path="/traffic/vehicles" element={<ProtectedRoute><MyVehicles /></ProtectedRoute>} />
       <Route path="/traffic/vehicles/new" element={<ProtectedRoute><VehicleForm /></ProtectedRoute>} />
       <Route path="/traffic/vehicles/edit/:id" element={<ProtectedRoute><VehicleForm /></ProtectedRoute>} />
+
+      {/* Traffic — inspections */}
+      <Route path="/traffic/inspections" element={<ProtectedRoute><MyInspections /></ProtectedRoute>} />
+      <Route path="/traffic/inspections/new" element={<ProtectedRoute><BookInspection /></ProtectedRoute>} />
+
+      {/* Traffic — vehicle licensing */}
+      <Route path="/traffic/vehicle-licences" element={<ProtectedRoute><MyVehicleLicences /></ProtectedRoute>} />
+      <Route path="/traffic/vehicle-licences/new" element={<ProtectedRoute><ApplyVehicleLicence /></ProtectedRoute>} />
+
+      {/* Traffic — transport permits */}
+      <Route path="/traffic/permits" element={<ProtectedRoute><MyTransportPermits /></ProtectedRoute>} />
+      <Route path="/traffic/permits/new" element={<ProtectedRoute><ApplyTransportPermit /></ProtectedRoute>} />
 
       {/* Traffic — staff */}
       <Route path="/traffic/staff" element={<RoleRoute roles={['TRAFFIC']}><TrafficStaffDashboard /></RoleRoute>} />

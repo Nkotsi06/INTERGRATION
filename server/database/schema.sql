@@ -857,3 +857,128 @@ CREATE INDEX IF NOT EXISTS idx_criminal_records_reference ON criminal_records(re
 INSERT INTO reference_formats (name, prefix, year_format, sequence_length, example)
 VALUES ('CRIMINAL_RECORD', 'CR', 'YYYY', 5, 'CR-2026-00001')
 ON CONFLICT (name) DO NOTHING;
+
+
+-- Extend driving_tests so it stores both theory and practical tests,
+-- plus the application it belongs to.
+ALTER TABLE driving_tests
+  ADD COLUMN IF NOT EXISTS application_id UUID REFERENCES applications(id) ON DELETE SET NULL,
+  ADD COLUMN IF NOT EXISTS test_category VARCHAR(20) DEFAULT 'PRACTICAL',
+  ADD COLUMN IF NOT EXISTS result VARCHAR(20),
+  ADD COLUMN IF NOT EXISTS score INTEGER,
+  ADD COLUMN IF NOT EXISTS notes TEXT;
+
+-- New statuses for driving_tests: BOOKED | COMPLETED | CANCELLED | FAILED
+-- (already present from schema) plus PASSED at completion time.
+
+-- Add application subtypes so a single table holds all traffic applications.
+-- The `service` column on applications already holds 'TRAFFIC' — the subtype
+-- lives in the JSONB `data` field. To make queries easier, add a column:
+ALTER TABLE applications
+  ADD COLUMN IF NOT EXISTS sub_type VARCHAR(50);
+
+-- Index for fast "my traffic applications" queries.
+CREATE INDEX IF NOT EXISTS idx_applications_sub_type
+  ON applications(sub_type) WHERE sub_type IS NOT NULL;
+
+-- New reference formats for the new application types.
+INSERT INTO reference_formats (name, prefix, year_format, sequence_length, example)
+VALUES
+  ('LEARNERS_LICENCE',      'LL',  'YYYY', 5, 'LL-2026-00001'),
+  ('DRIVING_LICENCE',       'DL',  'YYYY', 5, 'DL-2026-00001'),
+  ('PUBLIC_DRIVING_PERMIT', 'PDP', 'YYYY', 5, 'PDP-2026-00001'),
+  ('THEORY_TEST',           'TT',  'YYYY', 5, 'TT-2026-00001')
+ON CONFLICT (name) DO NOTHING;
+
+
+-- ============================================================
+-- Traffic: vehicle registration subtypes, inspections,
+-- licensing (renewal discs), transport permits.
+-- ============================================================
+
+-- 1. Extend vehicles with the extra fields registration needs.
+ALTER TABLE vehicles
+  ADD COLUMN IF NOT EXISTS origin VARCHAR(30) DEFAULT 'NEW',
+  ADD COLUMN IF NOT EXISTS previous_country VARCHAR(50),
+  ADD COLUMN IF NOT EXISTS previous_registration VARCHAR(50),
+  ADD COLUMN IF NOT EXISTS chasis_number VARCHAR(50),
+  ADD COLUMN IF NOT EXISTS plate_number VARCHAR(50),
+  ADD COLUMN IF NOT EXISTS licence_expiry_date DATE,
+  ADD COLUMN IF NOT EXISTS is_licensed BOOLEAN DEFAULT FALSE,
+  ADD COLUMN IF NOT EXISTS special_permit_issued BOOLEAN DEFAULT FALSE,
+  ADD COLUMN IF NOT EXISTS special_permit_expires DATE;
+
+CREATE INDEX IF NOT EXISTS idx_vehicles_plate ON vehicles(plate_number);
+CREATE INDEX IF NOT EXISTS idx_vehicles_origin ON vehicles(origin);
+
+-- 2. Vehicle inspections / roadworthiness / certificate of fitness
+CREATE TABLE IF NOT EXISTS vehicle_inspections (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  citizen_id UUID NOT NULL REFERENCES citizens(id) ON DELETE CASCADE,
+  vehicle_id UUID REFERENCES vehicles(id) ON DELETE SET NULL,
+  reference_number VARCHAR(50) UNIQUE NOT NULL,
+  inspection_type VARCHAR(30) NOT NULL, -- ROADWORTHINESS | FITNESS | RENEWAL
+  inspection_date DATE,
+  time_slot VARCHAR(20),
+  location VARCHAR(100),
+  status VARCHAR(20) DEFAULT 'BOOKED',  -- BOOKED | COMPLETED | PASSED | FAILED | CANCELLED
+  result VARCHAR(20),
+  notes TEXT,
+  certificate_number VARCHAR(50),
+  certificate_expiry DATE,
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_vehicle_inspections_citizen ON vehicle_inspections(citizen_id);
+CREATE INDEX IF NOT EXISTS idx_vehicle_inspections_vehicle ON vehicle_inspections(vehicle_id);
+CREATE INDEX IF NOT EXISTS idx_vehicle_inspections_status ON vehicle_inspections(status);
+
+-- 3. Vehicle licensing / renewal discs
+CREATE TABLE IF NOT EXISTS vehicle_licences (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  citizen_id UUID NOT NULL REFERENCES citizens(id) ON DELETE CASCADE,
+  vehicle_id UUID NOT NULL REFERENCES vehicles(id) ON DELETE CASCADE,
+  reference_number VARCHAR(50) UNIQUE NOT NULL,
+  licence_number VARCHAR(50),
+  issue_date DATE,
+  expiry_date DATE,
+  fee_amount NUMERIC(10, 2),
+  is_paid BOOLEAN DEFAULT FALSE,
+  status VARCHAR(20) DEFAULT 'PENDING', -- PENDING | ISSUED | RENEWED | EXPIRED
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_vehicle_licences_citizen ON vehicle_licences(citizen_id);
+CREATE INDEX IF NOT EXISTS idx_vehicle_licences_vehicle ON vehicle_licences(vehicle_id);
+
+-- 4. Transport permits (categories A–F)
+CREATE TABLE IF NOT EXISTS transport_permits (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  citizen_id UUID NOT NULL REFERENCES citizens(id) ON DELETE CASCADE,
+  reference_number VARCHAR(50) UNIQUE NOT NULL,
+  permit_category VARCHAR(5) NOT NULL,  -- A | B | C | D | E | F
+  permit_type VARCHAR(30) NOT NULL,     -- NEW | RENEWAL | SHORT_TERM | SPECIAL_TRIP | GOODS | PASSENGER | COMMERCIAL
+  vehicle_id UUID REFERENCES vehicles(id) ON DELETE SET NULL,
+  route_description TEXT,
+  valid_from DATE,
+  valid_until DATE,
+  status VARCHAR(20) DEFAULT 'SUBMITTED',
+  notes TEXT,
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_transport_permits_citizen ON transport_permits(citizen_id);
+CREATE INDEX IF NOT EXISTS idx_transport_permits_category ON transport_permits(permit_category);
+CREATE INDEX IF NOT EXISTS idx_transport_permits_status ON transport_permits(status);
+
+-- 5. New reference formats
+INSERT INTO reference_formats (name, prefix, year_format, sequence_length, example)
+VALUES
+  ('VEHICLE_REGISTRATION',   'VEH', 'YYYY', 5, 'VEH-2026-00001'),
+  ('VEHICLE_INSPECTION',     'INS', 'YYYY', 5, 'INS-2026-00001'),
+  ('VEHICLE_LICENCE',        'LIC', 'YYYY', 5, 'LIC-2026-00001'),
+  ('TRANSPORT_PERMIT',       'TP',  'YYYY', 5, 'TP-2026-00001')
+ON CONFLICT (name) DO NOTHING;
