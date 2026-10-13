@@ -18,73 +18,51 @@ export function LanguageProvider({ children }) {
     localStorage.getItem('language') || import.meta.env.VITE_DEFAULT_LANGUAGE || 'EN'
   );
   const [languages, setLanguages] = useState([]);
-  const [translations, setTranslations] = useState({});       // current lang { key: value }
-  const [enTranslations, setEnTranslations] = useState({});   // English  { key: value }
-  const [lookup, setLookup] = useState(null);                 // reverse map for observer
-  const [version, setVersion] = useState(0);                  // bump to re-run observer
-  const [ready, setReady] = useState(false);                  // both maps loaded
+  const [translations, setTranslations] = useState({});
+  const [enTranslations, setEnTranslations] = useState({});
+  const [lookup, setLookup] = useState(null);
+  const [version, setVersion] = useState(0);
+  const [ready, setReady] = useState(false);
 
-  // ── Load available languages once ─────────────────────────────────────
+  // Load available languages (non-blocking).
   useEffect(() => {
     getLanguages()
       .then((data) => setLanguages(data || []))
-      .catch((error) => {
-        if (error?.status !== 401 && error?.status !== 429) {
-          console.error('Failed to load languages:', error);
-        }
-      });
+      .catch(() => {});
   }, []);
 
-  // ── Always keep an English map for the observer to reference ──────────
+  // Load English reference map (non-blocking).
   useEffect(() => {
     let cancelled = false;
     getTranslations(EN_CODE)
-      .then((data) => {
-        if (!cancelled) setEnTranslations(data || {});
-      })
-      .catch((error) => {
-        if (error?.status !== 401 && error?.status !== 429) {
-          console.error('Failed to load English translations:', error);
-        }
-        // Even on error, mark English as "loaded" so the app can render.
-        if (!cancelled) setEnTranslations({});
-      });
-    return () => {
-      cancelled = true;
-    };
+      .then((data) => { if (!cancelled) setEnTranslations(data || {}); })
+      .catch(() => { if (!cancelled) setEnTranslations({}); });
+    return () => { cancelled = true; };
   }, []);
 
-  // ── Load the current language on change ───────────────────────────────
+  // Load current language (non-blocking).
   useEffect(() => {
     let cancelled = false;
     getTranslations(currentLanguage)
-      .then((data) => {
-        if (!cancelled) setTranslations(data || {});
-      })
-      .catch((error) => {
-        if (error?.status !== 401 && error?.status !== 429) {
-          console.error('Failed to load translations:', error);
-        }
-        if (!cancelled) setTranslations({});
-      });
+      .then((data) => { if (!cancelled) setTranslations(data || {}); })
+      .catch(() => { if (!cancelled) setTranslations({}); });
     localStorage.setItem('language', currentLanguage);
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, [currentLanguage]);
 
-  // ── Mark ready once both maps are present ─────────────────────────────
+  // Ready as soon as English is loaded, OR after 3 seconds, whichever is first.
+  // This guarantees the app never hangs on "Loading…" because of a slow or
+  // unreachable backend.
   useEffect(() => {
-    const enLoaded = Object.keys(enTranslations).length > 0;
-    const currentLoaded = Object.keys(translations).length > 0;
-    if (currentLanguage === EN_CODE) {
-      setReady(enLoaded);
+    if (Object.keys(enTranslations).length > 0) {
+      setReady(true);
       return;
     }
-    setReady(enLoaded && currentLoaded);
-  }, [currentLanguage, enTranslations, translations]);
+    const t = setTimeout(() => setReady(true), 3000);
+    return () => clearTimeout(t);
+  }, [enTranslations]);
 
-  // ── Build the reverse lookup whenever either map changes ──────────────
+  // Build reverse lookup for the observer.
   useEffect(() => {
     if (currentLanguage === EN_CODE) {
       setLookup(null);
@@ -93,13 +71,10 @@ export function LanguageProvider({ children }) {
     }
     if (Object.keys(enTranslations).length === 0) return;
     if (Object.keys(translations).length === 0) return;
-
-    const map = buildLookup(enTranslations, translations);
-    setLookup(map);
+    setLookup(buildLookup(enTranslations, translations));
     setVersion((v) => v + 1);
   }, [currentLanguage, translations, enTranslations]);
 
-  // ── t() for pages that already consume it (kept for future use) ───────
   const t = useCallback(
     (key, vars) => {
       let value = translations[key] || enTranslations[key] || key;
@@ -122,8 +97,6 @@ export function LanguageProvider({ children }) {
     [currentLanguage, languages, switchLanguage, t]
   );
 
-  // Wait for the translation maps before mounting the app. This prevents a
-  // flash of English text when the user's saved language is not English.
   if (!ready) {
     return (
       <div className="page-loading" role="status" aria-live="polite">
