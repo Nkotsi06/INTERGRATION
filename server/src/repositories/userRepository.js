@@ -18,6 +18,14 @@ async function findById(id) {
   return result.rows[0];
 }
 
+async function findByCitizenId(citizenId) {
+  const result = await query(
+    'SELECT * FROM users WHERE citizen_id = $1 LIMIT 1',
+    [citizenId]
+  );
+  return result.rows[0];
+}
+
 // -------------------------------------------------------------
 // Read — paginated, filtered list
 // -------------------------------------------------------------
@@ -39,7 +47,6 @@ async function findAll({ username, role, status, page = 1, pageSize = 10 } = {})
   }
 
   const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
-
   const offset = (page - 1) * pageSize;
 
   const countSql = `SELECT COUNT(*)::int AS total FROM users ${whereClause}`;
@@ -165,18 +172,11 @@ async function linkCitizen(userId, citizenId) {
   return result.rows[0];
 }
 
-async function findByCitizenId(citizenId) {
-  const result = await query(
-    'SELECT * FROM users WHERE citizen_id = $1 LIMIT 1',
-    [citizenId]
-  );
-  return result.rows[0];
-}
-
 module.exports = {
   findByUsername,
   findByEmail,
   findById,
+  findByCitizenId,
   findAll,
   create,
   update,

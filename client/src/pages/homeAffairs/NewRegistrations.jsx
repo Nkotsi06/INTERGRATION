@@ -35,15 +35,15 @@ function NewRegistrations() {
     if (!registrations) return [];
     return registrations.filter((row) => {
       if (status && row.status !== status) return false;
-      if (fromDate && row.dateRegistered) {
-        if (new Date(row.dateRegistered) < new Date(fromDate)) return false;
+      if (fromDate && row.date_registered) {
+        if (new Date(row.date_registered) < new Date(fromDate)) return false;
       }
       if (search) {
         const q = search.trim().toLowerCase();
         const match =
           row.username?.toLowerCase().includes(q) ||
-          row.fullName?.toLowerCase().includes(q) ||
-          row.nationalId?.toLowerCase().includes(q);
+          row.full_name?.toLowerCase().includes(q) ||
+          row.national_id?.toLowerCase().includes(q);
         if (!match) return false;
       }
       return true;
@@ -55,9 +55,10 @@ function NewRegistrations() {
   const columns = [
     { key: 'username', label: 'Username' },
     {
-      key: 'dateRegistered',
+      key: 'date_registered',
       label: 'Date registered',
-      render: (row) => (row.dateRegistered ? formatDate(row.dateRegistered) : '—'),
+      render: (row) =>
+        row.date_registered ? formatDate(row.date_registered) : '—',
     },
     {
       key: 'status',
@@ -67,9 +68,9 @@ function NewRegistrations() {
       ),
     },
     {
-      key: 'nationalId',
+      key: 'national_id',
       label: 'National ID',
-      render: (row) => row.nationalId || 'Not yet generated',
+      render: (row) => row.national_id || 'Not yet generated',
     },
     {
       key: 'actions',
@@ -81,7 +82,7 @@ function NewRegistrations() {
           onClick={() =>
             navigate(
               row.status === 'VERIFIED'
-                ? `/home-affairs/citizen/${row.citizenId}`
+                ? `/home-affairs/citizen/${row.citizen_id}`
                 : `/home-affairs/registrations/${row.id}`
             )
           }

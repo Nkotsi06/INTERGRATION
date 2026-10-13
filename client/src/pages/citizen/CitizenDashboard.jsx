@@ -1,8 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FiCheckCircle, FiClock, FiLock } from 'react-icons/fi';
+import { FiCheckCircle, FiClock } from 'react-icons/fi';
 import { useAuth } from '../../context/AuthContext';
-import { useSession } from '../../context/SessionContext';
 import { useSettings } from '../../context/SettingsContext';
 import PageWrapper from '../../components/layout/PageWrapper';
 import ServiceCard from '../../components/ministry/ServiceCard';
@@ -10,7 +9,6 @@ import { getProfile } from '../../api/citizenApi';
 
 function CitizenDashboard() {
   const { user } = useAuth();
-  const { session } = useSession();
   const { settings } = useSettings();
   const navigate = useNavigate();
 
@@ -23,8 +21,8 @@ function CitizenDashboard() {
       try {
         const data = await getProfile();
         if (!cancelled) setProfile(data);
-      } catch (err) {
-        // 401 handled by interceptor; nothing else to do here
+      } catch {
+        // 401 handled by interceptor
       } finally {
         if (!cancelled) setLoadingProfile(false);
       }
@@ -37,17 +35,10 @@ function CitizenDashboard() {
 
   const isVerified = !!profile?.isVerified;
 
+  // No password prompt, no verification detour. Clicking a service
+  // goes directly to that ministry's dashboard. The ministry itself
+  // decides which actions are available to an unverified citizen.
   const handleServiceClick = (ministry) => {
-    if (!isVerified) {
-      navigate('/citizen/verify', { state: { targetMinistry: ministry.code } });
-      return;
-    }
-
-    if (!session.identityVerified) {
-      navigate('/citizen/verify', { state: { targetMinistry: ministry.code } });
-      return;
-    }
-
     navigate(`/${ministry.routePrefix}/dashboard`);
   };
 
@@ -75,8 +66,8 @@ function CitizenDashboard() {
             <FiClock aria-hidden="true" /> Waiting for Home Affairs
           </span>
           <span className="verification-status-subtitle">
-            Your details are being captured. Services unlock once you are
-            verified.
+            Your details are being captured. Some services may be limited
+            until you are verified.
           </span>
         </div>
       )}
@@ -88,7 +79,7 @@ function CitizenDashboard() {
             <ServiceCard
               key={ministry.code}
               ministry={ministry}
-              locked={!isVerified}
+              locked={false}
               onClick={() => handleServiceClick(ministry)}
             />
           ))}
