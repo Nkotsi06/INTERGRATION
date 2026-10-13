@@ -21,7 +21,6 @@ export const SIDEBAR_BY_ROLE = {
       { to: '/admin/users',      label: 'User Management' },
       { to: '/admin/audit-logs', label: 'Audit Logs' },
       { to: '/admin/branches',   label: 'Branches' },
-
       { to: '/admin/settings',                   label: 'System Settings' },
       { to: '/admin/settings/ministries',        label: 'Ministries' },
       { to: '/admin/settings/document-types',    label: 'Document Types' },
@@ -30,7 +29,6 @@ export const SIDEBAR_BY_ROLE = {
       { to: '/admin/settings/languages',         label: 'Languages' },
       { to: '/admin/settings/logo',              label: 'System Logo' },
       { to: '/admin/settings/biometrics',        label: 'Biometrics' },
-
       NOTIFICATIONS_LINK,
       HELP_LINK,
     ],
@@ -53,6 +51,7 @@ export const SIDEBAR_BY_ROLE = {
     links: [
       { to: '/traffic/staff',      label: 'Dashboard' },
       { to: '/traffic/processing', label: 'Process Applications' },
+      { to: '/traffic/staff',      label: 'Inspections & Permits' },
       NOTIFICATIONS_LINK,
       HELP_LINK,
     ],

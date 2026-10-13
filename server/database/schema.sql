@@ -982,3 +982,19 @@ VALUES
   ('VEHICLE_LICENCE',        'LIC', 'YYYY', 5, 'LIC-2026-00001'),
   ('TRANSPORT_PERMIT',       'TP',  'YYYY', 5, 'TP-2026-00001')
 ON CONFLICT (name) DO NOTHING;
+
+ALTER TABLE driver_licences
+  ADD COLUMN IF NOT EXISTS application_id UUID REFERENCES applications(id) ON DELETE SET NULL,
+  ADD COLUMN IF NOT EXISTS signature_id UUID REFERENCES signatures(id),
+  ADD COLUMN IF NOT EXISTS issued_by UUID REFERENCES users(id),
+  ADD COLUMN IF NOT EXISTS issued_at TIMESTAMP,
+  ADD COLUMN IF NOT EXISTS status VARCHAR(20) DEFAULT 'ACTIVE',
+  ADD COLUMN IF NOT EXISTS is_public_transport BOOLEAN DEFAULT FALSE;
+
+CREATE INDEX IF NOT EXISTS idx_licences_application ON driver_licences(application_id);
+CREATE INDEX IF NOT EXISTS idx_licences_status ON driver_licences(status);
+
+INSERT INTO reference_formats (name, prefix, year_format, sequence_length, example)
+VALUES
+  ('DRIVERS_LICENCE_NUMBER', 'DLN', 'YYYY', 6, 'DLN-2026-000001')
+ON CONFLICT (name) DO NOTHING;

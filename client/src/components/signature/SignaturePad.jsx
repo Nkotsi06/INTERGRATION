@@ -39,11 +39,7 @@ function SignaturePad({ onSave, onClear }) {
         <SignatureCanvas
           ref={sigPadRef}
           penColor="#2C3E50"
-          canvasProps={{
-            className: 'signature-canvas',
-            width: 600,
-            height: 200,
-          }}
+          canvasProps={{ className: 'signature-canvas', width: 600, height: 200 }}
         />
       </div>
       <div className="signature-actions">

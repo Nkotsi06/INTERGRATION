@@ -7,6 +7,7 @@ const vehicleLicenceRepository = require('../repositories/vehicleLicenceReposito
 const transportPermitRepository = require('../repositories/transportPermitRepository');
 const licenceApplicationRepository = require('../repositories/licenceApplicationRepository');
 const notificationService = require('./notificationService');
+const signatureService = require('./signatureService');
 const userRepository = require('../repositories/userRepository');
 const { generateReference } = require('../utils/referenceGenerator');
 const auditService = require('./auditService');
@@ -28,9 +29,12 @@ function notFound(message) {
   return err;
 }
 
-// ─── Licence + appointments ──────────────────────────────────────────
+// ─── Licence ──────────────────────────────────────────────────────────
 async function getLicence(citizenId) {
-  return driverLicenceRepository.findByCitizen(citizenId);
+  // Return null (not undefined) so the client can distinguish
+  // "no licence" from "request still loading".
+  const licence = await driverLicenceRepository.findByCitizen(citizenId);
+  return licence || null;
 }
 
 async function renewLicence(citizenId, user) {
@@ -81,20 +85,99 @@ async function getStaffApplications(filters) {
   return applicationRepository.findByService('TRAFFIC', filters);
 }
 
-async function processApplication(applicationId, action, staffUser) {
+// Generate a licence number based on the year and a sequence.
+async function generateLicenceNumber() {
+  const year = new Date().getFullYear();
+  const seq = await generateReference('DRIVERS_LICENCE_NUMBER');
+  // generateReference returns e.g. "DLN-2026-000123". The citizen sees this.
+  return seq;
+}
+
+// Approve a TRAFFIC application, create the licence record if it's a
+// driving licence or PDP, and return the issued document.
+async function approveTrafficApplication(applicationId, subType, staffUser, citizenSignatureDataUrl) {
+  const app = await applicationRepository.findById(applicationId);
+  if (!app) throw notFound('Application not found');
+
+  if (app.status === 'APPROVED' || app.status === 'COMPLETED') {
+    throw badRequest('This application has already been approved.');
+  }
+
+  // 1. Generate the licence number.
+  const licenceNumber = await generateLicenceNumber();
+  const issueDate = new Date().toISOString().slice(0, 10);
+  const expiryDate = new Date(Date.now() + 5 * 365 * 24 * 60 * 60 * 1000)
+    .toISOString().slice(0, 10);
+  const isPublicTransport = subType === 'PUBLIC_DRIVING_PERMIT';
+
+  // 2. Create the licence row.
+  const licence = await driverLicenceRepository.create({
+    citizenId: app.citizen_id,
+    licenceNumber,
+    licenceType: isPublicTransport ? 'PDP' : 'ORDINARY',
+    issueDate,
+    expiryDate,
+    applicationId: app.id,
+    issuedBy: staffUser.userId,
+    isPublicTransport,
+  });
+
+  // 3. Capture the citizen's signature, if provided.
+  if (citizenSignatureDataUrl) {
+    const signature = await signatureService.save(
+      {
+        citizenId: app.citizen_id,
+        documentTypeCode: isPublicTransport ? 'PUBLIC_DRIVING_PERMIT' : 'DRIVERS_LICENCE',
+        signatureData: citizenSignatureDataUrl,
+      },
+      staffUser
+    );
+    await driverLicenceRepository.attachSignature(licence.id, signature.id);
+  }
+
+  // 4. Mark the application as completed.
+  await applicationRepository.updateStatus(
+    applicationId, 'COMPLETED', staffUser.userId, 'Licence issued'
+  );
+
+  await auditService.log({
+    userId: staffUser.userId, username: staffUser.username,
+    action: 'DRIVING_LICENCE_ISSUED',
+    recordType: 'DRIVER_LICENCE', recordId: licence.id, result: 'SUCCESS',
+  });
+
+  await notifyCitizen(app.citizen_id, 'Licence issued',
+    `Your licence ${licenceNumber} has been issued.`);
+
+  return { licence, application: app };
+}
+
+async function processApplication(applicationId, action, body, staffUser) {
   const status =
     action === 'APPROVE' ? 'APPROVED' : action === 'REJECT' ? 'REJECTED' : 'UNDER_REVIEW';
+
+  const app = await applicationRepository.findById(applicationId);
+  if (!app) throw notFound('Application not found');
+
+  // Approving a driving licence / PDP application issues the licence.
+  if (action === 'APPROVE' && (app.sub_type === 'DRIVING_LICENCE' || app.sub_type === 'PUBLIC_DRIVING_PERMIT')) {
+    return approveTrafficApplication(
+      applicationId, app.sub_type, staffUser, body?.citizenSignature
+    );
+  }
+
   await applicationRepository.updateStatus(applicationId, status, staffUser.userId, action);
+
   await auditService.log({
     userId: staffUser.userId, username: staffUser.username,
     action: `TRAFFIC_APPLICATION_${status}`,
     recordType: 'APPLICATION', recordId: applicationId, result: 'SUCCESS',
   });
-  const app = await applicationRepository.findById(applicationId);
-  if (app) {
-    await notifyCitizen(app.citizen_id, 'Traffic application update',
-      `Your application ${app.reference_number} is now ${status.toLowerCase()}.`);
-  }
+
+  await notifyCitizen(app.citizen_id, 'Traffic application update',
+    `Your application ${app.reference_number} is now ${status.toLowerCase()}.`);
+
+  return { status };
 }
 
 // ─── Vehicles ────────────────────────────────────────────────────────
@@ -158,11 +241,10 @@ async function deleteVehicle(citizenId, id, user) {
   });
 }
 
-// ─── Vehicle inspections ─────────────────────────────────────────────
+// ─── Inspections ─────────────────────────────────────────────────────
 async function bookInspection(citizenId, data, user) {
   if (!data.inspectionType) throw badRequest('Inspection type is required.');
   if (!data.inspectionDate) throw badRequest('Inspection date is required.');
-
   const referenceNumber = await generateReference('VEHICLE_INSPECTION');
   const created = await vehicleInspectionRepository.create({
     citizenId,
@@ -173,7 +255,6 @@ async function bookInspection(citizenId, data, user) {
     timeSlot: data.timeSlot,
     location: data.location,
   });
-
   await auditService.log({
     userId: user.userId, username: user.username,
     action: 'VEHICLE_INSPECTION_BOOKED',
@@ -201,32 +282,23 @@ async function getStaffInspections(filters) {
 async function processInspection(id, data, staffUser) {
   const inspection = await vehicleInspectionRepository.findById(id);
   if (!inspection) throw notFound('Inspection not found');
-
   let certificateNumber = null;
   let certificateExpiry = null;
-
   if (data.result === 'PASSED') {
     certificateNumber = `CF-${Date.now()}`;
     certificateExpiry = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000)
       .toISOString().slice(0, 10);
   }
-
   const updated = await vehicleInspectionRepository.complete(id, {
-    result: data.result,
-    notes: data.notes,
-    certificateNumber,
-    certificateExpiry,
+    result: data.result, notes: data.notes, certificateNumber, certificateExpiry,
   });
-
   await auditService.log({
     userId: staffUser.userId, username: staffUser.username,
     action: `VEHICLE_INSPECTION_${data.result}`,
     recordType: 'VEHICLE_INSPECTION', recordId: id, result: 'SUCCESS',
   });
-
   await notifyCitizen(inspection.citizen_id, 'Inspection result',
     `Your inspection is ${data.result.toLowerCase()}.${certificateNumber ? ` Certificate: ${certificateNumber}` : ''}`);
-
   return updated;
 }
 
@@ -235,16 +307,10 @@ async function applyVehicleLicence(citizenId, data, user) {
   if (!data.vehicleId) throw badRequest('Vehicle is required.');
   const referenceNumber = await generateReference('VEHICLE_LICENCE');
   const feeAmount = data.feeAmount || 150.00;
-
   const created = await vehicleLicenceRepository.create({
-    citizenId,
-    vehicleId: data.vehicleId,
-    referenceNumber,
-    feeAmount,
-    expiryDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000)
-      .toISOString().slice(0, 10),
+    citizenId, vehicleId: data.vehicleId, referenceNumber, feeAmount,
+    expiryDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10),
   });
-
   await auditService.log({
     userId: user.userId, username: user.username,
     action: 'VEHICLE_LICENCE_APPLIED',
@@ -265,11 +331,9 @@ async function applyTransportPermit(citizenId, data, user) {
   if (!data.permitType) throw badRequest('Permit type is required.');
   if (!data.validFrom) throw badRequest('Valid-from date is required.');
   if (!data.validUntil) throw badRequest('Valid-until date is required.');
-
   const referenceNumber = await generateReference('TRANSPORT_PERMIT');
   const created = await transportPermitRepository.create({
-    citizenId,
-    referenceNumber,
+    citizenId, referenceNumber,
     permitCategory: data.permitCategory,
     permitType: data.permitType,
     vehicleId: data.vehicleId,
@@ -277,7 +341,6 @@ async function applyTransportPermit(citizenId, data, user) {
     validFrom: data.validFrom,
     validUntil: data.validUntil,
   });
-
   await auditService.log({
     userId: user.userId, username: user.username,
     action: 'TRANSPORT_PERMIT_APPLIED',
@@ -291,11 +354,9 @@ async function applyTransportPermit(citizenId, data, user) {
 async function getTransportPermits(citizenId) {
   return transportPermitRepository.findByCitizen(citizenId);
 }
-
 async function getStaffTransportPermits(filters) {
   return transportPermitRepository.findAll(filters);
 }
-
 async function processTransportPermit(id, action, staffUser) {
   const updated = await transportPermitRepository.process(id, action, staffUser);
   await auditService.log({
@@ -308,13 +369,13 @@ async function processTransportPermit(id, action, staffUser) {
   return updated;
 }
 
-// ─── Licence applications (learner's, driving, PDP) ──────────────────
+// ─── Licence applications ─────────────────────────────────────────────
 async function applyForLearnersLicence(citizenId, data, user) {
-  if (!data.dateOfBirth) throw badRequest('Date of birth is required.');
+  // The citizen's DOB, ID and address come from Home Affairs, not the form.
   const referenceNumber = await generateReference('LEARNERS_LICENCE');
   const app = await licenceApplicationRepository.create({
     referenceNumber, citizenId, subType: 'LEARNERS_LICENCE',
-    data: { dateOfBirth: data.dateOfBirth, idNumber: data.idNumber, address: data.address, examCentre: data.examCentre },
+    data: { examCentre: data.examCentre },
   });
   await auditService.log({
     userId: user.userId, username: user.username,
@@ -332,7 +393,7 @@ async function applyForDrivingLicence(citizenId, data, user) {
   const referenceNumber = await generateReference('DRIVING_LICENCE');
   const app = await licenceApplicationRepository.create({
     referenceNumber, citizenId, subType: 'DRIVING_LICENCE',
-    data: { licenceType: data.licenceType, testReference: data.testReference, address: data.address },
+    data: { licenceType: data.licenceType, testReference: data.testReference },
   });
   await auditService.log({
     userId: user.userId, username: user.username,
@@ -350,7 +411,7 @@ async function applyForPublicDrivingPermit(citizenId, data, user) {
   const referenceNumber = await generateReference('PUBLIC_DRIVING_PERMIT');
   const app = await licenceApplicationRepository.create({
     referenceNumber, citizenId, subType: 'PUBLIC_DRIVING_PERMIT',
-    data: { purpose: data.purpose, testReference: data.testReference, address: data.address, licenceNumber: data.licenceNumber },
+    data: { purpose: data.purpose, testReference: data.testReference, licenceNumber: data.licenceNumber },
   });
   await auditService.log({
     userId: user.userId, username: user.username,
@@ -365,7 +426,6 @@ async function applyForPublicDrivingPermit(citizenId, data, user) {
 async function getMyApplications(citizenId) {
   return licenceApplicationRepository.findByCitizen(citizenId);
 }
-
 async function getApplicationByReference(referenceNumber, citizenId) {
   const app = await licenceApplicationRepository.findByReference(referenceNumber);
   if (!app) return null;

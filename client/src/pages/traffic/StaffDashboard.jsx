@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { FiClock, FiCalendar, FiCreditCard } from 'react-icons/fi';
+import { FiClock, FiCalendar, FiCreditCard, FiTruck, FiCheckCircle } from 'react-icons/fi';
 import PageWrapper from '../../components/layout/PageWrapper';
 import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
@@ -22,7 +22,6 @@ function TrafficStaffDashboard() {
             <div className="stat-label">Pending applications</div>
           </div>
         </Card>
-
         <Card variant="bordered" className="stat-card">
           <div className="stat-icon"><FiCalendar /></div>
           <div className="stat-body">
@@ -30,7 +29,6 @@ function TrafficStaffDashboard() {
             <div className="stat-label">Today's appointments</div>
           </div>
         </Card>
-
         <Card variant="bordered" className="stat-card">
           <div className="stat-icon"><FiCreditCard /></div>
           <div className="stat-body">
@@ -42,7 +40,10 @@ function TrafficStaffDashboard() {
 
       <div className="quick-actions">
         <Button variant="primary" onClick={() => navigate('/traffic/processing')}>
-          Process applications
+          <FiCheckCircle /> Process applications
+        </Button>
+        <Button variant="secondary" onClick={() => navigate('/traffic/processing')}>
+          <FiTruck /> Inspections & permits
         </Button>
       </div>
     </PageWrapper>
