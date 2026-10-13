@@ -1,7 +1,8 @@
 const policeCaseRepository = require('../repositories/policeCaseRepository');
+const criminalRecordRepository = require('../repositories/criminalRecordRepository');
 const notificationService = require('./notificationService');
 const userRepository = require('../repositories/userRepository');
-const { generateCaseNumber } = require('../utils/referenceGenerator');
+const { generateCaseNumber, generateReference } = require('../utils/referenceGenerator');
 const auditService = require('./auditService');
 
 async function notifyCitizen(citizenId, title, message) {
@@ -10,32 +11,25 @@ async function notifyCitizen(citizenId, title, message) {
   if (user) await notificationService.notify(user.id, title, message);
 }
 
+// ─── Cases ────────────────────────────────────────────────────────────
 async function reportCase(citizenId, data, user) {
   const caseNumber = await generateCaseNumber();
-
   const created = await policeCaseRepository.create({
-    caseNumber,
-    citizenId,
+    caseNumber, citizenId,
     caseType: data.caseType,
-    incidentDate: data.date,
+    incidentDate: data.date || data.incidentDate,
     location: data.location,
     description: data.description,
   });
 
   await auditService.log({
-    userId: user.userId,
-    username: user.username,
+    userId: user.userId, username: user.username,
     action: 'POLICE_CASE_REPORTED',
-    recordType: 'POLICE_CASE',
-    recordId: created.id,
-    result: 'SUCCESS',
+    recordType: 'POLICE_CASE', recordId: created.id, result: 'SUCCESS',
   });
 
-  await notifyCitizen(
-    citizenId,
-    'Case reported',
-    `Your case ${caseNumber} has been recorded.`
-  );
+  await notifyCitizen(citizenId, 'Case reported',
+    `Your case ${caseNumber} has been recorded.`);
 
   return created;
 }
@@ -60,23 +54,15 @@ async function updateCase(id, data, staffUser) {
   if (data.status) {
     await policeCaseRepository.updateStatus(id, data.status, staffUser.userId);
   }
-
   await auditService.log({
-    userId: staffUser.userId,
-    username: staffUser.username,
+    userId: staffUser.userId, username: staffUser.username,
     action: 'POLICE_CASE_UPDATED',
-    recordType: 'POLICE_CASE',
-    recordId: id,
-    result: 'SUCCESS',
+    recordType: 'POLICE_CASE', recordId: id, result: 'SUCCESS',
   });
-
   const c = await policeCaseRepository.findById(id);
   if (c) {
-    await notifyCitizen(
-      c.citizen_id,
-      'Case update',
-      `Your case ${c.case_number} is now ${(data.status || c.status).toLowerCase()}.`
-    );
+    await notifyCitizen(c.citizen_id, 'Case update',
+      `Your case ${c.case_number} is now ${(data.status || c.status).toLowerCase()}.`);
   }
 }
 
@@ -84,11 +70,75 @@ async function addCaseUpdate(id, notes, staffUser) {
   return policeCaseRepository.addUpdate(id, notes, staffUser.userId);
 }
 
+// ─── Criminal record ──────────────────────────────────────────────────
+async function requestCriminalRecord(citizenId, data, user) {
+  if (!data.purpose) {
+    const err = new Error('Purpose is required.');
+    err.statusCode = 400;
+    throw err;
+  }
+  const referenceNumber = await generateReference('CRIMINAL_RECORD');
+  const created = await criminalRecordRepository.create({
+    citizenId, referenceNumber, purpose: data.purpose,
+  });
+
+  await auditService.log({
+    userId: user.userId, username: user.username,
+    action: 'CRIMINAL_RECORD_REQUESTED',
+    recordType: 'CRIMINAL_RECORD', recordId: created.id, result: 'SUCCESS',
+  });
+
+  await notifyCitizen(citizenId, 'Criminal record requested',
+    `Your request ${referenceNumber} has been submitted.`);
+
+  return created;
+}
+
+async function getMyCriminalRecords(citizenId) {
+  return criminalRecordRepository.findByCitizen(citizenId);
+}
+
+async function getStaffCriminalRecords(filters) {
+  return criminalRecordRepository.findAll(filters);
+}
+
+async function processCriminalRecord(id, action, data, staffUser) {
+  const record = await criminalRecordRepository.findById(id);
+  if (!record) {
+    const err = new Error('Record not found');
+    err.statusCode = 404;
+    throw err;
+  }
+
+  let updated;
+  if (action === 'ISSUE') {
+    const validUntil = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000)
+      .toISOString().slice(0, 10);
+    updated = await criminalRecordRepository.issue(id, {
+      issuedBy: staffUser.userId,
+      validUntil,
+      findings: data.findings,
+    });
+  } else {
+    updated = await criminalRecordRepository.reject(id, {
+      issuedBy: staffUser.userId,
+      findings: data.findings,
+    });
+  }
+
+  await auditService.log({
+    userId: staffUser.userId, username: staffUser.username,
+    action: `CRIMINAL_RECORD_${action}`,
+    recordType: 'CRIMINAL_RECORD', recordId: id, result: 'SUCCESS',
+  });
+
+  await notifyCitizen(record.citizen_id, 'Criminal record update',
+    `Your criminal record request is now ${updated.status.toLowerCase()}.`);
+
+  return updated;
+}
+
 module.exports = {
-  reportCase,
-  getMyCases,
-  getCaseByNumber,
-  getStaffCases,
-  updateCase,
-  addCaseUpdate,
+  reportCase, getMyCases, getCaseByNumber, getStaffCases, updateCase, addCaseUpdate,
+  requestCriminalRecord, getMyCriminalRecords, getStaffCriminalRecords, processCriminalRecord,
 };

@@ -7,6 +7,12 @@ export const bookDrivingTest = (data) => apiClient.post('/traffic/test/book', da
 export const getAppointments = () => apiClient.get('/traffic/appointments');
 export const cancelAppointment = (id) => apiClient.delete(`/traffic/appointments/${id}`);
 
+// Vehicles
+export const getVehicles = () => apiClient.get('/traffic/vehicles');
+export const registerVehicle = (data) => apiClient.post('/traffic/vehicles', data);
+export const updateVehicle = (id, data) => apiClient.put(`/traffic/vehicles/${id}`, data);
+export const deleteVehicle = (id) => apiClient.delete(`/traffic/vehicles/${id}`);
+
 // Staff
 export const getStaffApplications = (params) =>
   apiClient.get('/traffic/staff/applications', { params });

@@ -45,6 +45,8 @@ import MyAppointments from '../pages/traffic/MyAppointments';
 import TrafficStaffDashboard from '../pages/traffic/StaffDashboard';
 import TrafficApplicationProcessing from '../pages/traffic/ApplicationProcessing';
 import IssueLicence from '../pages/traffic/IssueLicence';
+import MyVehicles from '../pages/traffic/MyVehicles';
+import VehicleForm from '../pages/traffic/VehicleForm';
 
 // Police
 import PoliceDashboard from '../pages/police/PoliceDashboard';
@@ -55,6 +57,8 @@ import RequestClearance from '../pages/police/RequestClearance';
 import PoliceStaffDashboard from '../pages/police/StaffDashboard';
 import ManageCases from '../pages/police/ManageCases';
 import CaseUpdate from '../pages/police/CaseUpdate';
+import RequestCriminalRecord from '../pages/police/RequestCriminalRecord';
+import MyCriminalRecords from '../pages/police/MyCriminalRecords';
 
 // Finance
 import FinanceDashboard from '../pages/finance/FinanceDashboard';
@@ -152,6 +156,10 @@ function AppRoutes() {
       <Route path="/traffic/renew" element={<ProtectedRoute><RenewLicence /></ProtectedRoute>} />
       <Route path="/traffic/book-test" element={<ProtectedRoute><BookDrivingTest /></ProtectedRoute>} />
       <Route path="/traffic/appointments" element={<ProtectedRoute><MyAppointments /></ProtectedRoute>} />
+      <Route path="/traffic/vehicles" element={<ProtectedRoute><MyVehicles /></ProtectedRoute>} />
+      <Route path="/traffic/vehicles/new" element={<ProtectedRoute><VehicleForm /></ProtectedRoute>} />
+      <Route path="/traffic/vehicles/edit/:id" element={<ProtectedRoute><VehicleForm /></ProtectedRoute>} />
+
       {/* Traffic — staff */}
       <Route path="/traffic/staff" element={<RoleRoute roles={['TRAFFIC']}><TrafficStaffDashboard /></RoleRoute>} />
       <Route path="/traffic/processing" element={<RoleRoute roles={['TRAFFIC']}><TrafficApplicationProcessing /></RoleRoute>} />
@@ -163,6 +171,9 @@ function AppRoutes() {
       <Route path="/police/cases" element={<ProtectedRoute><MyCases /></ProtectedRoute>} />
       <Route path="/police/cases/:id" element={<ProtectedRoute><CaseDetails /></ProtectedRoute>} />
       <Route path="/police/clearance" element={<ProtectedRoute><RequestClearance /></ProtectedRoute>} />
+      <Route path="/police/criminal-records" element={<ProtectedRoute><MyCriminalRecords /></ProtectedRoute>} />
+      <Route path="/police/criminal-records/new" element={<ProtectedRoute><RequestCriminalRecord /></ProtectedRoute>} />
+
       {/* Police — staff */}
       <Route path="/police/staff" element={<RoleRoute roles={['POLICE']}><PoliceStaffDashboard /></RoleRoute>} />
       <Route path="/police/manage" element={<RoleRoute roles={['POLICE']}><ManageCases /></RoleRoute>} />

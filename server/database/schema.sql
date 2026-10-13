@@ -820,3 +820,40 @@ SELECT
 --   - 9 status types
 --   - 2 views for admin
 -- ================================================================
+
+ALTER TABLE vehicles
+  ADD COLUMN IF NOT EXISTS colour VARCHAR(50),
+  ADD COLUMN IF NOT EXISTS vin VARCHAR(50),
+  ADD COLUMN IF NOT EXISTS engine_number VARCHAR(50),
+  ADD COLUMN IF NOT EXISTS registered_at TIMESTAMP DEFAULT NOW(),
+  ADD COLUMN IF NOT EXISTS status VARCHAR(20) DEFAULT 'ACTIVE';
+
+CREATE INDEX IF NOT EXISTS idx_vehicles_registration ON vehicles(registration_number);
+CREATE INDEX IF NOT EXISTS idx_vehicles_status ON vehicles(status);
+
+INSERT INTO reference_formats (name, prefix, year_format, sequence_length, example)
+VALUES ('VEHICLE_REGISTRATION', 'VEH', 'YYYY', 5, 'VEH-2026-00001')
+ON CONFLICT (name) DO NOTHING;
+
+
+CREATE TABLE IF NOT EXISTS criminal_records (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  citizen_id UUID NOT NULL REFERENCES citizens(id) ON DELETE CASCADE,
+  reference_number VARCHAR(50) UNIQUE NOT NULL,
+  purpose VARCHAR(200) NOT NULL,
+  status VARCHAR(20) DEFAULT 'PENDING',
+  issued_by UUID REFERENCES users(id),
+  issued_at TIMESTAMP,
+  valid_until DATE,
+  findings TEXT,
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_criminal_records_citizen ON criminal_records(citizen_id);
+CREATE INDEX IF NOT EXISTS idx_criminal_records_status ON criminal_records(status);
+CREATE INDEX IF NOT EXISTS idx_criminal_records_reference ON criminal_records(reference_number);
+
+INSERT INTO reference_formats (name, prefix, year_format, sequence_length, example)
+VALUES ('CRIMINAL_RECORD', 'CR', 'YYYY', 5, 'CR-2026-00001')
+ON CONFLICT (name) DO NOTHING;

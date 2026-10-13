@@ -4,12 +4,18 @@ const roleMiddleware = require('../middleware/roleMiddleware');
 const verificationMiddleware = require('../middleware/verificationMiddleware');
 const trafficController = require('../controllers/trafficController');
 
-// Citizen routes (require session verification)
+// Citizen routes
 router.get('/licence', authMiddleware, verificationMiddleware, trafficController.getLicence);
 router.post('/licence/renew', authMiddleware, verificationMiddleware, trafficController.renewLicence);
 router.post('/test/book', authMiddleware, verificationMiddleware, trafficController.bookDrivingTest);
 router.get('/appointments', authMiddleware, verificationMiddleware, trafficController.getAppointments);
 router.delete('/appointments/:id', authMiddleware, verificationMiddleware, trafficController.cancelAppointment);
+
+// Vehicles
+router.get('/vehicles', authMiddleware, trafficController.getVehicles);
+router.post('/vehicles', authMiddleware, verificationMiddleware, trafficController.registerVehicle);
+router.put('/vehicles/:id', authMiddleware, verificationMiddleware, trafficController.updateVehicle);
+router.delete('/vehicles/:id', authMiddleware, verificationMiddleware, trafficController.deleteVehicle);
 
 // Staff routes
 router.get('/staff/applications', authMiddleware, roleMiddleware(['TRAFFIC']), trafficController.getStaffApplications);
