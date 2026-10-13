@@ -38,18 +38,14 @@ async function adminLogin(req, res, next) {
 
 async function logout(req, res) {
   res.clearCookie('token', {
-    httpOnly: authCookieOptions.httpOnly,
-    secure: authCookieOptions.secure,
-    sameSite: authCookieOptions.sameSite,
-    path: authCookieOptions.path,
+    httpOnly: true,
+    secure: true,
+    sameSite: 'none',
+    path: '/',
   });
   res.json({ message: 'Logged out successfully' });
 }
 
-// ─────────────────────────────────────────────────────────────────────
-// THIS IS THE FIX. The response MUST include identityVerified and
-// verifiedCitizenId, or SessionContext stays "not verified" forever.
-// ─────────────────────────────────────────────────────────────────────
 async function getSession(req, res, next) {
   try {
     const session = await authService.getSession(req.user.userId);
