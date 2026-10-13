@@ -10,9 +10,9 @@ const apiClient = axios.create({
   timeout: 60000,
 });
 
-// Endpoints that legitimately return 401 when not logged in, or that
-// should NEVER trigger a redirect (background calls, session checks,
-// public endpoints).
+// Endpoints that must NEVER trigger a redirect to /login.
+// These are public endpoints, background calls, or ministry pages that a
+// citizen should be able to view even if they aren't identity-verified yet.
 const NEVER_REDIRECT_ENDPOINTS = [
   '/auth/session',
   '/auth/login',
@@ -20,28 +20,27 @@ const NEVER_REDIRECT_ENDPOINTS = [
   '/auth/staff/login',
   '/auth/admin/login',
   '/auth/logout',
-  '/settings/public',
-  '/settings/languages',
-  '/settings/translations',
-  '/home-affairs/stats',
-  '/admin/stats',
-  '/admin/health',
-  '/admin/activity',
+  '/settings/',
+  '/home-affairs/',
+  '/admin/',
+  '/traffic/',
+  '/police/',
+  '/finance/',
+  '/pensions/',
+  '/passport/',
+  '/citizen/',
 ];
 
 function shouldNeverRedirect(url = '') {
   return NEVER_REDIRECT_ENDPOINTS.some((endpoint) => url.includes(endpoint));
 }
 
-// Attach Authorization header if a token is stored (defensive).
 apiClient.interceptors.request.use((config) => {
   try {
     const token = localStorage.getItem('token');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
+    if (token) config.headers.Authorization = `Bearer ${token}`;
   } catch {
-    // localStorage can throw in private mode
+    // ignore
   }
   return config;
 });
@@ -52,7 +51,6 @@ apiClient.interceptors.response.use(
     const status = error.response?.status;
     const url = error.config?.url || '';
 
-    // Network error — most commonly a cold start on Render.
     if (!error.response) {
       const friendly = new Error(
         'Cannot reach the server. It may be starting up. Wait a moment and try again.'
@@ -62,13 +60,21 @@ apiClient.interceptors.response.use(
       return Promise.reject(friendly);
     }
 
-    // Never redirect for these endpoints — they can return 401 while the
-    // user is still legitimately logged in, or they're polling/background
-    // calls that shouldn't take the user out of whatever page they're on.
-    if (status === 401 && !shouldNeverRedirect(url)) {
-      // Only blow away the session if the request was a real user action
-      // AND we haven't redirected in the last second (prevents cascading
-      // redirects when multiple requests 401 at once).
+    // Return the error to the caller without redirecting, so the page can
+    // show a message but the user stays where they are.
+    if (status === 401 && shouldNeverRedirect(url)) {
+      const wrapped = new Error(
+        error.response.data?.message ||
+        error.response.data?.error ||
+        'Your session is not valid for this action.'
+      );
+      wrapped.status = status;
+      wrapped.data = error.response.data;
+      return Promise.reject(wrapped);
+    }
+
+    // Redirect only for genuinely unexpected auth failures, once per 1.5 s.
+    if (status === 401) {
       const now = Date.now();
       const last = Number(sessionStorage.getItem('lastAuthRedirect') || 0);
       if (now - last > 1500 && window.location.pathname !== '/login') {
