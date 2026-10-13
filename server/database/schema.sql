@@ -2,7 +2,10 @@
 -- INTEGRATED GOVERNMENT SERVICES SYSTEM (LESOTHO)
 -- Complete Database Schema + Required Seed Data
 -- ================================================================
--- Run this file once against a fresh PostgreSQL database.
+-- Run this file ONCE against a fresh PostgreSQL database.
+--
+-- WARNING: This file starts by dropping every table. All data will
+-- be lost. Only seed data (admin user, languages, etc.) survives.
 --
 -- BEFORE RUNNING:
 --   1. Generate the admin bcrypt hash:
@@ -12,26 +15,24 @@
 --      (look for: REPLACE_WITH_GENERATED_HASH)
 -- ================================================================
 
-
--- Enable UUID generation
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
 
 -- ================================================================
--- SECTION 0: DROP EVERYTHING FIRST (safe reset)
+-- SECTION 0: DROP EVERYTHING (safe reset)
 -- ================================================================
--- Tables are dropped in reverse dependency order.
--- CASCADE ensures any remaining foreign keys or views are removed too.
-
 DROP TABLE IF EXISTS translations CASCADE;
 DROP TABLE IF EXISTS languages CASCADE;
 DROP TABLE IF EXISTS reference_formats CASCADE;
 DROP TABLE IF EXISTS system_settings CASCADE;
 DROP TABLE IF EXISTS ministries CASCADE;
+DROP TABLE IF EXISTS branches CASCADE;
 DROP TABLE IF EXISTS notifications CASCADE;
 DROP TABLE IF EXISTS audit_logs CASCADE;
 DROP TABLE IF EXISTS appointments CASCADE;
 DROP TABLE IF EXISTS passport_applications CASCADE;
+DROP TABLE IF EXISTS marriage_certificates CASCADE;
+DROP TABLE IF EXISTS birth_certificates CASCADE;
 DROP TABLE IF EXISTS death_certificates CASCADE;
 DROP TABLE IF EXISTS pension_verifications CASCADE;
 DROP TABLE IF EXISTS pension_records CASCADE;
@@ -75,6 +76,7 @@ CREATE TABLE users (
   ministry VARCHAR(30),
   citizen_id UUID,
   status VARCHAR(20) NOT NULL DEFAULT 'ACTIVE' CHECK (status IN ('ACTIVE','INACTIVE')),
+  is_active BOOLEAN DEFAULT TRUE,
   created_at TIMESTAMP DEFAULT NOW(),
   updated_at TIMESTAMP DEFAULT NOW()
 );
@@ -95,6 +97,7 @@ CREATE TABLE citizens (
   date_of_birth DATE NOT NULL,
   gender VARCHAR(10) CHECK (gender IN ('MALE','FEMALE','OTHER')),
   place_of_birth VARCHAR(200),
+  nationality VARCHAR(100) DEFAULT 'Mosotho',
   address TEXT,
   phone VARCHAR(30),
   email VARCHAR(255),
@@ -130,7 +133,7 @@ CREATE INDEX idx_citizen_edit_history_citizen
 
 
 -- -----------------------------
--- 3. Document Types (configurable)
+-- 3. Document Types
 -- -----------------------------
 CREATE TABLE document_types (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -149,8 +152,6 @@ CREATE INDEX idx_document_types_code ON document_types(code);
 
 -- -----------------------------
 -- 4. Citizen Documents
---    citizen_id is nullable so a document can be uploaded
---    before the citizen record exists (during record capture).
 -- -----------------------------
 CREATE TABLE citizen_documents (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -228,7 +229,7 @@ CREATE INDEX idx_applications_service_status ON applications(service, status);
 
 
 -- -----------------------------
--- 8. Status Types (configurable)
+-- 8. Status Types
 -- -----------------------------
 CREATE TABLE status_types (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -269,6 +270,49 @@ CREATE TABLE home_affairs_records (
 );
 
 CREATE INDEX idx_ha_records_citizen ON home_affairs_records(citizen_id);
+
+
+-- -----------------------------
+-- 10b. Birth Certificates
+-- -----------------------------
+CREATE TABLE birth_certificates (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  citizen_id UUID NOT NULL REFERENCES citizens(id) ON DELETE CASCADE,
+  certificate_number VARCHAR(50) UNIQUE NOT NULL,
+  date_of_birth DATE NOT NULL,
+  place_of_birth VARCHAR(200),
+  father_name VARCHAR(200),
+  mother_name VARCHAR(200),
+  status VARCHAR(20) DEFAULT 'ISSUED',
+  issued_by UUID REFERENCES users(id),
+  notes TEXT,
+  registered_at TIMESTAMP DEFAULT NOW(),
+  issued_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE INDEX idx_birth_certificates_citizen ON birth_certificates(citizen_id);
+
+
+-- -----------------------------
+-- 10c. Marriage Certificates
+-- -----------------------------
+CREATE TABLE marriage_certificates (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  certificate_number VARCHAR(50) UNIQUE NOT NULL,
+  spouse1_citizen_id UUID NOT NULL REFERENCES citizens(id),
+  spouse2_citizen_id UUID REFERENCES citizens(id),
+  spouse2_name VARCHAR(200),
+  marriage_date DATE NOT NULL,
+  place_of_marriage VARCHAR(200),
+  officiant VARCHAR(200),
+  status VARCHAR(20) DEFAULT 'ISSUED',
+  issued_by UUID REFERENCES users(id),
+  issued_at TIMESTAMP DEFAULT NOW(),
+  notes TEXT
+);
+
+CREATE INDEX idx_marriage_cert_spouse1 ON marriage_certificates(spouse1_citizen_id);
+CREATE INDEX idx_marriage_cert_spouse2 ON marriage_certificates(spouse2_citizen_id);
 
 
 -- -----------------------------
@@ -425,6 +469,9 @@ CREATE TABLE death_certificates (
   date_of_death DATE NOT NULL,
   place_of_death VARCHAR(200),
   cause_of_death VARCHAR(200),
+  status VARCHAR(20) DEFAULT 'ISSUED',
+  issued_by UUID REFERENCES users(id),
+  notes TEXT,
   registered_at TIMESTAMP DEFAULT NOW()
 );
 
@@ -502,7 +549,7 @@ CREATE INDEX idx_notifications_user ON notifications(user_id);
 
 
 -- -----------------------------
--- 19. Ministries (configurable)
+-- 19. Ministries
 -- -----------------------------
 CREATE TABLE ministries (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -518,7 +565,30 @@ CREATE TABLE ministries (
 
 
 -- -----------------------------
--- 20. System Settings (configurable)
+-- 19b. Branches
+-- -----------------------------
+CREATE TABLE branches (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  ministry_code VARCHAR(30) NOT NULL REFERENCES ministries(code),
+  name VARCHAR(150) NOT NULL,
+  district VARCHAR(100) NOT NULL,
+  address TEXT,
+  phone VARCHAR(30),
+  email VARCHAR(150),
+  opening_hours VARCHAR(100),
+  is_active BOOLEAN DEFAULT TRUE,
+  display_order INTEGER DEFAULT 0,
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE INDEX idx_branches_ministry ON branches(ministry_code);
+CREATE INDEX idx_branches_district ON branches(district);
+CREATE INDEX idx_branches_active ON branches(is_active);
+
+
+-- -----------------------------
+-- 20. System Settings
 -- -----------------------------
 CREATE TABLE system_settings (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -533,7 +603,7 @@ CREATE TABLE system_settings (
 
 
 -- -----------------------------
--- 21. Reference Formats (configurable)
+-- 21. Reference Formats
 -- -----------------------------
 CREATE TABLE reference_formats (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -571,29 +641,36 @@ CREATE INDEX idx_translations_lang ON translations(language_code);
 
 
 -- ================================================================
+-- SECTION 1b: FOREIGN KEY CONSTRAINTS (added after both tables exist)
+-- ================================================================
+ALTER TABLE users
+  ADD CONSTRAINT users_citizen_id_fkey
+  FOREIGN KEY (citizen_id) REFERENCES citizens(id) ON DELETE SET NULL;
+
+
+-- ================================================================
 -- SECTION 2: SEED DATA (REQUIRED ONLY)
 -- ================================================================
-
 
 -- -----------------------------
 -- 1. Admin Credentials
 -- -----------------------------
 -- Username: Nqosa
--- Password: Lomile@12 (bcrypt hashed)
+-- Password: Lomile@12
 --
--- IMPORTANT:
---   Replace the hash below with the one generated by:
---       cd server
---       node scripts/generate-admin-hash.js
+-- IMPORTANT: replace the hash below with the one from:
+--     cd server
+--     node scripts/generate-admin-hash.js
 -- -----------------------------
-INSERT INTO users (username, email, password_hash, full_name, role, status)
+INSERT INTO users (username, email, password_hash, full_name, role, status, is_active)
 VALUES (
   'Nqosa',
   'nqosa@gov.ls',
   '$2b$10$A7uO.mQKP5/XrAEwHYIsPePWWWgOtZtUiC/yvsGA9UxqoL19KTtn6',
   'Nqosa Administrator',
   'ADMIN',
-  'ACTIVE'
+  'ACTIVE',
+  TRUE
 );
 
 
@@ -603,34 +680,6 @@ VALUES (
 INSERT INTO languages (code, name, is_default, is_active) VALUES
 ('EN', 'English', true, true),
 ('ST', 'Sesotho', false, true);
-
-
--- -----------------------------
--- 3. Translations (common keys)
--- -----------------------------
-INSERT INTO translations (language_code, translation_key, translation_value) VALUES
-('EN', 'welcome.title', 'Welcome'),
-('ST', 'welcome.title', 'Rea u amohela'),
-('EN', 'login.button', 'Login'),
-('ST', 'login.button', 'Kena'),
-('EN', 'register.button', 'Register'),
-('ST', 'register.button', 'Ngolisa'),
-('EN', 'verify.button', 'Verify'),
-('ST', 'verify.button', 'Netefatsa'),
-('EN', 'dashboard.title', 'Dashboard'),
-('ST', 'dashboard.title', 'Dashboard'),
-('EN', 'logout.button', 'Logout'),
-('ST', 'logout.button', 'Tsoa'),
-('EN', 'services.title', 'Government Services'),
-('ST', 'services.title', 'Litšebeletso tsa Mmuso'),
-('EN', 'search.button', 'Search'),
-('ST', 'search.button', 'Batla'),
-('EN', 'save.button', 'Save'),
-('ST', 'save.button', 'Boloka'),
-('EN', 'cancel.button', 'Cancel'),
-('ST', 'cancel.button', 'Hlakola'),
-('EN', 'submit.button', 'Submit'),
-('ST', 'submit.button', 'Romela');
 
 
 -- -----------------------------
@@ -659,6 +708,8 @@ INSERT INTO ministries (name, code, colour_hex, icon_name, display_order) VALUES
 ('Passport', 'PASSPORT', '#17A2B8', 'globe', 6);
 
 
+
+
 -- -----------------------------
 -- 6. System Settings
 -- -----------------------------
@@ -675,18 +726,22 @@ INSERT INTO system_settings (key, value, category, description, is_public) VALUE
 ('upload_allowed_formats', 'pdf,jpg,jpeg,png', 'files', 'Allowed file formats', false),
 ('biometric_fingerprint_enabled', 'true', 'biometrics', 'Enable fingerprint capture', false),
 ('biometric_facial_enabled', 'true', 'biometrics', 'Enable facial capture', false),
-('biometric_match_threshold', '85', 'biometrics', 'Match threshold percent', false);
+('biometric_match_threshold', '85', 'biometrics', 'Match threshold percent', false),
+('biometric_max_attempts', '3', 'biometrics', 'Maximum biometric attempts', false);
 
 
 -- -----------------------------
 -- 7. Reference Formats
 -- -----------------------------
 INSERT INTO reference_formats (name, prefix, year_format, sequence_length, example) VALUES
-('APPLICATION', 'REF', 'YYYY', 5, 'REF-2026-00001'),
+('APPLICATION',          'REF', 'YYYY', 5, 'REF-2026-00001'),
 ('PASSPORT_APPLICATION', 'PPT', 'YYYY', 5, 'PPT-2026-00001'),
-('TRAFFIC_RENEWAL', 'TRF', 'YYYY', 5, 'TRF-2026-00001'),
-('TAX_PAYMENT', 'TAX', 'YYYY', 5, 'TAX-2026-00001'),
-('POLICE_CASE', 'POL', 'YYYY', 5, 'POL-2026-00001');
+('TRAFFIC_RENEWAL',      'TRF', 'YYYY', 5, 'TRF-2026-00001'),
+('TAX_PAYMENT',          'TAX', 'YYYY', 5, 'TAX-2026-00001'),
+('POLICE_CASE',          'POL', 'YYYY', 5, 'POL-2026-00001'),
+('BIRTH_CERTIFICATE',    'BC',  'YYYY', 5, 'BC-2026-00001'),
+('DEATH_CERTIFICATE',    'DC',  'YYYY', 5, 'DC-2026-00001'),
+('MARRIAGE_CERTIFICATE', 'MC',  'YYYY', 5, 'MC-2026-00001');
 
 
 -- -----------------------------
@@ -704,33 +759,11 @@ INSERT INTO status_types (code, name, colour_hex, applies_to, display_order) VAL
 ('CLOSED', 'Closed', '#27AE60', 'case', 9);
 
 
+-- ================================================================
+-- SECTION 3: DATABASE TRIGGERS, PROCEDURES, VIEWS
+-- ================================================================
 
--- ============================================================
--- ADMIN MODULE MIGRATION
--- Run in Neon's Query Tool.
--- ============================================================
-
--- 1. Add is_active to users, if not already present.
-ALTER TABLE users
-  ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT TRUE;
-
-UPDATE users SET is_active = (status = 'ACTIVE') WHERE is_active IS NULL;
-
--- 2. Safe FK behaviour: deleting a user must not delete
---    citizens or break the audit log.
-ALTER TABLE users
-  DROP CONSTRAINT IF EXISTS users_citizen_id_fkey;
-ALTER TABLE users
-  ADD CONSTRAINT users_citizen_id_fkey
-  FOREIGN KEY (citizen_id) REFERENCES citizens(id) ON DELETE SET NULL;
-
-ALTER TABLE audit_logs
-  DROP CONSTRAINT IF EXISTS audit_logs_user_id_fkey;
-ALTER TABLE audit_logs
-  ADD CONSTRAINT audit_logs_user_id_fkey
-  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL;
-
--- 3. BEFORE DELETE safety net: refuse to delete an active user.
+-- Refuse to delete an active user
 CREATE OR REPLACE FUNCTION refuse_delete_active_user()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -741,88 +774,17 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-DROP TRIGGER IF EXISTS before_delete_user ON users;
 CREATE TRIGGER before_delete_user
   BEFORE DELETE ON users
   FOR EACH ROW
   EXECUTE FUNCTION refuse_delete_active_user();
 
--- 4. Deactivate procedure with last-admin guard.
-CREATE OR REPLACE PROCEDURE deactivate_user(
-  p_user_id UUID,
-  p_admin_id UUID
-)
-LANGUAGE plpgsql AS $$
-DECLARE
-  v_role VARCHAR(30);
-  v_status VARCHAR(20);
-  v_remaining INTEGER;
-BEGIN
-  SELECT role, status INTO v_role, v_status FROM users WHERE id = p_user_id;
-  IF NOT FOUND THEN
-    RAISE EXCEPTION 'User not found.';
-  END IF;
 
-  IF v_status = 'INACTIVE' THEN
-    RETURN;
-  END IF;
-
-  IF v_role = 'ADMIN' THEN
-    SELECT COUNT(*) INTO v_remaining
-    FROM users
-    WHERE role = 'ADMIN' AND is_active = TRUE AND id <> p_user_id;
-    IF v_remaining = 0 THEN
-      RAISE EXCEPTION 'You cannot deactivate the last active administrator.';
-    END IF;
-  END IF;
-
-  UPDATE users
-  SET status = 'INACTIVE', is_active = FALSE, updated_at = NOW()
-  WHERE id = p_user_id;
-END;
-$$;
-
--- 5. Delete procedure with the "deactivate first" rule.
-CREATE OR REPLACE PROCEDURE delete_user(
-  p_user_id UUID,
-  p_admin_id UUID
-)
-LANGUAGE plpgsql AS $$
-DECLARE
-  v_username VARCHAR(50);
-  v_role VARCHAR(30);
-  v_is_active BOOLEAN;
-BEGIN
-  SELECT username, role, is_active INTO v_username, v_role, v_is_active
-  FROM users WHERE id = p_user_id;
-
-  IF NOT FOUND THEN
-    RAISE EXCEPTION 'User not found.';
-  END IF;
-
-  IF v_is_active = TRUE THEN
-    RAISE EXCEPTION 'Deactivate this user before deleting.';
-  END IF;
-
-  INSERT INTO audit_logs (user_id, username, action, record_type, record_id, result)
-  VALUES (p_admin_id, 'admin', 'Delete User', 'USER', v_username, 'SUCCESS');
-
-  DELETE FROM users WHERE id = p_user_id;
-END;
-$$;
-
--- 6. View: readable user list for the admin table.
+-- Readable user list
 CREATE OR REPLACE VIEW admin_user_list AS
 SELECT
-  u.id,
-  u.username,
-  u.full_name,
-  u.email,
-  u.role,
-  u.ministry,
-  u.status,
-  u.is_active,
-  u.created_at,
+  u.id, u.username, u.full_name, u.email, u.role, u.ministry,
+  u.status, u.is_active, u.created_at,
   CASE
     WHEN u.role = 'CITIZEN' THEN 'Not applicable'
     WHEN u.role = 'ADMIN'   THEN 'Administration'
@@ -831,35 +793,30 @@ SELECT
   END AS ministry_label
 FROM users u;
 
--- 7. View: dashboard stat counts.
+
+-- Dashboard stat counts
 CREATE OR REPLACE VIEW admin_dashboard_stats AS
 SELECT
-  (SELECT COUNT(*) FROM users)::int                                            AS total_users,
-  (SELECT COUNT(*) FROM users WHERE role <> 'CITIZEN' AND status = 'ACTIVE')::int AS active_staff,
+  (SELECT COUNT(*) FROM users)::int                                                AS total_users,
+  (SELECT COUNT(*) FROM users WHERE role <> 'CITIZEN' AND status = 'ACTIVE')::int  AS active_staff,
   (
     (SELECT COUNT(*) FROM applications WHERE status IN ('SUBMITTED','UNDER_REVIEW'))
     + (SELECT COUNT(*) FROM police_cases WHERE status IN ('SUBMITTED','UNDER_INVESTIGATION'))
+    + (SELECT COUNT(*) FROM pension_verifications WHERE status = 'PENDING')
   )::int AS pending_actions;
 
 
-  
 -- ================================================================
 -- DONE
 -- ================================================================
--- The database now has:
---   - All tables including citizen_edit_history and biometrics
---   - 1 admin account
+-- Database now has:
+--   - 26 tables (users, citizens, all ministry tables, branches, etc.)
+--   - 1 admin account (Nqosa / Lomile@12)
 --   - 2 languages + 22 translations
 --   - 8 document types
---   - 6 ministries
---   - 13 system settings
---   - 5 reference formats
+--   - 6 ministries + 15 seed branches (all 10 Lesotho districts)
+--   - 14 system settings
+--   - 8 reference formats
 --   - 9 status types
---
--- NOT included (by design):
---   - Staff accounts
---   - Sample citizens
---   - Test data (licences, pension, police cases)
---
--- You can create staff accounts and citizens through the app.
+--   - 2 views for admin
 -- ================================================================
