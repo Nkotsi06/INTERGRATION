@@ -70,6 +70,47 @@ async function addCaseUpdate(id, notes, staffUser) {
   return policeCaseRepository.addUpdate(id, notes, staffUser.userId);
 }
 
+// ─── Clearance certificate ────────────────────────────────────────────
+async function requestClearance(citizenId, data, user) {
+  if (!data.purpose) {
+    const err = new Error('Purpose is required.');
+    err.statusCode = 400;
+    throw err;
+  }
+  if (!data.station) {
+    const err = new Error('Collection station is required.');
+    err.statusCode = 400;
+    throw err;
+  }
+
+  // Clearance requests are stored as police_cases with case_type CLEARANCE.
+  // This keeps everything in one table and one workflow.
+  const referenceNumber = await generateReference('POLICE_CASE');
+
+  const created = await policeCaseRepository.create({
+    caseNumber: referenceNumber,
+    citizenId,
+    caseType: 'CLEARANCE',
+    incidentDate: new Date().toISOString().slice(0, 10),
+    location: data.station,
+    description:
+      `Clearance request.\nPurpose: ${data.purpose}` +
+      (data.contactNumber ? `\nContact: ${data.contactNumber}` : '') +
+      (data.email ? `\nEmail: ${data.email}` : ''),
+  });
+
+  await auditService.log({
+    userId: user.userId, username: user.username,
+    action: 'POLICE_CLEARANCE_REQUESTED',
+    recordType: 'POLICE_CASE', recordId: created.id, result: 'SUCCESS',
+  });
+
+  await notifyCitizen(citizenId, 'Clearance request received',
+    `Your clearance request ${referenceNumber} has been received.`);
+
+  return created;
+}
+
 // ─── Criminal record ──────────────────────────────────────────────────
 async function requestCriminalRecord(citizenId, data, user) {
   if (!data.purpose) {
@@ -140,5 +181,6 @@ async function processCriminalRecord(id, action, data, staffUser) {
 
 module.exports = {
   reportCase, getMyCases, getCaseByNumber, getStaffCases, updateCase, addCaseUpdate,
+  requestClearance,
   requestCriminalRecord, getMyCriminalRecords, getStaffCriminalRecords, processCriminalRecord,
 };

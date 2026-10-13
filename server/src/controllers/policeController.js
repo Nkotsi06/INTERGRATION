@@ -43,6 +43,16 @@ async function addCaseUpdate(req, res, next) {
   } catch (err) { next(err); }
 }
 
+// ─── Clearance ────────────────────────────────────────────────────────
+async function requestClearance(req, res, next) {
+  try {
+    const created = await policeService.requestClearance(
+      citizenIdFrom(req), req.body, req.user
+    );
+    res.status(201).json(created);
+  } catch (err) { next(err); }
+}
+
 // ─── Criminal record ──────────────────────────────────────────────────
 async function requestCriminalRecord(req, res, next) {
   try {
@@ -74,5 +84,6 @@ async function processCriminalRecord(req, res, next) {
 
 module.exports = {
   reportCase, getMyCases, getCaseByNumber, getStaffCases, updateCase, addCaseUpdate,
+  requestClearance,
   requestCriminalRecord, getMyCriminalRecords, getStaffCriminalRecords, processCriminalRecord,
 };

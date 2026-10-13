@@ -9,6 +9,9 @@ router.post('/cases', authMiddleware, verificationMiddleware, policeController.r
 router.get('/cases', authMiddleware, verificationMiddleware, policeController.getMyCases);
 router.get('/cases/:caseNumber', authMiddleware, verificationMiddleware, policeController.getCaseByNumber);
 
+// Citizen — clearance certificate
+router.post('/clearance', authMiddleware, verificationMiddleware, policeController.requestClearance);
+
 // Citizen — criminal record
 router.post('/criminal-records', authMiddleware, verificationMiddleware, policeController.requestCriminalRecord);
 router.get('/criminal-records', authMiddleware, policeController.getMyCriminalRecords);

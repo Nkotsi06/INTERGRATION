@@ -5,6 +5,9 @@ export const reportCase = (data) => apiClient.post('/police/cases', data);
 export const getMyCases = (params) => apiClient.get('/police/cases', { params });
 export const getCaseByNumber = (caseNumber) => apiClient.get(`/police/cases/${caseNumber}`);
 
+// Clearance certificate — citizen
+export const requestClearance = (data) => apiClient.post('/police/clearance', data);
+
 // Criminal record — citizen
 export const requestCriminalRecord = (data) => apiClient.post('/police/criminal-records', data);
 export const getMyCriminalRecords = () => apiClient.get('/police/criminal-records');
