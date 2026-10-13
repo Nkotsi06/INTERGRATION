@@ -12,6 +12,7 @@ import ConfirmDialog from '../../components/common/ConfirmDialog';
 import EmptyState from '../../components/common/EmptyState';
 import { useSettings } from '../../context/SettingsContext';
 import { useNotification } from '../../context/NotificationContext';
+import { LESOTHO_DISTRICTS } from '../../utils/districts';
 import {
   getBranches,
   createBranch,
@@ -40,7 +41,7 @@ function BranchManagement() {
   const [loadError, setLoadError] = useState(null);
   const [saving, setSaving] = useState(false);
 
-  const [editing, setEditing] = useState(null);      // null = list view; object = form
+  const [editing, setEditing] = useState(null);
   const [deleting, setDeleting] = useState(null);
 
   const [filterMinistry, setFilterMinistry] = useState('');
@@ -67,11 +68,6 @@ function BranchManagement() {
 
   const ministries = settings.ministries || [];
 
-  const districts = useMemo(() => {
-    const set = new Set(rows.map((r) => r.district).filter(Boolean));
-    return Array.from(set).sort();
-  }, [rows]);
-
   const handleNew = () => setEditing({ ...emptyForm });
 
   const handleSave = async () => {
@@ -84,7 +80,7 @@ function BranchManagement() {
       const payload = {
         ministryCode: editing.ministryCode,
         name: editing.name.trim(),
-        district: editing.district.trim(),
+        district: editing.district,
         address: editing.address.trim() || null,
         phone: editing.phone.trim() || null,
         email: editing.email.trim() || null,
@@ -121,6 +117,9 @@ function BranchManagement() {
       setSaving(false);
     }
   };
+
+  const ministryOptions = ministries.map((m) => ({ value: m.code, label: m.name }));
+  const districtOptions = LESOTHO_DISTRICTS.map((d) => ({ value: d, label: d }));
 
   const columns = [
     {
@@ -183,7 +182,7 @@ function BranchManagement() {
               onChange={(e) => setFilterDistrict(e.target.value)}
             >
               <option value="">All</option>
-              {districts.map((d) => (
+              {LESOTHO_DISTRICTS.map((d) => (
                 <option key={d} value={d}>{d}</option>
               ))}
             </select>
@@ -228,7 +227,7 @@ function BranchManagement() {
               label="Ministry"
               value={editing.ministryCode}
               onChange={(e) => setEditing({ ...editing, ministryCode: e.target.value })}
-              options={ministries.map((m) => ({ value: m.code, label: m.name }))}
+              options={ministryOptions}
               required
             />
             <Input
@@ -237,10 +236,11 @@ function BranchManagement() {
               onChange={(e) => setEditing({ ...editing, name: e.target.value })}
               required
             />
-            <Input
+            <Select
               label="District"
               value={editing.district}
               onChange={(e) => setEditing({ ...editing, district: e.target.value })}
+              options={districtOptions}
               required
             />
             <Input

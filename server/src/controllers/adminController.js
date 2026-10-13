@@ -78,7 +78,6 @@ async function updateSettings(req, res, next) {
   } catch (e) { next(e); }
 }
 
-// ─── FIX: dedicated logo upload ─────────────────────────────────────────
 async function uploadLogo(req, res, next) {
   try {
     if (!req.file) return res.status(400).json({ message: 'No logo file provided' });
@@ -86,7 +85,37 @@ async function uploadLogo(req, res, next) {
     res.json(result);
   } catch (e) { next(e); }
 }
-// ────────────────────────────────────────────────────────────────────────
+
+// ─── Biometric settings ─────────────────────────────────────────────
+async function getBiometricSettings(req, res, next) {
+  try {
+    const all = await adminService.getSettings();
+    res.json({
+      fingerprintEnabled: all.biometric_fingerprint_enabled !== 'false',
+      facialEnabled:      all.biometric_facial_enabled !== 'false',
+      matchThreshold:     parseInt(all.biometric_match_threshold || '85', 10),
+      maxAttempts:        parseInt(all.biometric_max_attempts || '3', 10),
+    });
+  } catch (e) { next(e); }
+}
+
+async function updateBiometricSettings(req, res, next) {
+  try {
+    const map = {
+      fingerprintEnabled: 'biometric_fingerprint_enabled',
+      facialEnabled:      'biometric_facial_enabled',
+      matchThreshold:     'biometric_match_threshold',
+      maxAttempts:        'biometric_max_attempts',
+    };
+    const patch = {};
+    for (const [key, settingKey] of Object.entries(map)) {
+      if (req.body[key] !== undefined) patch[settingKey] = String(req.body[key]);
+    }
+    await adminService.updateSettings(patch, req.user);
+    res.json({ success: true });
+  } catch (e) { next(e); }
+}
+// ────────────────────────────────────────────────────────────────────
 
 module.exports = {
   getStats,
@@ -103,4 +132,6 @@ module.exports = {
   getSettings,
   updateSettings,
   uploadLogo,
+  getBiometricSettings,
+  updateBiometricSettings,
 };

@@ -1,4 +1,5 @@
 const HELP_LINK = { to: '/help', label: 'Help & Support' };
+const NOTIFICATIONS_LINK = { to: '/citizen/notifications', label: 'Notifications' };
 
 export const SIDEBAR_BY_ROLE = {
   CITIZEN: {
@@ -8,7 +9,7 @@ export const SIDEBAR_BY_ROLE = {
       { to: '/citizen/profile',       label: 'My Profile' },
       { to: '/citizen/applications',  label: 'My Applications' },
       { to: '/citizen/documents',     label: 'My Documents' },
-      { to: '/citizen/notifications', label: 'Notifications' },
+      NOTIFICATIONS_LINK,
       HELP_LINK,
     ],
   },
@@ -30,6 +31,7 @@ export const SIDEBAR_BY_ROLE = {
       { to: '/admin/settings/logo',              label: 'System Logo' },
       { to: '/admin/settings/biometrics',        label: 'Biometrics' },
 
+      NOTIFICATIONS_LINK,
       HELP_LINK,
     ],
   },
@@ -41,6 +43,7 @@ export const SIDEBAR_BY_ROLE = {
       { to: '/home-affairs/registrations', label: 'New Registrations' },
       { to: '/home-affairs/search',        label: 'Citizen Search' },
       { to: '/home-affairs/reports',       label: 'Reports' },
+      NOTIFICATIONS_LINK,
       HELP_LINK,
     ],
   },
@@ -50,6 +53,7 @@ export const SIDEBAR_BY_ROLE = {
     links: [
       { to: '/traffic/staff',      label: 'Dashboard' },
       { to: '/traffic/processing', label: 'Process Applications' },
+      NOTIFICATIONS_LINK,
       HELP_LINK,
     ],
   },
@@ -59,6 +63,7 @@ export const SIDEBAR_BY_ROLE = {
     links: [
       { to: '/police/staff',  label: 'Dashboard' },
       { to: '/police/manage', label: 'Manage Cases' },
+      NOTIFICATIONS_LINK,
       HELP_LINK,
     ],
   },
@@ -68,6 +73,7 @@ export const SIDEBAR_BY_ROLE = {
     links: [
       { to: '/finance/staff',      label: 'Dashboard' },
       { to: '/finance/processing', label: 'Process Registrations' },
+      NOTIFICATIONS_LINK,
       HELP_LINK,
     ],
   },
@@ -77,6 +83,7 @@ export const SIDEBAR_BY_ROLE = {
     links: [
       { to: '/pensions/staff',   label: 'Dashboard' },
       { to: '/pensions/process', label: 'Process Verifications' },
+      NOTIFICATIONS_LINK,
       HELP_LINK,
     ],
   },
@@ -87,6 +94,7 @@ export const SIDEBAR_BY_ROLE = {
       { to: '/passport/staff',   label: 'Dashboard' },
       { to: '/passport/process', label: 'Process Applications' },
       { to: '/passport/history', label: 'Application History' },
+      NOTIFICATIONS_LINK,
       HELP_LINK,
     ],
   },
