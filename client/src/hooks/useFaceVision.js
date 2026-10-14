@@ -2,17 +2,6 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import { FaceLandmarker, ImageSegmenter, FilesetResolver } from '@mediapipe/tasks-vision';
 import config from '../config/facialCapture';
 
-/**
- * Loads the Mediapipe face landmarker and selfie segmenter once,
- * releases them on unmount.
- *
- * Returns:
- *   ready        - true when both models are loaded
- *   loading      - true while loading
- *   error        - a string if loading failed
- *   analyse(video) - run both models on the current video frame
- *   release()    - manually free resources
- */
 export default function useFaceVision() {
   const faceLandmarkerRef = useRef(null);
   const segmenterRef = useRef(null);
@@ -83,10 +72,6 @@ export default function useFaceVision() {
     };
   }, []);
 
-  /**
-   * Run both models on a video element.
-   * Returns null if either is not ready or the timestamp is invalid.
-   */
   const analyse = useCallback((videoEl, timestampMs) => {
     if (!faceLandmarkerRef.current || !segmenterRef.current || !videoEl) return null;
     if (!timestampMs || timestampMs <= 0) return null;

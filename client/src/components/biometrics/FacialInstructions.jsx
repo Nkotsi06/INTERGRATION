@@ -1,6 +1,5 @@
 import { FiX, FiAlertCircle } from 'react-icons/fi';
 import Button from '../common/Button';
-import config from '../../config/facialCapture';
 
 const RULES = [
   { key: 'sunglasses', label: 'Remove sunglasses' },

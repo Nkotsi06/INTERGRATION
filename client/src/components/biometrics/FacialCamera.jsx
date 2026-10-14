@@ -30,11 +30,9 @@ export default function FacialCamera({ onCapture, onCancel, settings }) {
   const [message, setMessage] = useState('Looking for a face…');
   const [holdProgress, setHoldProgress] = useState(0);
   const [lastCaptured, setLastCaptured] = useState(null);
-  const [startTime] = useState(Date.now());
 
   const { ready, loading, error, analyse } = useFaceVision();
 
-  // Tick loop — analyse the video, update state.
   useEffect(() => {
     if (!ready || lastCaptured) return undefined;
 
@@ -54,7 +52,6 @@ export default function FacialCamera({ onCapture, onCancel, settings }) {
           setChecks(result.checks);
           setMessage(result.primaryMessage);
 
-          // Track hold time
           if (result.canHold) {
             if (!holdStartRef.current) holdStartRef.current = Date.now();
             const held = Date.now() - holdStartRef.current;
@@ -84,12 +81,11 @@ export default function FacialCamera({ onCapture, onCancel, settings }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ready, lastCaptured, thresholds.holdStillMs]);
 
-  // Give-up timer — offer manual fallback.
   useEffect(() => {
     if (!thresholds.allowManualFallback) return undefined;
     const t = setTimeout(() => {
       if (!lastCaptured) {
-        setMessage('Having trouble? You can upload a photo instead.');
+        setMessage('Having trouble? You can capture manually instead.');
       }
     }, thresholds.giveUpMs);
     return () => clearTimeout(t);
@@ -134,11 +130,7 @@ export default function FacialCamera({ onCapture, onCancel, settings }) {
             />
           </div>
 
-          <p
-            className="facial-primary-message"
-            role="status"
-            aria-live="polite"
-          >
+          <p className="facial-primary-message" role="status" aria-live="polite">
             {message}
           </p>
 
@@ -157,11 +149,7 @@ export default function FacialCamera({ onCapture, onCancel, settings }) {
 
           <div className="facial-actions">
             <Button variant="secondary" onClick={onCancel}>Cancel</Button>
-            <Button
-              variant="primary"
-              onClick={handleCapture}
-              disabled={!ready}
-            >
+            <Button variant="primary" onClick={handleCapture} disabled={!ready}>
               <FiCamera /> Capture manually
             </Button>
           </div>
@@ -173,7 +161,7 @@ export default function FacialCamera({ onCapture, onCancel, settings }) {
             <Button variant="secondary" onClick={handleRetake}>
               <FiRefreshCw /> Retake
             </Button>
-            <Button variant="primary" onClick={onCapture}>
+            <Button variant="primary" onClick={handleCapture}>
               <FiCheckCircle /> Use this photo
             </Button>
           </div>
