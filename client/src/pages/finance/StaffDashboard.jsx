@@ -1,44 +1,84 @@
 import { useNavigate } from 'react-router-dom';
-import { FiUsers, FiDollarSign, FiTrendingUp } from 'react-icons/fi';
+import {
+  FiBriefcase,
+  FiTrendingUp,
+  FiDollarSign,
+  FiFolder,
+  FiBook,
+  FiShield,
+  FiFileText,
+  FiCreditCard,
+  FiUsers,
+} from 'react-icons/fi';
 import PageWrapper from '../../components/layout/PageWrapper';
 import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
-import useFetch from '../../hooks/useFetch';
-import { getStaffStats } from '../../api/financeApi';
+
+const QUICK_LINKS = [
+  { to: '/finance/treasury',     label: 'Treasury Payments',     icon: <FiDollarSign /> },
+  { to: '/finance/budget',       label: 'Budget Allocations',    icon: <FiBriefcase /> },
+  { to: '/finance/debt',         label: 'Debt & Aid',            icon: <FiTrendingUp /> },
+  { to: '/finance/procurement',  label: 'Procurement',           icon: <FiFolder /> },
+  { to: '/finance/tax-policy',   label: 'Tax Policy',            icon: <FiBook /> },
+  { to: '/finance/audit',        label: 'Internal Audit',        icon: <FiShield /> },
+];
+
+const PROCESSING_LINKS = [
+  { to: '/finance/processing',       label: 'Tax Registrations', icon: <FiUsers /> },
+  { to: '/finance/staff/vat',        label: 'VAT Applications',  icon: <FiFileText /> },
+  { to: '/finance/staff/returns',    label: 'Tax Returns',       icon: <FiFileText /> },
+  { to: '/finance/staff/plans',      label: 'Payment Plans',     icon: <FiCreditCard /> },
+  { to: '/finance/staff/businesses', label: 'Business Regs',     icon: <FiBriefcase /> },
+];
 
 function FinanceStaffDashboard() {
-  const { data: stats, loading } = useFetch(getStaffStats, []);
   const navigate = useNavigate();
 
   return (
     <PageWrapper title="Finance Staff Dashboard" accentColour="#117864">
       <h1>Finance staff dashboard</h1>
+      <p className="text-muted">
+        Ministry of Finance — Treasury, Budget, Debt, Procurement, Tax Policy,
+        Internal Audit, and citizen application processing.
+      </p>
 
-      <div className="stats-grid">
-        <Card variant="bordered" className="stat-card">
-          <div className="stat-icon"><FiUsers /></div>
-          <div className="stat-body">
-            <div className="stat-value">{loading ? '—' : stats?.registeredTaxpayers ?? 0}</div>
-            <div className="stat-label">Registered taxpayers</div>
-          </div>
-        </Card>
+      <section className="dashboard-section">
+        <h2>Ministry dashboards</h2>
+        <div className="services-grid">
+          {QUICK_LINKS.map((link) => (
+            <Card
+              key={link.to}
+              variant="bordered"
+              className="service-card"
+              onClick={() => navigate(link.to)}
+            >
+              <div className="stat-icon">{link.icon}</div>
+              <div className="service-card-body">
+                <span className="service-card-name">{link.label}</span>
+              </div>
+            </Card>
+          ))}
+        </div>
+      </section>
 
-        <Card variant="bordered" className="stat-card">
-          <div className="stat-icon"><FiDollarSign /></div>
-          <div className="stat-body">
-            <div className="stat-value">{loading ? '—' : stats?.paymentsToday ?? 0}</div>
-            <div className="stat-label">Payments today</div>
-          </div>
-        </Card>
-
-        <Card variant="bordered" className="stat-card">
-          <div className="stat-icon"><FiTrendingUp /></div>
-          <div className="stat-body">
-            <div className="stat-value">{loading ? '—' : stats?.outstanding ?? 0}</div>
-            <div className="stat-label">Outstanding balances</div>
-          </div>
-        </Card>
-      </div>
+      <section className="dashboard-section">
+        <h2>Citizen processing</h2>
+        <div className="services-grid">
+          {PROCESSING_LINKS.map((link) => (
+            <Card
+              key={link.to}
+              variant="bordered"
+              className="service-card"
+              onClick={() => navigate(link.to)}
+            >
+              <div className="stat-icon">{link.icon}</div>
+              <div className="service-card-body">
+                <span className="service-card-name">{link.label}</span>
+              </div>
+            </Card>
+          ))}
+        </div>
+      </section>
 
       <div className="quick-actions">
         <Button variant="primary" onClick={() => navigate('/finance/processing')}>

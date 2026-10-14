@@ -32,6 +32,21 @@ const emptyForm = {
   postalAddress: '',
 };
 
+// Facial meta comes back from BiometricEnrollment as:
+//   { confirmed: { noSunglasses, noHat, plainBackground },
+//     override:  { enabled, reason } }
+// A photo is accepted if the officer confirmed all three checks,
+// or provided an override with a reason.
+function facialMetaSatisfied(meta) {
+  if (!meta) return false;
+  if (meta.override?.enabled && meta.override?.reason) return true;
+  return (
+    meta.confirmed?.noSunglasses === true &&
+    meta.confirmed?.noHat === true &&
+    meta.confirmed?.plainBackground === true
+  );
+}
+
 function CompleteCitizenRecord() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -122,14 +137,25 @@ function CompleteCitizenRecord() {
   };
 
   // In edit mode, no biometric capture is required.
-  const biometricsReady = isEditMode || !!biometrics?.facialImage;
+  // In create mode:
+  //   - a facial image is required
+  //   - the officer must have confirmed or overridden the three checks
+  const facialPresent = !!biometrics?.facialImage;
+  const facialAccepted = facialMetaSatisfied(biometrics?.facialMeta);
+  const biometricsReady = isEditMode || (facialPresent && facialAccepted);
 
   const handleSave = async () => {
     setServerError(null);
     if (!validate()) return;
 
-    if (!isEditMode && !biometrics?.facialImage) {
+    if (!isEditMode && !facialPresent) {
       setServerError('Capture a facial photo before saving.');
+      return;
+    }
+    if (!isEditMode && !facialAccepted) {
+      setServerError(
+        'Confirm the three officer checks, or provide an override reason, before saving.'
+      );
       return;
     }
 
@@ -352,18 +378,43 @@ function CompleteCitizenRecord() {
           <div className="form-section">
             <h3 className="form-section-title">Biometric enrollment</h3>
             <p className="text-muted">
-              Capture a facial photograph. Fingerprints are optional.
+              A facial photograph is required. Fingerprints are optional.
             </p>
-            <BiometricEnrollment onComplete={setBiometrics} />
+            <BiometricEnrollment
+              onComplete={setBiometrics}
+              requireFingerprints={false}
+            />
           </div>
 
-          {!biometricsReady && (
+          {facialPresent && !facialAccepted && (
+            <Alert
+              type="warning"
+              message="Confirm the three officer checks (or provide an override reason) before saving."
+            />
+          )}
+
+          {!facialPresent && (
             <Alert
               type="info"
               message="Capture a facial photo before saving."
             />
           )}
         </>
+      )}
+
+      {biometrics && (
+        <div className="card card-flat" style={{ marginBottom: 16 }}>
+          <h3 style={{ marginTop: 0 }}>Biometric summary</h3>
+          <p className="text-muted" style={{ margin: 0 }}>
+            {Object.keys(biometrics.fingerprints || {}).length} fingerprints captured
+            {biometrics.facialImage ? ' · facial photo captured' : ''}
+            {biometrics.facialMeta?.override?.enabled
+              ? ' · officer override recorded'
+              : biometrics.facialMeta?.confirmed
+                ? ' · officer checks confirmed'
+                : ''}
+          </p>
+        </div>
       )}
 
       <FormActions

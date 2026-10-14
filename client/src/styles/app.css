@@ -2946,3 +2946,215 @@ textarea:focus-visible,
     text-align: center;
   }
 }
+
+/* ============================================
+   FACIAL CAPTURE
+   ============================================ */
+
+.facial-instructions,
+.facial-camera,
+.facial-review {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  align-items: stretch;
+  max-width: 560px;
+}
+
+.facial-rules {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.facial-rule {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  font-size: 14pt;
+  line-height: 1.4;
+}
+
+.facial-rule-icon {
+  color: var(--colour-accent);
+  font-weight: 700;
+  font-size: 18pt;
+  line-height: 1;
+}
+
+.facial-consent {
+  display: flex;
+  gap: 12px;
+  padding: 14px 16px;
+  background-color: rgba(46, 134, 193, 0.08);
+  border-left: 4px solid var(--colour-info);
+  border-radius: var(--radius-md);
+  font-size: 12pt;
+}
+
+.facial-consent p { margin: 0; }
+
+.facial-webcam-wrapper {
+  position: relative;
+  width: 100%;
+  max-width: 480px;
+  aspect-ratio: 4 / 3;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  border: 2px solid var(--colour-border);
+  background-color: #000;
+  align-self: center;
+}
+
+.facial-webcam-wrapper .webcam-view {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.facial-oval {
+  position: absolute;
+  top: 8%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60%;
+  height: 82%;
+  border: 3px dashed rgba(255, 255, 255, 0.75);
+  border-radius: 50% / 45%;
+  pointer-events: none;
+}
+
+.facial-hold-ring {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(
+    to right,
+    var(--colour-success) calc(var(--hold, 0) * 100%),
+    var(--colour-border-light) calc(var(--hold, 0) * 100%)
+  );
+  transition: background 0.15s;
+}
+
+.facial-primary-message {
+  font-size: 14pt;
+  font-weight: 600;
+  color: var(--colour-text-primary);
+  min-height: 24px;
+  margin: 0;
+  text-align: center;
+}
+
+.facial-checklist {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  padding: 12px;
+  background-color: var(--colour-surface);
+  border: 1px solid var(--colour-border);
+  border-radius: var(--radius-md);
+}
+
+.facial-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11pt;
+}
+
+.facial-check-pass .facial-check-icon { color: var(--colour-success); }
+.facial-check-fail .facial-check-icon { color: var(--colour-error); }
+.facial-check-checking .facial-check-icon,
+.facial-check-unknown .facial-check-icon { color: var(--colour-warning-text); }
+
+.facial-check-label { flex: 1; }
+.facial-check-status { font-weight: 600; color: var(--colour-text-secondary); }
+
+.facial-image {
+  max-width: 320px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--colour-border);
+  align-self: center;
+}
+
+.facial-image-large {
+  max-width: 420px;
+}
+
+.facial-review-checks {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px;
+  background-color: var(--colour-surface);
+  border: 1px solid var(--colour-border);
+  border-radius: var(--radius-md);
+}
+
+.facial-override {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.facial-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+
+.facial-error {
+  padding: 12px 16px;
+  background-color: rgba(231, 76, 60, 0.08);
+  border-left: 4px solid var(--colour-error);
+  border-radius: var(--radius-md);
+  color: var(--colour-text-primary);
+}
+
+.facial-captured-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: center;
+}
+
+@media (max-width: 600px) {
+  .facial-checklist { grid-template-columns: 1fr; }
+}
+.facial-preview-status {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  font-size: 11pt;
+  color: var(--colour-text-secondary);
+  margin-top: 6px;
+}
+
+.facial-preview-status svg {
+  color: var(--colour-warning-text);
+  flex-shrink: 0;
+}
+
+.facial-preview-label {
+  display: block;
+  font-size: 11pt;
+  font-weight: 600;
+  color: var(--colour-text-primary);
+  margin-top: 4px;
+}
+
+.facial-preview-empty {
+  padding: 16px;
+  text-align: center;
+  color: var(--colour-text-secondary);
+  background-color: var(--colour-background);
+  border-radius: var(--radius-md);
+  font-size: 12pt;
+}

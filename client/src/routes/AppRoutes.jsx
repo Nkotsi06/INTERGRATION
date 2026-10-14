@@ -70,14 +70,34 @@ import CaseUpdate from '../pages/police/CaseUpdate';
 import RequestCriminalRecord from '../pages/police/RequestCriminalRecord';
 import MyCriminalRecords from '../pages/police/MyCriminalRecords';
 
-// Finance
+// Finance — citizen
 import FinanceDashboard from '../pages/finance/FinanceDashboard';
 import TaxRegistration from '../pages/finance/TaxRegistration';
 import TaxProfile from '../pages/finance/TaxProfile';
 import MakePayment from '../pages/finance/MakePayment';
 import PaymentConfirmation from '../pages/finance/PaymentConfirmation';
 import TaxClearanceCertificate from '../pages/finance/TaxClearanceCertificate';
+import ApplyVat from '../pages/finance/ApplyVat';
+import MyVat from '../pages/finance/MyVat';
+import SubmitTaxReturn from '../pages/finance/SubmitTaxReturn';
+import MyTaxReturns from '../pages/finance/MyTaxReturns';
+import MyPaymentPlans from '../pages/finance/MyPaymentPlans';
+import RequestPaymentPlan from '../pages/finance/RequestPaymentPlan';
+import RegisterBusiness from '../pages/finance/RegisterBusiness';
+import MyBusinesses from '../pages/finance/MyBusinesses';
+
+// Finance — staff
 import FinanceStaffDashboard from '../pages/finance/StaffDashboard';
+import TreasuryView from '../pages/finance/TreasuryView';
+import BudgetView from '../pages/finance/BudgetView';
+import DebtView from '../pages/finance/DebtView';
+import ProcurementView from '../pages/finance/ProcurementView';
+import TaxPolicyView from '../pages/finance/TaxPolicyView';
+import AuditFindingsView from '../pages/finance/AuditFindingsView';
+import StaffVat from '../pages/finance/StaffVat';
+import StaffReturns from '../pages/finance/StaffReturns';
+import StaffPaymentPlans from '../pages/finance/StaffPaymentPlans';
+import StaffBusinesses from '../pages/finance/StaffBusinesses';
 import ProcessTaxRegistration from '../pages/finance/ProcessTaxRegistration';
 
 // Pensions
@@ -214,9 +234,30 @@ function AppRoutes() {
       <Route path="/finance/payment" element={<ProtectedRoute><MakePayment /></ProtectedRoute>} />
       <Route path="/finance/payment/success" element={<ProtectedRoute><PaymentConfirmation /></ProtectedRoute>} />
       <Route path="/finance/tax/clearance" element={<ProtectedRoute><TaxClearanceCertificate /></ProtectedRoute>} />
+
+      {/* Finance — citizen new */}
+      <Route path="/finance/vat" element={<ProtectedRoute><MyVat /></ProtectedRoute>} />
+      <Route path="/finance/vat/new" element={<ProtectedRoute><ApplyVat /></ProtectedRoute>} />
+      <Route path="/finance/returns" element={<ProtectedRoute><MyTaxReturns /></ProtectedRoute>} />
+      <Route path="/finance/returns/new" element={<ProtectedRoute><SubmitTaxReturn /></ProtectedRoute>} />
+      <Route path="/finance/payment-plans" element={<ProtectedRoute><MyPaymentPlans /></ProtectedRoute>} />
+      <Route path="/finance/payment-plans/new" element={<ProtectedRoute><RequestPaymentPlan /></ProtectedRoute>} />
+      <Route path="/finance/businesses" element={<ProtectedRoute><MyBusinesses /></ProtectedRoute>} />
+      <Route path="/finance/businesses/new" element={<ProtectedRoute><RegisterBusiness /></ProtectedRoute>} />
+
       {/* Finance — staff */}
       <Route path="/finance/staff" element={<RoleRoute roles={['FINANCE']}><FinanceStaffDashboard /></RoleRoute>} />
       <Route path="/finance/processing" element={<RoleRoute roles={['FINANCE']}><ProcessTaxRegistration /></RoleRoute>} />
+      <Route path="/finance/treasury" element={<RoleRoute roles={['FINANCE']}><TreasuryView /></RoleRoute>} />
+      <Route path="/finance/budget" element={<RoleRoute roles={['FINANCE']}><BudgetView /></RoleRoute>} />
+      <Route path="/finance/debt" element={<RoleRoute roles={['FINANCE']}><DebtView /></RoleRoute>} />
+      <Route path="/finance/procurement" element={<RoleRoute roles={['FINANCE']}><ProcurementView /></RoleRoute>} />
+      <Route path="/finance/tax-policy" element={<RoleRoute roles={['FINANCE']}><TaxPolicyView /></RoleRoute>} />
+      <Route path="/finance/audit" element={<RoleRoute roles={['FINANCE']}><AuditFindingsView /></RoleRoute>} />
+      <Route path="/finance/staff/vat" element={<RoleRoute roles={['FINANCE']}><StaffVat /></RoleRoute>} />
+      <Route path="/finance/staff/returns" element={<RoleRoute roles={['FINANCE']}><StaffReturns /></RoleRoute>} />
+      <Route path="/finance/staff/plans" element={<RoleRoute roles={['FINANCE']}><StaffPaymentPlans /></RoleRoute>} />
+      <Route path="/finance/staff/businesses" element={<RoleRoute roles={['FINANCE']}><StaffBusinesses /></RoleRoute>} />
 
       {/* Pensions — citizen */}
       <Route path="/pensions/dashboard" element={<ProtectedRoute><PensionsDashboard /></ProtectedRoute>} />
