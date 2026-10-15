@@ -1,4 +1,4 @@
-import logo from '../../public/Logo.jpeg';
+import logo from '/Logo.jpeg';
 
 function Logo({ size = 40, showName = false, name }) {
   return (

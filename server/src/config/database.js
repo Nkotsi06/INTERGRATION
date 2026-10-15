@@ -1,7 +1,8 @@
 const { Pool } = require('pg');
 const logger = require('../utils/logger');
 
-// Determine if SSL is required (Neon, Supabase, and most cloud DBs require it)
+// Determine if SSL is required. Supabase requires SSL.
+// Production is assumed to require SSL as well.
 const useSSL = process.env.DB_SSL === 'true' || process.env.NODE_ENV === 'production';
 
 const pool = new Pool({
@@ -15,9 +16,13 @@ const pool = new Pool({
   connectionTimeoutMillis: 10000,
   ssl: useSSL
     ? {
-        rejectUnauthorized: false, // Neon uses valid certificates; false avoids CA bundle issues
+        rejectUnauthorized: false, // Supabase uses valid certificates; false avoids CA bundle issues
       }
     : false,
+  // Render does not support outbound IPv6. Supabase's pooler hostname
+  // resolves to both IPv4 and IPv6. Forcing family 4 guarantees the
+  // connection uses IPv4 and avoids ENETUNREACH.
+  family: 4,
 });
 
 pool.on('error', (err) => {
