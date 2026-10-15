@@ -34,9 +34,17 @@ const DEFAULTS = {
   // Hat detection
   foreheadAccessoryCoverageMax: 0.18, // fraction of forehead covered by accessories
 
-  // Model locations (relative to /public)
-  faceLandmarkerPath: '/models/face_landmarker.task',
-  selfieSegmenterPath: '/models/selfie_multiclass_256x256.tflite',
+  // Model locations.
+  // These point at Google's MediaPipe CDN so the app does not need
+  // the .task and .tflite files inside client/public/models/.
+  // If you later decide to self-host them, replace these two URLs
+  // with '/models/face_landmarker.task' and
+  // '/models/selfie_multiclass_256x256.tflite' and place the files
+  // in client/public/models/.
+  faceLandmarkerPath:
+    'https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task',
+  selfieSegmenterPath:
+    'https://storage.googleapis.com/mediapipe-models/image_segmenter/selfie_multiclass_256x256/float32/1/selfie_multiclass_256x256.tflite',
 
   // Whether to give up and offer manual mode after giveUpMs
   allowManualFallback: true,
