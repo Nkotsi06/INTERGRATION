@@ -1,13 +1,15 @@
 function Tabs({ tabs, activeTab, onChange }) {
   return (
-    <div className="tabs">
+    <div className="tabs" role="tablist">
       {tabs.map((tab) => (
         <button
           key={tab.key}
+          type="button"
+          role="tab"
+          aria-selected={activeTab === tab.key}
           className={`tab ${activeTab === tab.key ? 'active' : ''}`}
           onClick={() => onChange(tab.key)}
         >
-          {tab.icon && <span className="tab-icon">{tab.icon}</span>}
           {tab.label}
         </button>
       ))}

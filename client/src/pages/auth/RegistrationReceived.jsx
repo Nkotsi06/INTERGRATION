@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { FiCheckCircle } from 'react-icons/fi';
 import Button from '../../components/common/Button';
 import Modal from '../../components/common/Modal';
 
@@ -14,9 +13,7 @@ function RegistrationReceived() {
     <div className="auth-page">
       <div className="auth-card">
         <div className="result-card" style={{ padding: 0, border: 'none' }}>
-          <div className="result-icon success">
-            <FiCheckCircle />
-          </div>
+          <div className="result-icon success">✓</div>
           <h1 className="auth-card-title">Registration received</h1>
           <p className="auth-card-subtitle">
             Your account is created{username ? ` (${username})` : ''}. Home

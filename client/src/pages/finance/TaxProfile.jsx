@@ -4,14 +4,14 @@ import Button from '../../components/common/Button';
 import StatusBadge from '../../components/common/StatusBadge';
 import Table from '../../components/common/Table';
 import EmptyState from '../../components/common/EmptyState';
+import { TableSkeleton } from '../../components/common/SkeletonLoader';
 import useFetch from '../../hooks/useFetch';
 import { getTaxProfile, getPayments } from '../../api/financeApi';
 import { formatCurrency, formatDate } from '../../utils/formatters';
-import { FiFileText } from 'react-icons/fi';
 
 function TaxProfile() {
   const { data: profile, loading } = useFetch(getTaxProfile, []);
-  const { data: payments } = useFetch(getPayments, []);
+  const { data: payments, loading: paymentsLoading } = useFetch(getPayments, []);
   const navigate = useNavigate();
 
   const columns = [
@@ -32,7 +32,7 @@ function TaxProfile() {
       <h1>Tax profile</h1>
 
       {loading ? (
-        <p className="text-muted">Loading…</p>
+        <TableSkeleton rows={2} columns={3} />
       ) : !profile ? (
         <p className="text-muted">No tax profile on record. Register first.</p>
       ) : (
@@ -66,13 +66,16 @@ function TaxProfile() {
           </div>
 
           <h3>Recent payments</h3>
-          {!payments || payments.length === 0 ? (
+          {paymentsLoading && <TableSkeleton rows={3} columns={5} />}
+
+          {!paymentsLoading && (!payments || payments.length === 0) && (
             <EmptyState
-              icon={<FiFileText />}
               title="No payments yet"
               message="Payments you make will appear here."
             />
-          ) : (
+          )}
+
+          {!paymentsLoading && payments && payments.length > 0 && (
             <Table columns={columns} data={payments} />
           )}
         </>

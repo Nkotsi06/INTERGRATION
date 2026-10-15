@@ -1,10 +1,9 @@
 import { useState, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
 import PageWrapper from '../../components/layout/PageWrapper';
 import Table from '../../components/common/Table';
 import StatusBadge from '../../components/common/StatusBadge';
-import Button from '../../components/common/Button';
 import EmptyState from '../../components/common/EmptyState';
+import { TableSkeleton } from '../../components/common/SkeletonLoader';
 import useFetch from '../../hooks/useFetch';
 import { getMyTrafficApplications } from '../../api/trafficApi';
 import { formatDate } from '../../utils/formatters';
@@ -27,7 +26,6 @@ const SUB_TYPE_LABEL = {
 function MyTrafficApplications() {
   const { data, loading } = useFetch(getMyTrafficApplications, []);
   const [statusFilter, setStatusFilter] = useState('');
-  const navigate = useNavigate();
 
   const filtered = useMemo(() => {
     if (!data) return [];
@@ -49,19 +47,11 @@ function MyTrafficApplications() {
     {
       key: 'status',
       label: 'Status',
-      render: (r) => <StatusBadge variant={STATUS_VARIANT[r.status] || 'pending'} label={r.status} />,
-    },
-    {
-      key: 'actions',
-      label: '',
       render: (r) => (
-        <Button
-          variant="secondary"
-          size="small"
-          onClick={() => navigate(`/traffic/applications/${r.reference_number}`)}
-        >
-          View
-        </Button>
+        <StatusBadge
+          variant={STATUS_VARIANT[r.status] || 'pending'}
+          label={r.status}
+        />
       ),
     },
   ];
@@ -95,14 +85,16 @@ function MyTrafficApplications() {
         </div>
       </div>
 
-      {loading ? (
-        <p className="text-muted">Loading…</p>
-      ) : filtered.length === 0 ? (
+      {loading && <TableSkeleton rows={5} columns={4} />}
+
+      {!loading && filtered.length === 0 && (
         <EmptyState
           title="No applications yet"
           message="Apply for a licence from your Traffic dashboard to see it here."
         />
-      ) : (
+      )}
+
+      {!loading && filtered.length > 0 && (
         <Table columns={columns} data={filtered} />
       )}
     </PageWrapper>

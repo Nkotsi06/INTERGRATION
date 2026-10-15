@@ -13,9 +13,7 @@ function FormActions({
   align = 'right',
 }) {
   return (
-    <div
-      className={`form-actions ${align === 'between' ? 'form-actions-between' : ''}`}
-    >
+    <div className={`form-actions ${align === 'between' ? 'form-actions-between' : ''}`}>
       {destructiveLabel && onDestructive && (
         <Button
           type="button"
@@ -29,11 +27,7 @@ function FormActions({
 
       <div className="form-actions-primary-group">
         {secondaryLabel && onSecondary && (
-          <Button
-            type="button"
-            variant="secondary"
-            onClick={onSecondary}
-          >
+          <Button type="button" variant="secondary" onClick={onSecondary}>
             {secondaryLabel}
           </Button>
         )}
@@ -42,9 +36,10 @@ function FormActions({
           type="button"
           variant={primaryVariant}
           onClick={onPrimary}
+          loading={primaryLoading}
           disabled={primaryLoading || primaryDisabled}
         >
-          {primaryLoading ? 'Please wait…' : primaryLabel}
+          {primaryLabel}
         </Button>
       </div>
     </div>

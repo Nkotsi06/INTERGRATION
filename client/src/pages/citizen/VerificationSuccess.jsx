@@ -1,5 +1,4 @@
 import { useNavigate, useLocation } from 'react-router-dom';
-import { FiCheckCircle } from 'react-icons/fi';
 import PageWrapper from '../../components/layout/PageWrapper';
 import Button from '../../components/common/Button';
 
@@ -21,9 +20,7 @@ function VerificationSuccess() {
     <PageWrapper title="Identity verified">
       <div className="verification-result-page">
         <div className="result-card">
-          <div className="result-icon success">
-            <FiCheckCircle />
-          </div>
+          <div className="result-icon success">✓</div>
           <h2>Identity verified</h2>
           <p>
             Your Home Affairs record matched. You can now access the service

@@ -1,9 +1,9 @@
 import { useState, useMemo } from 'react';
-import { FiFileText } from 'react-icons/fi';
 import PageWrapper from '../../components/layout/PageWrapper';
 import Table from '../../components/common/Table';
 import StatusBadge from '../../components/common/StatusBadge';
 import EmptyState from '../../components/common/EmptyState';
+import { TableSkeleton } from '../../components/common/SkeletonLoader';
 import useFetch from '../../hooks/useFetch';
 import { getMyApplications } from '../../api/passportApi';
 import { formatDate } from '../../utils/formatters';
@@ -88,15 +88,16 @@ function CheckStatus() {
         )}
       </div>
 
-      {loading ? (
-        <p className="text-muted">Loading…</p>
-      ) : filtered.length === 0 ? (
+      {loading && <TableSkeleton rows={5} columns={3} />}
+
+      {!loading && filtered.length === 0 && (
         <EmptyState
-          icon={<FiFileText />}
           title="No applications found"
           message="Try changing the filters, or apply for a passport."
         />
-      ) : (
+      )}
+
+      {!loading && filtered.length > 0 && (
         <Table columns={columns} data={filtered} />
       )}
     </PageWrapper>

@@ -10,17 +10,18 @@ const apiClient = axios.create({
   timeout: 60000,
 });
 
-// Endpoints that must NEVER trigger a redirect to /login.
-//
-// Two categories:
-//   1. Public endpoints that legitimately return 401 when not logged in.
-//   2. Ministry endpoints whose data failures should be shown on the page,
-//      not turned into a global logout.
-//
-// This does NOT weaken authentication. It only prevents the SPA from being
-// torn down by a single failing background request.
+// ── Progress hooks ──────────────────────────────────────────────────────
+// App.jsx registers callbacks here once. Every request bumps the counter.
+let onRequestStart = () => {};
+let onRequestEnd = () => {};
+
+export function registerProgressHandlers({ start, stop }) {
+  onRequestStart = start || (() => {});
+  onRequestEnd = stop || (() => {});
+}
+// ────────────────────────────────────────────────────────────────────────
+
 const NEVER_REDIRECT_ENDPOINTS = [
-  // Public / session endpoints
   '/auth/session',
   '/auth/login',
   '/auth/register',
@@ -28,11 +29,7 @@ const NEVER_REDIRECT_ENDPOINTS = [
   '/auth/admin/login',
   '/auth/logout',
   '/auth/forgot-password',
-
-  // Public settings
   '/settings/',
-
-  // Ministry endpoints — failures here belong on the page, not at /login
   '/citizen/',
   '/home-affairs/',
   '/traffic/',
@@ -47,32 +44,35 @@ const NEVER_REDIRECT_ENDPOINTS = [
   '/verification/',
   '/references/',
   '/audit/',
+  '/notifications/',
 ];
 
 function shouldNeverRedirect(url = '') {
   return NEVER_REDIRECT_ENDPOINTS.some((endpoint) => url.includes(endpoint));
 }
 
-// Attach the bearer token if one exists. Cookie auth works in parallel.
 apiClient.interceptors.request.use((config) => {
+  onRequestStart();
   try {
     const token = localStorage.getItem('token');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
+    if (token) config.headers.Authorization = `Bearer ${token}`;
   } catch {
-    // localStorage can throw in private mode. Ignore.
+    // ignore
   }
   return config;
 });
 
 apiClient.interceptors.response.use(
-  (response) => response.data,
+  (response) => {
+    onRequestEnd();
+    return response.data;
+  },
   (error) => {
+    onRequestEnd();
+
     const status = error.response?.status;
     const url = error.config?.url || '';
 
-    // Network error or timeout — treat as transient, never as logout.
     if (!error.response) {
       const friendly = new Error(
         'Cannot reach the server. It may be starting up. Wait a moment and try again.'
@@ -82,8 +82,6 @@ apiClient.interceptors.response.use(
       return Promise.reject(friendly);
     }
 
-    // A 401 on an endpoint in the exempt list is NOT a logout event.
-    // Return the error to the caller so the page can display it.
     if (status === 401 && shouldNeverRedirect(url)) {
       const wrapped = new Error(
         error.response.data?.message ||
@@ -95,9 +93,6 @@ apiClient.interceptors.response.use(
       return Promise.reject(wrapped);
     }
 
-    // Only a 401 on a non-exempt endpoint is treated as a genuine
-    // auth failure that warrants a redirect. Debounce so a burst of
-    // simultaneous 401s only redirects once.
     if (status === 401) {
       const now = Date.now();
       const last = Number(sessionStorage.getItem('lastAuthRedirect') || 0);

@@ -1,14 +1,15 @@
 const HELP_LINK = { to: '/help', label: 'Help & Support' };
-const NOTIFICATIONS_LINK = { to: '/citizen/notifications', label: 'Notifications' };
+const NOTIFICATIONS_LINK = { to: '/notifications', label: 'Notifications' };
 
 export const SIDEBAR_BY_ROLE = {
   CITIZEN: {
     label: 'Citizen workspace',
     links: [
-      { to: '/citizen/dashboard',     label: 'Dashboard' },
-      { to: '/citizen/profile',       label: 'My Profile' },
-      { to: '/citizen/applications',  label: 'My Applications' },
-      { to: '/citizen/documents',     label: 'My Documents' },
+      { to: '/citizen/dashboard', label: 'Dashboard' },
+      { to: '/citizen/profile', label: 'My Profile' },
+      { to: '/citizen/applications', label: 'My Applications' },
+      { to: '/citizen/documents', label: 'My Documents' },
+      { to: '/citizen/certificates', label: 'My Certificates' },
       NOTIFICATIONS_LINK,
       HELP_LINK,
     ],
@@ -17,20 +18,18 @@ export const SIDEBAR_BY_ROLE = {
   ADMIN: {
     label: 'Administration',
     links: [
-      { to: '/admin/dashboard',  label: 'Dashboard' },
-      { to: '/admin/users',      label: 'User Management' },
+      { to: '/admin/dashboard', label: 'Dashboard' },
+      { to: '/admin/users', label: 'User Management' },
       { to: '/admin/audit-logs', label: 'Audit Logs' },
-      { to: '/admin/branches',   label: 'Branches' },
-
-      { to: '/admin/settings',                   label: 'System Settings' },
-      { to: '/admin/settings/ministries',        label: 'Ministries' },
-      { to: '/admin/settings/document-types',    label: 'Document Types' },
-      { to: '/admin/settings/statuses',          label: 'Status Types' },
+      { to: '/admin/branches', label: 'Branches' },
+      { to: '/admin/settings', label: 'System Settings' },
+      { to: '/admin/settings/ministries', label: 'Ministries' },
+      { to: '/admin/settings/document-types', label: 'Document Types' },
+      { to: '/admin/settings/statuses', label: 'Status Types' },
       { to: '/admin/settings/reference-formats', label: 'Reference Formats' },
-      { to: '/admin/settings/languages',         label: 'Languages' },
-      { to: '/admin/settings/logo',              label: 'System Logo' },
-      { to: '/admin/settings/biometrics',        label: 'Biometrics' },
-
+      { to: '/admin/settings/languages', label: 'Languages' },
+      { to: '/admin/settings/biometrics', label: 'Biometrics' },
+      { to: '/admin/service-catalogue', label: 'Service Catalogue' },
       NOTIFICATIONS_LINK,
       HELP_LINK,
     ],
@@ -39,10 +38,11 @@ export const SIDEBAR_BY_ROLE = {
   HOME_AFFAIRS: {
     label: 'Home Affairs workspace',
     links: [
-      { to: '/home-affairs/dashboard',     label: 'Dashboard' },
+      { to: '/home-affairs/dashboard', label: 'Dashboard' },
       { to: '/home-affairs/registrations', label: 'New Registrations' },
-      { to: '/home-affairs/search',        label: 'Citizen Search' },
-      { to: '/home-affairs/reports',       label: 'Reports' },
+      { to: '/home-affairs/search', label: 'Citizen Search' },
+      { to: '/home-affairs/certificates', label: 'Certificates' },
+      { to: '/home-affairs/reports', label: 'Reports' },
       NOTIFICATIONS_LINK,
       HELP_LINK,
     ],
@@ -51,7 +51,7 @@ export const SIDEBAR_BY_ROLE = {
   TRAFFIC: {
     label: 'Traffic workspace',
     links: [
-      { to: '/traffic/staff',      label: 'Dashboard' },
+      { to: '/traffic/staff', label: 'Dashboard' },
       { to: '/traffic/processing', label: 'Process Applications' },
       NOTIFICATIONS_LINK,
       HELP_LINK,
@@ -61,7 +61,7 @@ export const SIDEBAR_BY_ROLE = {
   POLICE: {
     label: 'Police workspace',
     links: [
-      { to: '/police/staff',  label: 'Dashboard' },
+      { to: '/police/staff', label: 'Dashboard' },
       { to: '/police/manage', label: 'Manage Cases' },
       NOTIFICATIONS_LINK,
       HELP_LINK,
@@ -72,22 +72,19 @@ export const SIDEBAR_BY_ROLE = {
     label: 'Finance workspace',
     links: [
       { to: '/finance/staff', label: 'Dashboard' },
-
-      // Ministry dashboards
-      { to: '/finance/treasury',    label: 'Treasury Payments' },
-      { to: '/finance/budget',      label: 'Budget Allocations' },
-      { to: '/finance/debt',        label: 'Debt & Aid' },
+      { to: '/finance/treasury', label: 'Treasury Payments' },
+      { to: '/finance/budget', label: 'Budget Allocations' },
+      { to: '/finance/debt', label: 'Debt & Aid' },
       { to: '/finance/procurement', label: 'Procurement' },
-      { to: '/finance/tax-policy',  label: 'Tax Policy' },
-      { to: '/finance/audit',       label: 'Internal Audit' },
-
-      // Citizen application processing
-      { to: '/finance/processing',       label: 'Tax Registrations' },
-      { to: '/finance/staff/vat',        label: 'VAT Applications' },
-      { to: '/finance/staff/returns',    label: 'Tax Returns' },
-      { to: '/finance/staff/plans',      label: 'Payment Plans' },
+      { to: '/finance/tax-policy', label: 'Tax Policy' },
+      { to: '/finance/audit', label: 'Internal Audit' },
+      { to: '/finance/processing', label: 'Tax Registrations' },
+      { to: '/finance/staff/vat', label: 'VAT Applications' },
+      { to: '/finance/staff/returns', label: 'Tax Returns' },
+      { to: '/finance/staff/plans', label: 'Payment Plans' },
       { to: '/finance/staff/businesses', label: 'Business Registrations' },
-
+      { to: '/finance/payments', label: 'Payments Received' },
+      { to: '/finance/fee-schedule', label: 'Fee Schedule' },
       NOTIFICATIONS_LINK,
       HELP_LINK,
     ],
@@ -96,7 +93,7 @@ export const SIDEBAR_BY_ROLE = {
   PENSIONS: {
     label: 'Pensions workspace',
     links: [
-      { to: '/pensions/staff',   label: 'Dashboard' },
+      { to: '/pensions/staff', label: 'Dashboard' },
       { to: '/pensions/process', label: 'Process Verifications' },
       NOTIFICATIONS_LINK,
       HELP_LINK,
@@ -106,7 +103,7 @@ export const SIDEBAR_BY_ROLE = {
   PASSPORT: {
     label: 'Passport workspace',
     links: [
-      { to: '/passport/staff',   label: 'Dashboard' },
+      { to: '/passport/staff', label: 'Dashboard' },
       { to: '/passport/process', label: 'Process Applications' },
       { to: '/passport/history', label: 'Application History' },
       NOTIFICATIONS_LINK,

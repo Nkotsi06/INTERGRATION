@@ -1,11 +1,11 @@
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FiFolder } from 'react-icons/fi';
 import PageWrapper from '../../components/layout/PageWrapper';
 import Table from '../../components/common/Table';
 import StatusBadge from '../../components/common/StatusBadge';
 import Button from '../../components/common/Button';
 import EmptyState from '../../components/common/EmptyState';
+import { TableSkeleton } from '../../components/common/SkeletonLoader';
 import useFetch from '../../hooks/useFetch';
 import { getMyCases } from '../../api/policeApi';
 import { formatDate } from '../../utils/formatters';
@@ -111,15 +111,16 @@ function MyCases() {
         )}
       </div>
 
-      {loading ? (
-        <p className="text-muted">Loading…</p>
-      ) : filtered.length === 0 ? (
+      {loading && <TableSkeleton rows={5} columns={5} />}
+
+      {!loading && filtered.length === 0 && (
         <EmptyState
-          icon={<FiFolder />}
           title="No cases found"
           message="Change the filters, or report a new case."
         />
-      ) : (
+      )}
+
+      {!loading && filtered.length > 0 && (
         <Table columns={columns} data={filtered} />
       )}
     </PageWrapper>

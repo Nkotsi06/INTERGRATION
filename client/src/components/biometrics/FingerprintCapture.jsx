@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { FiCheckCircle, FiRefreshCw } from 'react-icons/fi';
 
 function FingerprintCapture({ fingerLabel, onCapture, onComplete }) {
   const [capturing, setCapturing] = useState(false);
@@ -48,10 +47,10 @@ function FingerprintCapture({ fingerLabel, onCapture, onComplete }) {
           <img src={captured} alt={fingerLabel} className="fingerprint-image" />
           <div className="fingerprint-actions">
             <button className="btn btn-secondary" onClick={handleRetake}>
-              <FiRefreshCw /> Retake
+              Retake
             </button>
             <button className="btn btn-primary" onClick={handleConfirm}>
-              <FiCheckCircle /> Confirm
+              Confirm
             </button>
           </div>
         </div>

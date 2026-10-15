@@ -1,18 +1,12 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import {
-  FiUsers,
-  FiCheckCircle,
-  FiAlertCircle,
-  FiChevronLeft,
-  FiChevronRight,
-} from 'react-icons/fi';
 import AdminLayout from '../../components/layout/AdminLayout';
 import Table from '../../components/common/Table';
 import Button from '../../components/common/Button';
 import EmptyState from '../../components/common/EmptyState';
 import Alert from '../../components/common/Alert';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
+import { TableSkeleton } from '../../components/common/SkeletonLoader';
 import { getUsers, activateUser, deactivateUser, deleteUser } from '../../api/adminApi';
 import { useNotification } from '../../context/NotificationContext';
 import DeactivatePanel from '../../components/admin/DeactivatePanel';
@@ -64,7 +58,6 @@ function UserManagement() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filters, page]);
 
-  // Debounce the username filter
   const [usernameInput, setUsernameInput] = useState('');
   useEffect(() => {
     const t = setTimeout(() => {
@@ -85,8 +78,7 @@ function UserManagement() {
       label: 'Status',
       render: (row) => (
         <span className={`user-status user-status-${row.status}`}>
-          {row.status === 'ACTIVE' ? <FiCheckCircle /> : <FiAlertCircle />}
-          <span>{row.status === 'ACTIVE' ? 'Active' : 'Inactive'}</span>
+          {row.status === 'ACTIVE' ? 'Active' : 'Inactive'}
         </span>
       ),
     },
@@ -258,15 +250,16 @@ function UserManagement() {
 
       {loadError && <Alert type="error" message={loadError} />}
 
-      {loading ? (
-        <p className="text-muted">Loading users…</p>
-      ) : data.rows.length === 0 ? (
+      {loading && <TableSkeleton rows={8} columns={5} />}
+
+      {!loading && data.rows.length === 0 && (
         <EmptyState
-          icon={<FiUsers />}
           title="No users match these filters"
           message="Try changing the filters or the search text."
         />
-      ) : (
+      )}
+
+      {!loading && data.rows.length > 0 && (
         <>
           <Table columns={columns} data={data.rows} />
 
@@ -281,7 +274,7 @@ function UserManagement() {
                 disabled={page <= 1}
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
               >
-                <FiChevronLeft /> Previous
+                Previous
               </button>
               <button
                 type="button"
@@ -289,7 +282,7 @@ function UserManagement() {
                 disabled={page >= totalPages}
                 onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
               >
-                Next <FiChevronRight />
+                Next
               </button>
             </div>
           </div>

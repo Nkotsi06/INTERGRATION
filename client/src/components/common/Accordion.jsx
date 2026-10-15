@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { FiChevronDown, FiChevronUp } from 'react-icons/fi';
 
 function Accordion({ items }) {
   const [openIndex, setOpenIndex] = useState(null);
@@ -14,7 +13,7 @@ function Accordion({ items }) {
         <div key={index} className="accordion-item">
           <button className="accordion-header" onClick={() => toggle(index)}>
             <span>{item.title}</span>
-            {openIndex === index ? <FiChevronUp /> : <FiChevronDown />}
+            <span aria-hidden="true">{openIndex === index ? '▴' : '▾'}</span>
           </button>
           {openIndex === index && (
             <div className="accordion-body">{item.content}</div>

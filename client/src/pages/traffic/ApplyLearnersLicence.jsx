@@ -1,25 +1,22 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import PageWrapper from '../../components/layout/PageWrapper';
+import Input from '../../components/common/Input';
 import Select from '../../components/common/Select';
 import FormActions from '../../components/common/FormActions';
 import Alert from '../../components/common/Alert';
-import CitizenReadOnlyBlock from '../../components/ministry/CitizenReadOnlyBlock';
-import useFetch from '../../hooks/useFetch';
-import { getProfile } from '../../api/citizenApi';
+import useServiceFee from '../../hooks/useServiceFees';
 import { applyForLearnersLicence } from '../../api/trafficApi';
 import { useNotification } from '../../context/NotificationContext';
-
-const EXAM_CENTRES = [
-  { value: 'MASERU',   label: 'Maseru Testing Centre' },
-  { value: 'LERIBE',   label: 'Leribe Testing Centre' },
-  { value: 'MAFETENG', label: 'Mafeteng Testing Centre' },
-  { value: 'BEREA',    label: 'Berea Testing Centre' },
-];
+import { formatCurrency } from '../../utils/formatters';
 
 function ApplyLearnersLicence() {
-  const { data: profile } = useFetch(getProfile, []);
-  const [examCentre, setExamCentre] = useState('MASERU');
+  const { fee, currency } = useServiceFee('TRAFFIC', 'LEARNERS_LICENCE');
+  const [form, setForm] = useState({
+    examCentre: '',
+    method: 'MOBILE_MONEY',
+    mobile: '',
+  });
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
@@ -27,41 +24,85 @@ function ApplyLearnersLicence() {
 
   const handleSubmit = async () => {
     setError(null);
-    if (!examCentre) return setError('Exam centre is required.');
-
+    if (!form.examCentre) {
+      setError('Please select an exam centre.');
+      return;
+    }
+    if (fee > 0 && form.method === 'MOBILE_MONEY' && !form.mobile.trim()) {
+      setError('Please enter your mobile number for payment.');
+      return;
+    }
     setLoading(true);
     try {
-      const result = await applyForLearnersLicence({ examCentre });
-      success(`Application submitted. Reference: ${result.reference_number}`);
-      navigate('/traffic/applications');
+      const result = await applyForLearnersLicence({ ...form, amount: fee });
+      success('Application submitted');
+      navigate('/traffic/applications', { state: { reference: result.referenceNumber } });
     } catch (err) {
-      setError(err.message || 'Could not submit the application.');
+      setError(err.message || 'Could not submit. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <PageWrapper title="Apply for Learner's Licence" showBack backPath="/traffic/dashboard" accentColour="#B9770E">
-      <h1>Apply for learner's licence</h1>
+    <PageWrapper
+      title="Apply for Learner's Licence"
+      showBack
+      backPath="/traffic/dashboard"
+      accentColour="#B9770E"
+    >
+      <h1>Apply for a learner's licence</h1>
       <p className="text-muted">
         Your personal details come from Home Affairs and cannot be edited here.
       </p>
 
-      <CitizenReadOnlyBlock citizen={profile} />
-
       {error && <Alert type="error" message={error} />}
 
       <Select
-        label="Preferred exam centre"
-        value={examCentre}
-        onChange={(e) => setExamCentre(e.target.value)}
-        options={EXAM_CENTRES}
+        label="Exam centre"
+        value={form.examCentre}
+        onChange={(e) => setForm({ ...form, examCentre: e.target.value })}
+        options={[
+          { value: 'MASERU', label: 'Maseru' },
+          { value: 'LERIBE', label: 'Leribe' },
+          { value: 'MAFETENG', label: 'Mafeteng' },
+        ]}
         required
       />
 
+      {fee > 0 && (
+        <div className="form-section">
+          <h3 className="form-section-title">Payment</h3>
+          <p className="text-muted">
+            Application fee: <strong>{formatCurrency(fee, currency)}</strong>
+          </p>
+          <Select
+            label="Payment method"
+            value={form.method}
+            onChange={(e) => setForm({ ...form, method: e.target.value })}
+            options={[
+              { value: 'MOBILE_MONEY', label: 'Mobile money' },
+              { value: 'BANK_TRANSFER', label: 'Bank transfer' },
+              { value: 'CARD', label: 'Card' },
+            ]}
+            required
+          />
+          {form.method === 'MOBILE_MONEY' && (
+            <Input
+              label="Mobile number"
+              value={form.mobile}
+              onChange={(e) => setForm({ ...form, mobile: e.target.value })}
+              placeholder="+266 5888 2140"
+              required
+            />
+          )}
+        </div>
+      )}
+
       <FormActions
-        primaryLabel="Submit application"
+        primaryLabel={
+          fee > 0 ? `Pay ${formatCurrency(fee, currency)} and submit` : 'Submit application'
+        }
         primaryLoading={loading}
         onPrimary={handleSubmit}
         onSecondary={() => navigate('/traffic/dashboard')}

@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
-import { FiMenu } from 'react-icons/fi';
 import Header from './Header';
 import Footer from './Footer';
 import Sidebar from './Sidebar';
@@ -15,12 +14,10 @@ function AppShell({
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
 
-  // Close the mobile sidebar whenever the URL changes
   useEffect(() => {
     setSidebarOpen(false);
   }, [location.pathname]);
 
-  // Close the mobile sidebar on Escape
   useEffect(() => {
     function onKey(event) {
       if (event.key === 'Escape') setSidebarOpen(false);
@@ -45,7 +42,7 @@ function AppShell({
             aria-expanded={sidebarOpen}
             onClick={() => setSidebarOpen((v) => !v)}
           >
-            <FiMenu />
+            Menu
           </button>
 
           <Header

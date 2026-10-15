@@ -1,11 +1,13 @@
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { useNotificationPoller } from '../../context/NotificationPollerContext';
 import { getSidebarConfig } from './sidebarLinks';
 
 function Sidebar({ collapsed = false, onNavigate }) {
   const { user } = useAuth();
-  const config = user ? getSidebarConfig(user.role) : null;
+  const { unreadCount } = useNotificationPoller();
 
+  const config = user ? getSidebarConfig(user.role) : null;
   if (!config) return null;
 
   return (
@@ -26,9 +28,14 @@ function Sidebar({ collapsed = false, onNavigate }) {
             }
           >
             {link.label}
+            {link.to === '/notifications' && unreadCount > 0 && (
+              <span className="app-sidebar-badge"> ({unreadCount})</span>
+            )}
           </NavLink>
         ))}
       </nav>
+
+      <span className="app-sidebar-footer">{config.label}</span>
     </aside>
   );
 }

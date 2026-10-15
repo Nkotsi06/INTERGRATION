@@ -1,8 +1,8 @@
 import { QRCodeSVG } from 'qrcode.react';
-import { FiDownload } from 'react-icons/fi';
 import PageWrapper from '../../components/layout/PageWrapper';
 import Button from '../../components/common/Button';
 import StatusBadge from '../../components/common/StatusBadge';
+import { TableSkeleton } from '../../components/common/SkeletonLoader';
 import useFetch from '../../hooks/useFetch';
 import { getTaxClearance } from '../../api/financeApi';
 
@@ -18,13 +18,15 @@ function TaxClearanceCertificate() {
     >
       <h1>Tax clearance certificate</h1>
 
-      {loading ? (
-        <p className="text-muted">Loading…</p>
-      ) : !cert ? (
+      {loading && <TableSkeleton rows={4} columns={2} />}
+
+      {!loading && !cert && (
         <p className="text-muted">
           No certificate available yet. Clear any outstanding balance first.
         </p>
-      ) : (
+      )}
+
+      {!loading && cert && (
         <div className="card card-flat">
           <StatusBadge variant="verified" label="Valid" />
 
@@ -54,7 +56,7 @@ function TaxClearanceCertificate() {
                 Print
               </Button>
               <Button variant="primary">
-                <FiDownload /> Download
+                Download
               </Button>
             </div>
           </div>

@@ -1,14 +1,25 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FiCheckCircle, FiClock } from 'react-icons/fi';
 import { useAuth } from '../../context/AuthContext';
+import { useSession } from '../../context/SessionContext';
 import { useSettings } from '../../context/SettingsContext';
 import PageWrapper from '../../components/layout/PageWrapper';
-import ServiceCard from '../../components/ministry/ServiceCard';
+import Card from '../../components/common/Card';
+import { StatsSkeleton } from '../../components/common/SkeletonLoader';
 import { getProfile } from '../../api/citizenApi';
+
+const MINISTRY_PREFIX = {
+  HOME_AFFAIRS: 'home-affairs',
+  TRAFFIC: 'traffic',
+  POLICE: 'police',
+  FINANCE: 'finance',
+  PENSIONS: 'pensions',
+  PASSPORT: 'passport',
+};
 
 function CitizenDashboard() {
   const { user } = useAuth();
+  const { session } = useSession();
   const { settings } = useSettings();
   const navigate = useNavigate();
 
@@ -22,30 +33,28 @@ function CitizenDashboard() {
         const data = await getProfile();
         if (!cancelled) setProfile(data);
       } catch {
-        // 401 handled by interceptor
+        // 401 handled by the interceptor
       } finally {
         if (!cancelled) setLoadingProfile(false);
       }
     }
     load();
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, []);
 
   const isVerified = !!profile?.isVerified;
 
-  // No password prompt, no verification detour. Clicking a service
-  // goes directly to that ministry's dashboard. The ministry itself
-  // decides which actions are available to an unverified citizen.
-  const handleServiceClick = (ministry) => {
-    const routePrefix = ministry.code.toLowerCase().replace(/_/g, '-');
-    navigate(
-      ministry.code === 'HOME_AFFAIRS'
-        ? '/citizen/verify'
-        : `/${routePrefix}/dashboard`
-    );
+  const handleMinistryClick = (ministry) => {
+    if (!isVerified || !session?.identityVerified) {
+      navigate('/citizen/verify', { state: { targetMinistry: ministry.code } });
+      return;
+    }
+    const prefix = MINISTRY_PREFIX[ministry.code];
+    if (prefix) navigate(`/${prefix}/dashboard`);
   };
+
+  const ministries = settings.ministries || [];
+  const showSkeleton = loadingProfile && ministries.length === 0;
 
   return (
     <PageWrapper title="Citizen Dashboard">
@@ -53,9 +62,7 @@ function CitizenDashboard() {
 
       {isVerified ? (
         <div className="verification-status verified">
-          <span className="verification-status-title">
-            <FiCheckCircle aria-hidden="true" /> Identity verified
-          </span>
+          <span className="verification-status-title">Identity verified</span>
           <span className="verification-status-subtitle">
             Verified by Home Affairs
           </span>
@@ -67,26 +74,39 @@ function CitizenDashboard() {
         </div>
       ) : (
         <div className="verification-status pending">
-          <span className="verification-status-title">
-            <FiClock aria-hidden="true" /> Waiting for Home Affairs
-          </span>
+          <span className="verification-status-title">Waiting for Home Affairs</span>
           <span className="verification-status-subtitle">
-            Your details are being captured. Some services may be limited
-            until you are verified.
+            Services unlock once your identity is verified.
           </span>
         </div>
       )}
 
       <section className="dashboard-section">
-        <h2>Services</h2>
+        <h2>Government services</h2>
+
+        {showSkeleton && <StatsSkeleton count={6} />}
+
         <div className="services-grid">
-          {settings.ministries?.map((ministry) => (
-            <ServiceCard
+          {ministries.map((ministry) => (
+            <Card
               key={ministry.code}
-              ministry={ministry}
-              locked={false}
-              onClick={() => handleServiceClick(ministry)}
-            />
+              variant="bordered"
+              className="service-card"
+              onClick={() => handleMinistryClick(ministry)}
+            >
+              <div
+                className="service-card-accent"
+                style={{ backgroundColor: ministry.colourHex }}
+              />
+              <div className="service-card-body">
+                <span className="service-card-name">{ministry.name}</span>
+                <span className="text-muted">
+                  {isVerified
+                    ? 'Open services'
+                    : 'Verification required'}
+                </span>
+              </div>
+            </Card>
           ))}
         </div>
       </section>
@@ -102,7 +122,16 @@ function CitizenDashboard() {
         </button>
       </section>
 
-      {loadingProfile && <span className="text-muted">Loading profile…</span>}
+      <section className="dashboard-section">
+        <h2>Help and support</h2>
+        <button
+          type="button"
+          className="btn btn-secondary"
+          onClick={() => navigate('/help')}
+        >
+          Open Help
+        </button>
+      </section>
     </PageWrapper>
   );
 }

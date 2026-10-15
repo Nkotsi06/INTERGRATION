@@ -1,6 +1,7 @@
 const passportApplicationRepository = require('../repositories/passportApplicationRepository');
 const applicationRepository = require('../repositories/applicationRepository');
 const notificationService = require('./notificationService');
+const paymentService = require('./paymentService');
 const userRepository = require('../repositories/userRepository');
 const { generateReference } = require('../utils/referenceGenerator');
 const auditService = require('./auditService');
@@ -26,6 +27,21 @@ async function applyForPassport(citizenId, data, user) {
     citizenId,
     passportType: data.passportType,
     reason: data.reason,
+  });
+
+  // Amount depends on passport type. Ordinary = 500, Official = 700.
+  const amount = data.amount
+    || (data.passportType === 'OFFICIAL' ? 700 : 500);
+
+  await paymentService.recordPayment({
+    citizenId,
+    ministry: 'PASSPORT',
+    service: 'PASSPORT_APPLICATION',
+    applicationReference: referenceNumber,
+    amount,
+    method: data.method || 'MOBILE_MONEY',
+    mobile: data.mobile,
+    receivedBy: user.userId,
   });
 
   await auditService.log({

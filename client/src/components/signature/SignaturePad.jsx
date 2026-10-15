@@ -1,6 +1,5 @@
 import { useRef, useState } from 'react';
 import SignatureCanvas from 'react-signature-canvas';
-import { FiTrash2 } from 'react-icons/fi';
 import SignaturePreview from './SignaturePreview';
 
 function SignaturePad({ onSave, onClear }) {
@@ -26,7 +25,7 @@ function SignaturePad({ onSave, onClear }) {
         <SignaturePreview signatureData={saved} />
         <div className="signature-actions">
           <button type="button" className="btn btn-secondary" onClick={clear}>
-            <FiTrash2 /> Clear
+            Clear
           </button>
         </div>
       </div>
@@ -44,7 +43,7 @@ function SignaturePad({ onSave, onClear }) {
       </div>
       <div className="signature-actions">
         <button type="button" className="btn btn-secondary" onClick={clear}>
-          <FiTrash2 /> Clear
+          Clear
         </button>
         <button type="button" className="btn btn-primary" onClick={save}>
           Save Signature

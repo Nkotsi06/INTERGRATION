@@ -1,5 +1,4 @@
 import { useNavigate } from 'react-router-dom';
-import { FiLock } from 'react-icons/fi';
 
 function ServiceCard({ ministry, onClick, locked = false }) {
   const navigate = useNavigate();
@@ -28,7 +27,7 @@ function ServiceCard({ ministry, onClick, locked = false }) {
         <span className="service-card-name">{ministry.name}</span>
         {locked && (
           <span className="service-card-lock">
-            <FiLock aria-hidden="true" /> Available after verification
+            Available after verification
           </span>
         )}
       </span>

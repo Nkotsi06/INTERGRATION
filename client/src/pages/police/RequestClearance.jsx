@@ -112,8 +112,8 @@ function RequestClearance() {
         <DocumentUpload
           documentType="NATIONAL_ID"
           label="National ID copy"
-          onUpload={async (formData) => {
-            await uploadDocument(formData);
+          onUpload={async (formData, config) => {
+            await uploadDocument(formData, config);
             success('Document uploaded');
           }}
         />

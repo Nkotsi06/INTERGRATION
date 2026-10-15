@@ -13,11 +13,14 @@ export const getBiometrics = () => apiClient.get('/citizen/biometrics');
 export const getPhotoBlob = () =>
   apiClient.get('/citizen/photo', { responseType: 'blob' });
 
-export const getNotifications = () => apiClient.get('/citizen/notifications');
+// Notifications now live at the top-level /api/notifications route so
+// every role (citizen, staff, admin) can share the same endpoints.
+export const getNotifications = () => apiClient.get('/notifications');
+export const getUnreadCount = () => apiClient.get('/notifications/unread-count');
 export const deleteNotification = (id) =>
-  apiClient.delete(`/citizen/notifications/${id}`);
+  apiClient.delete(`/notifications/${id}`);
 export const markNotificationRead = (id) =>
-  apiClient.put(`/citizen/notifications/${id}/read`);
+  apiClient.put(`/notifications/${id}/read`);
 
 export const changePassword = (data) =>
   apiClient.put('/citizen/change-password', data);

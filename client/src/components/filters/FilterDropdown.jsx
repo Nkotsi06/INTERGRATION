@@ -1,5 +1,3 @@
-import { FiChevronDown } from 'react-icons/fi';
-
 function FilterDropdown({ label, value, options, onChange }) {
   return (
     <div className="filter-dropdown">
@@ -17,7 +15,7 @@ function FilterDropdown({ label, value, options, onChange }) {
             </option>
           ))}
         </select>
-        <FiChevronDown className="filter-select-icon" />
+        <span className="filter-select-icon" aria-hidden="true">▾</span>
       </div>
     </div>
   );

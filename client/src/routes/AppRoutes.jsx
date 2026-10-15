@@ -22,7 +22,9 @@ import ChangePassword from '../pages/citizen/ChangePassword';
 import ApplicationStatus from '../pages/citizen/ApplicationStatus';
 import MyDocuments from '../pages/citizen/MyDocuments';
 import MyBiometrics from '../pages/citizen/MyBiometrics';
+import MyCertificates from '../pages/citizen/MyCertificates';
 import Notifications from '../pages/citizen/Notifications';
+import ServiceApply from '../pages/citizen/ServiceApply';
 
 // Home Affairs
 import HAStaffDashboard from '../pages/homeAffairs/StaffDashboard';
@@ -35,6 +37,7 @@ import HAVerifyCitizen from '../pages/homeAffairs/VerifyCitizen';
 import HAReports from '../pages/homeAffairs/Reports';
 import HACertificates from '../pages/homeAffairs/Certificates';
 import HAIssueCertificate from '../pages/homeAffairs/IssueCertificate';
+import HAEditCertificate from '../pages/homeAffairs/EditCertificate';
 
 // Traffic
 import TrafficDashboard from '../pages/traffic/TrafficDashboard';
@@ -99,6 +102,8 @@ import StaffReturns from '../pages/finance/StaffReturns';
 import StaffPaymentPlans from '../pages/finance/StaffPaymentPlans';
 import StaffBusinesses from '../pages/finance/StaffBusinesses';
 import ProcessTaxRegistration from '../pages/finance/ProcessTaxRegistration';
+import PaymentsReceived from '../pages/finance/PaymentsReceived';
+import FeeSchedule from '../pages/finance/FeeSchedule';
 
 // Pensions
 import PensionsDashboard from '../pages/pensions/PensionsDashboard';
@@ -130,9 +135,9 @@ import DocumentTypeConfig from '../pages/admin/DocumentTypeConfig';
 import StatusConfig from '../pages/admin/StatusConfig';
 import ReferenceFormatConfig from '../pages/admin/ReferenceFormatConfig';
 import LanguageConfig from '../pages/admin/LanguageConfig';
-import LogoUpload from '../pages/admin/LogoUpload';
 import BiometricConfig from '../pages/admin/BiometricConfig';
 import BranchManagement from '../pages/admin/BranchManagement';
+import ServiceCatalogue from '../pages/admin/ServiceCatalogue';
 
 // Help
 import HelpHome from '../pages/help/HelpHome';
@@ -155,6 +160,9 @@ function AppRoutes() {
       <Route path="/admin/login" element={<AdminLogin />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
 
+      {/* Notifications — any authenticated user */}
+      <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
+
       {/* Citizen */}
       <Route path="/citizen/dashboard" element={<ProtectedRoute><CitizenDashboard /></ProtectedRoute>} />
       <Route path="/citizen/verify" element={<ProtectedRoute><IdentityVerification /></ProtectedRoute>} />
@@ -165,8 +173,10 @@ function AppRoutes() {
       <Route path="/citizen/change-password" element={<ProtectedRoute><ChangePassword /></ProtectedRoute>} />
       <Route path="/citizen/applications" element={<ProtectedRoute><ApplicationStatus /></ProtectedRoute>} />
       <Route path="/citizen/documents" element={<ProtectedRoute><MyDocuments /></ProtectedRoute>} />
+      <Route path="/citizen/certificates" element={<ProtectedRoute><MyCertificates /></ProtectedRoute>} />
       <Route path="/citizen/biometrics" element={<ProtectedRoute><MyBiometrics /></ProtectedRoute>} />
-      <Route path="/citizen/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
+      <Route path="/citizen/notifications" element={<Navigate to="/notifications" replace />} />
+      <Route path="/citizen/services/:id/apply" element={<ProtectedRoute><ServiceApply /></ProtectedRoute>} />
 
       {/* Home Affairs staff */}
       <Route path="/home-affairs/dashboard" element={<RoleRoute roles={['HOME_AFFAIRS']}><HAStaffDashboard /></RoleRoute>} />
@@ -177,8 +187,10 @@ function AppRoutes() {
       <Route path="/home-affairs/citizen/:id" element={<RoleRoute roles={['HOME_AFFAIRS']}><HACitizenProfile /></RoleRoute>} />
       <Route path="/home-affairs/verify/:id" element={<RoleRoute roles={['HOME_AFFAIRS']}><HAVerifyCitizen /></RoleRoute>} />
       <Route path="/home-affairs/reports" element={<RoleRoute roles={['HOME_AFFAIRS']}><HAReports /></RoleRoute>} />
+      <Route path="/home-affairs/certificates" element={<RoleRoute roles={['HOME_AFFAIRS']}><HACertificates /></RoleRoute>} />
       <Route path="/home-affairs/citizen/:id/certificates" element={<RoleRoute roles={['HOME_AFFAIRS']}><HACertificates /></RoleRoute>} />
       <Route path="/home-affairs/citizen/:id/certificates/new" element={<RoleRoute roles={['HOME_AFFAIRS']}><HAIssueCertificate /></RoleRoute>} />
+      <Route path="/home-affairs/certificates/:type/:id/edit" element={<RoleRoute roles={['HOME_AFFAIRS']}><HAEditCertificate /></RoleRoute>} />
 
       {/* Traffic — citizen */}
       <Route path="/traffic/dashboard" element={<ProtectedRoute><TrafficDashboard /></ProtectedRoute>} />
@@ -190,21 +202,13 @@ function AppRoutes() {
       <Route path="/traffic/book-test" element={<ProtectedRoute><BookDrivingTest /></ProtectedRoute>} />
       <Route path="/traffic/appointments" element={<ProtectedRoute><MyAppointments /></ProtectedRoute>} />
       <Route path="/traffic/applications" element={<ProtectedRoute><MyTrafficApplications /></ProtectedRoute>} />
-
-      {/* Traffic — vehicles */}
       <Route path="/traffic/vehicles" element={<ProtectedRoute><MyVehicles /></ProtectedRoute>} />
       <Route path="/traffic/vehicles/new" element={<ProtectedRoute><VehicleForm /></ProtectedRoute>} />
       <Route path="/traffic/vehicles/edit/:id" element={<ProtectedRoute><VehicleForm /></ProtectedRoute>} />
-
-      {/* Traffic — inspections */}
       <Route path="/traffic/inspections" element={<ProtectedRoute><MyInspections /></ProtectedRoute>} />
       <Route path="/traffic/inspections/new" element={<ProtectedRoute><BookInspection /></ProtectedRoute>} />
-
-      {/* Traffic — vehicle licensing */}
       <Route path="/traffic/vehicle-licences" element={<ProtectedRoute><MyVehicleLicences /></ProtectedRoute>} />
       <Route path="/traffic/vehicle-licences/new" element={<ProtectedRoute><ApplyVehicleLicence /></ProtectedRoute>} />
-
-      {/* Traffic — transport permits */}
       <Route path="/traffic/permits" element={<ProtectedRoute><MyTransportPermits /></ProtectedRoute>} />
       <Route path="/traffic/permits/new" element={<ProtectedRoute><ApplyTransportPermit /></ProtectedRoute>} />
 
@@ -234,8 +238,6 @@ function AppRoutes() {
       <Route path="/finance/payment" element={<ProtectedRoute><MakePayment /></ProtectedRoute>} />
       <Route path="/finance/payment/success" element={<ProtectedRoute><PaymentConfirmation /></ProtectedRoute>} />
       <Route path="/finance/tax/clearance" element={<ProtectedRoute><TaxClearanceCertificate /></ProtectedRoute>} />
-
-      {/* Finance — citizen new */}
       <Route path="/finance/vat" element={<ProtectedRoute><MyVat /></ProtectedRoute>} />
       <Route path="/finance/vat/new" element={<ProtectedRoute><ApplyVat /></ProtectedRoute>} />
       <Route path="/finance/returns" element={<ProtectedRoute><MyTaxReturns /></ProtectedRoute>} />
@@ -258,23 +260,23 @@ function AppRoutes() {
       <Route path="/finance/staff/returns" element={<RoleRoute roles={['FINANCE']}><StaffReturns /></RoleRoute>} />
       <Route path="/finance/staff/plans" element={<RoleRoute roles={['FINANCE']}><StaffPaymentPlans /></RoleRoute>} />
       <Route path="/finance/staff/businesses" element={<RoleRoute roles={['FINANCE']}><StaffBusinesses /></RoleRoute>} />
+      <Route path="/finance/payments" element={<RoleRoute roles={['FINANCE']}><PaymentsReceived /></RoleRoute>} />
+      <Route path="/finance/fee-schedule" element={<RoleRoute roles={['FINANCE']}><FeeSchedule /></RoleRoute>} />
 
-      {/* Pensions — citizen */}
+      {/* Pensions */}
       <Route path="/pensions/dashboard" element={<ProtectedRoute><PensionsDashboard /></ProtectedRoute>} />
       <Route path="/pensions/info" element={<ProtectedRoute><ViewPensionInfo /></ProtectedRoute>} />
       <Route path="/pensions/verify" element={<ProtectedRoute><ExistenceVerification /></ProtectedRoute>} />
       <Route path="/pensions/verify/success" element={<ProtectedRoute><PensionVerificationSuccess /></ProtectedRoute>} />
       <Route path="/pensions/history" element={<ProtectedRoute><VerificationHistory /></ProtectedRoute>} />
-      {/* Pensions — staff */}
       <Route path="/pensions/staff" element={<RoleRoute roles={['PENSIONS']}><PensionsStaffDashboard /></RoleRoute>} />
       <Route path="/pensions/process" element={<RoleRoute roles={['PENSIONS']}><ProcessVerification /></RoleRoute>} />
 
-      {/* Passport — citizen */}
+      {/* Passport */}
       <Route path="/passport/dashboard" element={<ProtectedRoute><PassportDashboard /></ProtectedRoute>} />
       <Route path="/passport/apply" element={<ProtectedRoute><ApplyForPassport /></ProtectedRoute>} />
       <Route path="/passport/confirmation" element={<ProtectedRoute><PassportApplicationConfirmation /></ProtectedRoute>} />
       <Route path="/passport/status" element={<ProtectedRoute><PassportCheckStatus /></ProtectedRoute>} />
-      {/* Passport — staff */}
       <Route path="/passport/staff" element={<RoleRoute roles={['PASSPORT']}><PassportStaffDashboard /></RoleRoute>} />
       <Route path="/passport/process" element={<RoleRoute roles={['PASSPORT']}><ProcessPassportApplication /></RoleRoute>} />
       <Route path="/passport/history" element={<RoleRoute roles={['PASSPORT']}><PassportApplicationHistory /></RoleRoute>} />
@@ -291,9 +293,9 @@ function AppRoutes() {
       <Route path="/admin/settings/statuses" element={<RoleRoute roles={['ADMIN']}><StatusConfig /></RoleRoute>} />
       <Route path="/admin/settings/reference-formats" element={<RoleRoute roles={['ADMIN']}><ReferenceFormatConfig /></RoleRoute>} />
       <Route path="/admin/settings/languages" element={<RoleRoute roles={['ADMIN']}><LanguageConfig /></RoleRoute>} />
-      <Route path="/admin/settings/logo" element={<RoleRoute roles={['ADMIN']}><LogoUpload /></RoleRoute>} />
       <Route path="/admin/settings/biometrics" element={<RoleRoute roles={['ADMIN']}><BiometricConfig /></RoleRoute>} />
       <Route path="/admin/branches" element={<RoleRoute roles={['ADMIN']}><BranchManagement /></RoleRoute>} />
+      <Route path="/admin/service-catalogue" element={<RoleRoute roles={['ADMIN']}><ServiceCatalogue /></RoleRoute>} />
 
       {/* Help — public */}
       <Route path="/help" element={<HelpHome />} />

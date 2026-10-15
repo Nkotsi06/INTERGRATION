@@ -1,23 +1,18 @@
 import { Link, useNavigate } from 'react-router-dom';
-import { FiBell, FiArrowLeft } from 'react-icons/fi';
 import { useAuth } from '../../context/AuthContext';
-import { useSession } from '../../context/SessionContext';
 import { useSettings } from '../../context/SettingsContext';
 import LanguageToggle from '../header/LanguageToggle';
 import Logo from '../header/Logo';
 
 function Header({ title, showBack = false, backPath = -1, accentColour }) {
   const { user, logout } = useAuth();
-  const { clearVerification } = useSession();
   const { settings, getMinistryColour } = useSettings();
   const navigate = useNavigate();
 
   const colour = accentColour || getMinistryColour(user?.ministry) || '#1A5276';
-  const isCitizen = user?.role === 'CITIZEN';
 
   const handleLogout = async () => {
     if (window.confirm('Are you sure you want to log out?')) {
-      clearVerification();
       await logout();
       navigate('/login');
     }
@@ -30,15 +25,15 @@ function Header({ title, showBack = false, backPath = -1, accentColour }) {
       <div className="header-left">
         {showBack && (
           <button
+            type="button"
             className="header-back-btn"
             onClick={handleBack}
             aria-label="Go back"
-            type="button"
           >
-            <FiArrowLeft />
+            Back
           </button>
         )}
-        <Logo colour={colour} />
+        <Logo size={40} />
         <span className="header-title">{title || settings.systemName}</span>
       </div>
 
@@ -47,23 +42,8 @@ function Header({ title, showBack = false, backPath = -1, accentColour }) {
 
         {user && (
           <>
-            {isCitizen && (
-              <Link
-                to="/citizen/notifications"
-                className="header-icon-btn"
-                aria-label="Notifications"
-              >
-                <FiBell />
-              </Link>
-            )}
-
-            <Link
-              to="/help"
-              className="header-icon-btn"
-              aria-label="Help and support"
-              title="Help and support"
-            >
-              ?
+            <Link to="/help" className="header-icon-btn" aria-label="Help and support">
+              Help
             </Link>
 
             <span className="header-user">
@@ -71,9 +51,9 @@ function Header({ title, showBack = false, backPath = -1, accentColour }) {
             </span>
 
             <button
+              type="button"
               className="header-logout-btn header-logout-text"
               onClick={handleLogout}
-              type="button"
             >
               Logout
             </button>

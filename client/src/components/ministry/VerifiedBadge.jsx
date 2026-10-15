@@ -1,9 +1,7 @@
-import { FiCheckCircle } from 'react-icons/fi';
-
 function VerifiedBadge({ label = 'Verified by Home Affairs' }) {
   return (
     <span className="verified-badge">
-      <FiCheckCircle />
+      <span aria-hidden="true">✓</span>
       <span>{label}</span>
     </span>
   );

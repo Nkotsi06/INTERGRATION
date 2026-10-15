@@ -1,10 +1,10 @@
 import { useState, useMemo } from 'react';
-import { FiFileText } from 'react-icons/fi';
 import PageWrapper from '../../components/layout/PageWrapper';
 import Table from '../../components/common/Table';
 import StatusBadge from '../../components/common/StatusBadge';
 import Button from '../../components/common/Button';
 import EmptyState from '../../components/common/EmptyState';
+import { TableSkeleton } from '../../components/common/SkeletonLoader';
 import useFetch from '../../hooks/useFetch';
 import { getStaffApplications, processApplication } from '../../api/passportApi';
 import { useNotification } from '../../context/NotificationContext';
@@ -52,7 +52,7 @@ function ProcessApplication() {
     { key: 'dateSubmitted', label: 'Submitted', render: (r) => formatDate(r.dateSubmitted) },
     { key: 'status', label: 'Status', render: (r) => <StatusBadge variant={STATUS_VARIANT[r.status] || 'pending'} label={r.status} /> },
     { key: 'actions', label: 'Actions', render: (r) => (
-      <div style={{ display: 'flex', gap: 4 }}>
+      <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
         <Button variant="success" size="small" onClick={() => handle(r.id, 'APPROVE')}>
           Approve
         </Button>
@@ -118,15 +118,16 @@ function ProcessApplication() {
         )}
       </div>
 
-      {loading ? (
-        <p className="text-muted">Loading…</p>
-      ) : filtered.length === 0 ? (
+      {loading && <TableSkeleton rows={6} columns={6} />}
+
+      {!loading && filtered.length === 0 && (
         <EmptyState
-          icon={<FiFileText />}
           title="No applications match"
           message="Change the filters to see more."
         />
-      ) : (
+      )}
+
+      {!loading && filtered.length > 0 && (
         <Table columns={columns} data={filtered} />
       )}
     </PageWrapper>

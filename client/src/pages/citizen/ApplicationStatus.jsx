@@ -1,13 +1,11 @@
 import { useState, useMemo } from 'react';
 import PageWrapper from '../../components/layout/PageWrapper';
 import Table from '../../components/common/Table';
-import FilterBar from '../../components/filters/FilterBar';
 import Badge from '../../components/common/Badge';
 import EmptyState from '../../components/common/EmptyState';
+import { TableSkeleton } from '../../components/common/SkeletonLoader';
 import useFetch from '../../hooks/useFetch';
-import useFilters from '../../hooks/useFilters';
 import { getApplications } from '../../api/citizenApi';
-import { FiFileText } from 'react-icons/fi';
 
 const STATUS_VARIANT = {
   SUBMITTED: 'info',
@@ -21,30 +19,6 @@ const STATUS_VARIANT = {
 function ApplicationStatus() {
   const { data: applications, loading } = useFetch(getApplications, []);
   const [filterValues, setFilterValues] = useState({ status: '', service: '' });
-
-  const filterConfig = [
-    {
-      key: 'status',
-      label: 'Status',
-      options: [
-        { value: 'SUBMITTED', label: 'Submitted' },
-        { value: 'UNDER_REVIEW', label: 'Under Review' },
-        { value: 'APPROVED', label: 'Approved' },
-        { value: 'REJECTED', label: 'Rejected' },
-        { value: 'COMPLETED', label: 'Completed' },
-      ],
-    },
-    {
-      key: 'service',
-      label: 'Service',
-      options: [
-        { value: 'PASSPORT', label: 'Passport' },
-        { value: 'TRAFFIC', label: 'Traffic' },
-        { value: 'FINANCE', label: 'Finance' },
-        { value: 'PENSIONS', label: 'Pensions' },
-      ],
-    },
-  ];
 
   const filtered = useMemo(() => {
     if (!applications) return [];
@@ -62,28 +36,75 @@ function ApplicationStatus() {
     {
       key: 'status',
       label: 'Status',
-      render: (row) => <Badge variant={STATUS_VARIANT[row.status] || 'default'}>{row.statusLabel || row.status}</Badge>,
+      render: (row) => (
+        <Badge variant={STATUS_VARIANT[row.status] || 'default'}>
+          {row.statusLabel || row.status}
+        </Badge>
+      ),
     },
   ];
 
   return (
     <PageWrapper title="My Applications" showBack backPath="/citizen/dashboard">
-      <h2>My Applications</h2>
-      <FilterBar
-        filters={filterConfig}
-        values={filterValues}
-        onChange={(key, value) => setFilterValues((prev) => ({ ...prev, [key]: value }))}
-        onClear={() => setFilterValues({ status: '', service: '' })}
-      />
-      {loading ? (
-        <p>Loading...</p>
-      ) : filtered.length === 0 ? (
+      <h1>My Applications</h1>
+
+      <div className="filter-bar">
+        <div className="filter-controls">
+          <div className="filter-dropdown">
+            <label className="filter-label">Status</label>
+            <select
+              className="filter-select"
+              value={filterValues.status}
+              onChange={(e) =>
+                setFilterValues((prev) => ({ ...prev, status: e.target.value }))
+              }
+            >
+              <option value="">All</option>
+              <option value="SUBMITTED">Submitted</option>
+              <option value="UNDER_REVIEW">Under Review</option>
+              <option value="APPROVED">Approved</option>
+              <option value="REJECTED">Rejected</option>
+              <option value="COMPLETED">Completed</option>
+            </select>
+          </div>
+          <div className="filter-dropdown">
+            <label className="filter-label">Service</label>
+            <select
+              className="filter-select"
+              value={filterValues.service}
+              onChange={(e) =>
+                setFilterValues((prev) => ({ ...prev, service: e.target.value }))
+              }
+            >
+              <option value="">All</option>
+              <option value="PASSPORT">Passport</option>
+              <option value="TRAFFIC">Traffic</option>
+              <option value="FINANCE">Finance</option>
+              <option value="PENSIONS">Pensions</option>
+            </select>
+          </div>
+        </div>
+        {(filterValues.status || filterValues.service) && (
+          <button
+            type="button"
+            className="clear-filters"
+            onClick={() => setFilterValues({ status: '', service: '' })}
+          >
+            Clear filters
+          </button>
+        )}
+      </div>
+
+      {loading && <TableSkeleton rows={5} columns={4} />}
+
+      {!loading && filtered.length === 0 && (
         <EmptyState
-          icon={<FiFileText />}
           title="No applications found"
           message="Try adjusting your filters, or apply for a service to see it here."
         />
-      ) : (
+      )}
+
+      {!loading && filtered.length > 0 && (
         <Table columns={columns} data={filtered} />
       )}
     </PageWrapper>

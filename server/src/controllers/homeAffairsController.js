@@ -2,6 +2,7 @@ const homeAffairsService = require('../services/homeAffairsService');
 const citizenService = require('../services/citizenService');
 const documentService = require('../services/documentService');
 const biometricService = require('../services/biometricService');
+const certificateService = require('../services/certificateService');
 const fs = require('fs');
 
 // ─────────────────────────────────────────────────────────────────────
@@ -219,7 +220,8 @@ async function issueMarriageCertificate(req, res, next) {
 async function getStats(req, res, next) {
   try {
     const stats = await homeAffairsService.getDashboardStats();
-    res.json(stats);
+    const pendingCertificates = await certificateService.getPendingCount();
+    res.json({ ...stats, pendingCertificates });
   } catch (err) {
     next(err);
   }

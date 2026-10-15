@@ -9,7 +9,11 @@ async function getLicence(req, res, next) {
   try { res.json(await trafficService.getLicence(citizenIdFrom(req))); } catch (e) { next(e); }
 }
 async function renewLicence(req, res, next) {
-  try { res.status(201).json(await trafficService.renewLicence(citizenIdFrom(req), req.user)); } catch (e) { next(e); }
+  try {
+    res.status(201).json(
+      await trafficService.renewLicence(citizenIdFrom(req), req.user, req.body)
+    );
+  } catch (e) { next(e); }
 }
 async function bookDrivingTest(req, res, next) {
   try { res.status(201).json(await trafficService.bookDrivingTest(citizenIdFrom(req), req.body, req.user)); } catch (e) { next(e); }
@@ -21,7 +25,7 @@ async function cancelAppointment(req, res, next) {
   try { await trafficService.cancelAppointment(req.params.id, citizenIdFrom(req)); res.json({ message: 'Cancelled' }); } catch (e) { next(e); }
 }
 
-// Staff — application processing (approve now issues the licence + captures signature)
+// Staff — application processing
 async function getStaffApplications(req, res, next) {
   try { res.json(await trafficService.getStaffApplications(req.query)); } catch (e) { next(e); }
 }

@@ -3,19 +3,26 @@ const { query } = require('../config/database');
 async function create(data) {
   const result = await query(
     `INSERT INTO marriage_certificates
-      (certificate_number, spouse1_citizen_id, spouse2_citizen_id, spouse2_name,
-       marriage_date, place_of_marriage, officiant, status, issued_by, notes)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,'ISSUED',$8,$9) RETURNING *`,
+       (application_id, citizen_id, certificate_number,
+        spouse1_full_name, spouse1_national_id,
+        spouse2_full_name, spouse2_national_id,
+        marriage_date, marriage_place, marriage_officiant,
+        request_type, status)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11, COALESCE($12,'PENDING'))
+     RETURNING *`,
     [
+      data.applicationId || null,
+      data.citizenId || null,
       data.certificateNumber,
-      data.spouse1CitizenId,
-      data.spouse2CitizenId || null,
-      data.spouse2Name || null,
+      data.spouse1FullName || null,
+      data.spouse1NationalId || null,
+      data.spouse2FullName || data.spouse2Name || null,
+      data.spouse2NationalId || null,
       data.marriageDate,
-      data.placeOfMarriage || null,
-      data.officiant || null,
-      data.issuedBy,
-      data.notes || null,
+      data.marriagePlace || data.placeOfMarriage || null,
+      data.marriageOfficiant || data.officiant || null,
+      data.requestType || 'NEW',
+      data.status || null,
     ]
   );
   return result.rows[0];
@@ -23,9 +30,7 @@ async function create(data) {
 
 async function findByCitizen(citizenId) {
   const result = await query(
-    `SELECT * FROM marriage_certificates
-     WHERE spouse1_citizen_id = $1 OR spouse2_citizen_id = $1
-     ORDER BY marriage_date DESC`,
+    'SELECT * FROM marriage_certificates WHERE citizen_id = $1 ORDER BY created_at DESC',
     [citizenId]
   );
   return result.rows;
@@ -33,7 +38,7 @@ async function findByCitizen(citizenId) {
 
 async function findAll() {
   const result = await query(
-    'SELECT * FROM marriage_certificates ORDER BY issued_at DESC LIMIT 200'
+    'SELECT * FROM marriage_certificates ORDER BY created_at DESC LIMIT 200'
   );
   return result.rows;
 }

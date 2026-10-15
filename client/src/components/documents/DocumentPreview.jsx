@@ -1,5 +1,3 @@
-import { FiFileText, FiDownload, FiEye, FiTrash2 } from 'react-icons/fi';
-
 function DocumentPreview({ document, onDownload, onView, onDelete }) {
   const isImage = document.fileType?.match(/jpg|jpeg|png/i);
 
@@ -9,7 +7,7 @@ function DocumentPreview({ document, onDownload, onView, onDelete }) {
         {isImage ? (
           <img src={document.fileUrl} alt={document.name} />
         ) : (
-          <FiFileText className="document-icon" />
+          <span className="document-thumb-label">FILE</span>
         )}
       </div>
 
@@ -22,30 +20,18 @@ function DocumentPreview({ document, onDownload, onView, onDelete }) {
 
       <div className="document-preview-actions">
         {onView && (
-          <button
-            type="button"
-            onClick={() => onView(document)}
-            aria-label="View document"
-          >
-            <FiEye />
+          <button type="button" onClick={() => onView(document)}>
+            View
           </button>
         )}
         {onDownload && (
-          <button
-            type="button"
-            onClick={() => onDownload(document)}
-            aria-label="Download document"
-          >
-            <FiDownload />
+          <button type="button" onClick={() => onDownload(document)}>
+            Download
           </button>
         )}
         {onDelete && (
-          <button
-            type="button"
-            onClick={() => onDelete(document)}
-            aria-label="Delete document"
-          >
-            <FiTrash2 />
+          <button type="button" onClick={() => onDelete(document)}>
+            Delete
           </button>
         )}
       </div>

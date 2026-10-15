@@ -1,6 +1,5 @@
 import { useRef, useState, useCallback } from 'react';
 import Webcam from 'react-webcam';
-import { FiCamera, FiRefreshCw, FiCheckCircle } from 'react-icons/fi';
 
 function FacialCapture({ onCapture, onComplete }) {
   const webcamRef = useRef(null);
@@ -31,7 +30,7 @@ function FacialCapture({ onCapture, onComplete }) {
             className="webcam-view"
           />
           <button className="btn btn-primary" onClick={handleCapture}>
-            <FiCamera /> Capture Photo
+            Capture Photo
           </button>
         </div>
       ) : (
@@ -39,10 +38,10 @@ function FacialCapture({ onCapture, onComplete }) {
           <img src={captured} alt="Captured face" className="facial-image" />
           <div className="facial-actions">
             <button className="btn btn-secondary" onClick={handleRetake}>
-              <FiRefreshCw /> Retake
+              Retake
             </button>
             <button className="btn btn-primary" onClick={handleConfirm}>
-              <FiCheckCircle /> Confirm
+              Confirm
             </button>
           </div>
         </div>

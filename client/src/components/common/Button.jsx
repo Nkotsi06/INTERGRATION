@@ -1,3 +1,5 @@
+import { useEffect, useState } from 'react';
+
 function Button({
   children,
   variant = 'primary',
@@ -5,22 +7,47 @@ function Button({
   type = 'button',
   onClick,
   disabled = false,
+  loading = false,
   fullWidth = false,
   accentColour,
   ...props
 }) {
-  const style = accentColour && variant === 'primary' ? { backgroundColor: accentColour } : {};
+  const [slow, setSlow] = useState(false);
+
+  useEffect(() => {
+    if (!loading) {
+      setSlow(false);
+      return undefined;
+    }
+    const t = setTimeout(() => setSlow(true), 4000);
+    return () => clearTimeout(t);
+  }, [loading]);
+
+  const isDisabled = disabled || loading;
+  const style = accentColour && variant === 'primary'
+    ? { backgroundColor: accentColour }
+    : {};
 
   return (
     <button
       type={type}
       className={`btn btn-${variant} btn-${size} ${fullWidth ? 'btn-full' : ''}`}
       onClick={onClick}
-      disabled={disabled}
+      disabled={isDisabled}
       style={style}
+      aria-busy={loading || undefined}
       {...props}
     >
-      {children}
+      {loading ? (
+        <span className="btn-loading-wrap">
+          <span className="btn-spinner" aria-hidden="true" />
+          <span className="btn-loading-label">
+            {slow ? 'The server is waking up. Please wait a moment.' : children}
+          </span>
+        </span>
+      ) : (
+        children
+      )}
     </button>
   );
 }

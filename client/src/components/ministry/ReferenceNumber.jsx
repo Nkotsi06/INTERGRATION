@@ -1,4 +1,3 @@
-import { FiCopy } from 'react-icons/fi';
 import { useNotification } from '../../context/NotificationContext';
 
 function ReferenceNumber({ value, label = 'Reference Number' }) {
@@ -15,7 +14,7 @@ function ReferenceNumber({ value, label = 'Reference Number' }) {
       <div className="reference-value-wrapper">
         <span className="reference-value">{value}</span>
         <button className="reference-copy" onClick={copy} aria-label="Copy">
-          <FiCopy />
+          Copy
         </button>
       </div>
     </div>

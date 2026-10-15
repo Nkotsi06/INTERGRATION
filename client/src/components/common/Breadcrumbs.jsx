@@ -1,5 +1,4 @@
 import { Link } from 'react-router-dom';
-import { FiChevronRight } from 'react-icons/fi';
 
 function Breadcrumbs({ items }) {
   return (
@@ -11,7 +10,9 @@ function Breadcrumbs({ items }) {
           ) : (
             <span className="breadcrumb-current">{item.label}</span>
           )}
-          {index < items.length - 1 && <FiChevronRight className="breadcrumb-sep" />}
+          {index < items.length - 1 && (
+            <span className="breadcrumb-sep" aria-hidden="true">›</span>
+          )}
         </span>
       ))}
     </nav>

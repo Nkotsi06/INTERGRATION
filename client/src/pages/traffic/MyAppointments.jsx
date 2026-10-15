@@ -1,11 +1,11 @@
 import { useState, useMemo } from 'react';
-import { FiCalendar } from 'react-icons/fi';
 import PageWrapper from '../../components/layout/PageWrapper';
 import Table from '../../components/common/Table';
 import StatusBadge from '../../components/common/StatusBadge';
 import Button from '../../components/common/Button';
 import EmptyState from '../../components/common/EmptyState';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
+import { TableSkeleton } from '../../components/common/SkeletonLoader';
 import useFetch from '../../hooks/useFetch';
 import { getAppointments, cancelAppointment } from '../../api/trafficApi';
 import { useNotification } from '../../context/NotificationContext';
@@ -103,15 +103,16 @@ function MyAppointments() {
         )}
       </div>
 
-      {loading ? (
-        <p className="text-muted">Loading…</p>
-      ) : filtered.length === 0 ? (
+      {loading && <TableSkeleton rows={5} columns={6} />}
+
+      {!loading && filtered.length === 0 && (
         <EmptyState
-          icon={<FiCalendar />}
           title="No appointments found"
           message="Try adjusting the filters or book a new test."
         />
-      ) : (
+      )}
+
+      {!loading && filtered.length > 0 && (
         <Table columns={columns} data={filtered} />
       )}
 

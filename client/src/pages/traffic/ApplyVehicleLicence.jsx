@@ -1,60 +1,118 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import PageWrapper from '../../components/layout/PageWrapper';
 import Select from '../../components/common/Select';
+import Input from '../../components/common/Input';
 import FormActions from '../../components/common/FormActions';
 import Alert from '../../components/common/Alert';
-import useFetch from '../../hooks/useFetch';
+import useServiceFee from '../../hooks/useServiceFees';
 import { getVehicles, applyVehicleLicence } from '../../api/trafficApi';
 import { useNotification } from '../../context/NotificationContext';
+import { formatCurrency } from '../../utils/formatters';
 
 function ApplyVehicleLicence() {
-  const { data: vehicles } = useFetch(getVehicles, []);
-  const [vehicleId, setVehicleId] = useState('');
+  const { fee, currency } = useServiceFee('TRAFFIC', 'VEHICLE_LICENCE');
+  const [vehicles, setVehicles] = useState([]);
+  const [form, setForm] = useState({
+    vehicleId: '',
+    method: 'MOBILE_MONEY',
+    mobile: '',
+  });
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { success } = useNotification();
 
+  useEffect(() => {
+    let cancelled = false;
+    getVehicles()
+      .then((v) => { if (!cancelled) setVehicles(Array.isArray(v) ? v : []); })
+      .catch(() => { /* silent */ });
+    return () => { cancelled = true; };
+  }, []);
+
   const handleSubmit = async () => {
     setError(null);
-    if (!vehicleId) return setError('Please select a vehicle.');
-
+    if (!form.vehicleId) {
+      setError('Please choose a vehicle.');
+      return;
+    }
+    if (fee > 0 && form.method === 'MOBILE_MONEY' && !form.mobile.trim()) {
+      setError('Please enter your mobile number for payment.');
+      return;
+    }
     setLoading(true);
     try {
-      const result = await applyVehicleLicence({ vehicleId, feeAmount: 150.00 });
-      success(`Application submitted. Reference: ${result.reference_number}`);
+      await applyVehicleLicence({
+        vehicleId: form.vehicleId,
+        feeAmount: fee,
+        method: form.method,
+        mobile: form.mobile,
+        amount: fee,
+      });
+      success('Application submitted');
       navigate('/traffic/vehicle-licences');
     } catch (err) {
-      setError(err.message || 'Could not submit the application.');
+      setError(err.message || 'Could not submit.');
     } finally {
       setLoading(false);
     }
   };
 
-  const vehicleOptions = (vehicles || []).map((v) => ({
-    value: v.id,
-    label: `${v.registration_number} — ${v.make || ''} ${v.model || ''}`,
-  }));
-
   return (
-    <PageWrapper title="Apply for Vehicle Licence" showBack backPath="/traffic/vehicle-licences" accentColour="#B9770E">
-      <h1>Apply for vehicle licence</h1>
+    <PageWrapper
+      title="Apply for Vehicle Licence"
+      showBack
+      backPath="/traffic/vehicle-licences"
+      accentColour="#B9770E"
+    >
+      <h1>Apply for a vehicle licence</h1>
 
       {error && <Alert type="error" message={error} />}
 
       <Select
         label="Vehicle"
-        value={vehicleId}
-        onChange={(e) => setVehicleId(e.target.value)}
-        options={vehicleOptions}
+        value={form.vehicleId}
+        onChange={(e) => setForm({ ...form, vehicleId: e.target.value })}
+        options={vehicles.map((v) => ({
+          value: v.id,
+          label: `${v.registration_number} — ${v.make || ''} ${v.model || ''}`.trim(),
+        }))}
         required
       />
 
-      <p className="text-muted">Licence fee: M 150.00 (annual)</p>
+      {fee > 0 && (
+        <div className="form-section">
+          <h3 className="form-section-title">Payment</h3>
+          <p className="text-muted">
+            Licence fee: <strong>{formatCurrency(fee, currency)}</strong>
+          </p>
+          <Select
+            label="Payment method"
+            value={form.method}
+            onChange={(e) => setForm({ ...form, method: e.target.value })}
+            options={[
+              { value: 'MOBILE_MONEY', label: 'Mobile money' },
+              { value: 'BANK_TRANSFER', label: 'Bank transfer' },
+              { value: 'CARD', label: 'Card' },
+            ]}
+            required
+          />
+          {form.method === 'MOBILE_MONEY' && (
+            <Input
+              label="Mobile number"
+              value={form.mobile}
+              onChange={(e) => setForm({ ...form, mobile: e.target.value })}
+              required
+            />
+          )}
+        </div>
+      )}
 
       <FormActions
-        primaryLabel="Submit application"
+        primaryLabel={
+          fee > 0 ? `Pay ${formatCurrency(fee, currency)} and submit` : 'Submit'
+        }
         primaryLoading={loading}
         onPrimary={handleSubmit}
         onSecondary={() => navigate('/traffic/vehicle-licences')}

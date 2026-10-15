@@ -16,6 +16,7 @@ export const getTrafficApplicationByRef = (reference) => apiClient.get(`/traffic
 
 // Citizen — vehicles
 export const getVehicles = () => apiClient.get('/traffic/vehicles');
+export const getVehicleById = (id) => apiClient.get(`/traffic/vehicles/${id}`);
 export const registerVehicle = (data) => apiClient.post('/traffic/vehicles', data);
 export const updateVehicle = (id, data) => apiClient.put(`/traffic/vehicles/${id}`, data);
 export const deleteVehicle = (id) => apiClient.delete(`/traffic/vehicles/${id}`);

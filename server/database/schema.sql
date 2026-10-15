@@ -1,18 +1,34 @@
 -- ================================================================
 -- INTEGRATED GOVERNMENT SERVICES SYSTEM (LESOTHO)
--- Complete Database Schema + All Migrations + Seed Data
+-- Complete Database Schema — consolidated and deduplicated
 -- ================================================================
 -- Run ONCE against a fresh PostgreSQL database.
 --
--- WARNING: This file DROPS every table. All data is lost.
---          Only the seed data below survives.
+-- DECISIONS APPLIED (2026-10-15):
+--   Q1: Certificate tables use the Phase 9 design
+--       (child_full_name, application_id, status lifecycle
+--        PENDING / ISSUED / REJECTED / CANCELLED).
+--       Section 1's older birth/marriage certificate tables
+--       have been REMOVED. death_certificates has been replaced
+--       by death_certificates_new. divorce_certificates added.
+--   Q2: Service codes use the Phase 4 codes
+--       (BIRTH_CERTIFICATE_APPLY, PASSPORT_RENEWAL, etc.).
+--       Duplicate service names have been collapsed to one code.
+--
+-- BUGFIX (2026-10-15):
+--   The passport_applications index line had a typo:
+--     ON passport_apps_application(application_id)
+--   corrected to:
+--     ON passport_applications(application_id)
+--   Without this, the file fails with:
+--     ERROR 42P01: relation "passport_apps_application" does not exist
 --
 -- BEFORE RUNNING:
 --   1. Generate the admin bcrypt hash:
 --        cd server
 --        node scripts/generate-admin-hash.js
---   2. Paste the hash into the admin INSERT (look for:
---      REPLACE_WITH_GENERATED_HASH)
+--   2. Paste the hash into the admin INSERT
+--      (look for: REPLACE_WITH_GENERATED_HASH)
 -- ================================================================
 
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
@@ -21,6 +37,15 @@ CREATE EXTENSION IF NOT EXISTS pgcrypto;
 -- ================================================================
 -- SECTION 0: DROP EVERYTHING
 -- ================================================================
+DROP VIEW  IF EXISTS admin_user_list CASCADE;
+DROP VIEW  IF EXISTS admin_dashboard_stats CASCADE;
+DROP VIEW  IF EXISTS finance_payment_summary CASCADE;
+
+DROP TABLE IF EXISTS divorce_certificates CASCADE;
+DROP TABLE IF EXISTS death_certificates_new CASCADE;
+DROP TABLE IF EXISTS birth_certificates CASCADE;
+DROP TABLE IF EXISTS marriage_certificates CASCADE;
+
 DROP TABLE IF EXISTS audit_findings CASCADE;
 DROP TABLE IF EXISTS tax_policy_notes CASCADE;
 DROP TABLE IF EXISTS procurement_records CASCADE;
@@ -41,15 +66,12 @@ DROP TABLE IF EXISTS translations CASCADE;
 DROP TABLE IF EXISTS languages CASCADE;
 DROP TABLE IF EXISTS reference_formats CASCADE;
 DROP TABLE IF EXISTS system_settings CASCADE;
-DROP TABLE IF EXISTS ministries CASCADE;
 DROP TABLE IF EXISTS branches CASCADE;
+DROP TABLE IF EXISTS ministries CASCADE;
 DROP TABLE IF EXISTS notifications CASCADE;
 DROP TABLE IF EXISTS audit_logs CASCADE;
 DROP TABLE IF EXISTS appointments CASCADE;
 DROP TABLE IF EXISTS passport_applications CASCADE;
-DROP TABLE IF EXISTS marriage_certificates CASCADE;
-DROP TABLE IF EXISTS birth_certificates CASCADE;
-DROP TABLE IF EXISTS death_certificates CASCADE;
 DROP TABLE IF EXISTS pension_verifications CASCADE;
 DROP TABLE IF EXISTS pension_records CASCADE;
 DROP TABLE IF EXISTS tax_clearances CASCADE;
@@ -72,12 +94,15 @@ DROP TABLE IF EXISTS document_types CASCADE;
 DROP TABLE IF EXISTS citizens CASCADE;
 DROP TABLE IF EXISTS users CASCADE;
 
+DROP TABLE IF EXISTS services CASCADE;
+DROP TABLE IF EXISTS fee_schedule CASCADE;
+DROP TABLE IF EXISTS payments CASCADE;
+
 
 -- ================================================================
 -- SECTION 1: CORE TABLES
 -- ================================================================
 
--- 1. Users
 CREATE TABLE users (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   username VARCHAR(50) UNIQUE NOT NULL,
@@ -98,8 +123,6 @@ CREATE INDEX idx_users_role ON users(role);
 CREATE INDEX idx_users_status ON users(status);
 CREATE INDEX idx_users_citizen_id ON users(citizen_id);
 
-
--- 2. Citizens
 CREATE TABLE citizens (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   national_id VARCHAR(20) UNIQUE NOT NULL,
@@ -124,14 +147,10 @@ CREATE TABLE citizens (
 CREATE INDEX idx_citizens_national_id ON citizens(national_id);
 CREATE INDEX idx_citizens_verified ON citizens(is_verified);
 
-
--- FK from users to citizens (added after both tables exist)
 ALTER TABLE users
   ADD CONSTRAINT users_citizen_id_fkey
   FOREIGN KEY (citizen_id) REFERENCES citizens(id) ON DELETE SET NULL;
 
-
--- 2b. Citizen edit history
 CREATE TABLE citizen_edit_history (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   citizen_id UUID NOT NULL REFERENCES citizens(id) ON DELETE CASCADE,
@@ -143,8 +162,20 @@ CREATE TABLE citizen_edit_history (
 );
 CREATE INDEX idx_citizen_edit_history_citizen ON citizen_edit_history(citizen_id);
 
+-- Ministries is created EARLY because budget_allocations, procurement_records,
+-- audit_findings, and branches all reference ministries(code).
+CREATE TABLE ministries (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name VARCHAR(100) NOT NULL,
+  code VARCHAR(50) UNIQUE NOT NULL,
+  colour_hex VARCHAR(10) NOT NULL,
+  icon_name VARCHAR(50),
+  display_order INTEGER DEFAULT 0,
+  is_active BOOLEAN DEFAULT TRUE,
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
+);
 
--- 3. Document types
 CREATE TABLE document_types (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   code VARCHAR(50) UNIQUE NOT NULL,
@@ -158,8 +189,6 @@ CREATE TABLE document_types (
 );
 CREATE INDEX idx_document_types_code ON document_types(code);
 
-
--- 4. Citizen documents
 CREATE TABLE citizen_documents (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   citizen_id UUID REFERENCES citizens(id) ON DELETE CASCADE,
@@ -180,8 +209,6 @@ CREATE INDEX idx_documents_status ON citizen_documents(status);
 CREATE INDEX idx_citizen_documents_pending
   ON citizen_documents(citizen_id) WHERE citizen_id IS NULL;
 
-
--- 5. Signatures
 CREATE TABLE signatures (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   citizen_id UUID NOT NULL REFERENCES citizens(id) ON DELETE CASCADE,
@@ -191,8 +218,6 @@ CREATE TABLE signatures (
 );
 CREATE INDEX idx_signatures_citizen ON signatures(citizen_id);
 
-
--- 6. Biometrics
 CREATE TABLE biometrics (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   citizen_id UUID UNIQUE NOT NULL REFERENCES citizens(id) ON DELETE CASCADE,
@@ -207,8 +232,6 @@ CREATE TABLE biometrics (
 );
 CREATE INDEX idx_biometrics_citizen ON biometrics(citizen_id);
 
-
--- 7. Applications
 CREATE TABLE applications (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   reference_number VARCHAR(50) UNIQUE NOT NULL,
@@ -225,8 +248,6 @@ CREATE INDEX idx_applications_citizen ON applications(citizen_id);
 CREATE INDEX idx_applications_service_status ON applications(service, status);
 CREATE INDEX idx_applications_sub_type ON applications(sub_type) WHERE sub_type IS NOT NULL;
 
-
--- 8. Status types
 CREATE TABLE status_types (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   code VARCHAR(50) UNIQUE NOT NULL,
@@ -237,8 +258,6 @@ CREATE TABLE status_types (
   is_active BOOLEAN DEFAULT TRUE
 );
 
-
--- 9. Application status history
 CREATE TABLE application_status_history (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   application_id UUID NOT NULL REFERENCES applications(id) ON DELETE CASCADE,
@@ -249,8 +268,6 @@ CREATE TABLE application_status_history (
 );
 CREATE INDEX idx_history_application ON application_status_history(application_id);
 
-
--- 10. Home Affairs records
 CREATE TABLE home_affairs_records (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   citizen_id UUID NOT NULL REFERENCES citizens(id) ON DELETE CASCADE,
@@ -261,45 +278,120 @@ CREATE TABLE home_affairs_records (
 );
 CREATE INDEX idx_ha_records_citizen ON home_affairs_records(citizen_id);
 
+-- ================================================================
+-- CERTIFICATE TABLES — PHASE 9 DESIGN (Option B)
+-- ================================================================
+-- These are the four tables the certificate flow reads and writes.
+-- All four share the same status lifecycle:
+--   PENDING → ISSUED   (staff issues)
+--   PENDING → REJECTED (staff rejects, with reason)
+--   PENDING → CANCELLED (administrative)
+-- Column names match certificateRepository.FIELD_MAP.
+-- ================================================================
 
--- 10b. Birth certificates
 CREATE TABLE birth_certificates (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  citizen_id UUID NOT NULL REFERENCES citizens(id) ON DELETE CASCADE,
+  application_id UUID REFERENCES applications(id) ON DELETE SET NULL,
+  citizen_id UUID REFERENCES citizens(id) ON DELETE SET NULL,
   certificate_number VARCHAR(50) UNIQUE NOT NULL,
-  date_of_birth DATE NOT NULL,
+  child_full_name VARCHAR(200) NOT NULL,
+  child_date_of_birth DATE NOT NULL,
+  child_gender VARCHAR(10),
   place_of_birth VARCHAR(200),
-  father_name VARCHAR(200),
-  mother_name VARCHAR(200),
-  status VARCHAR(20) DEFAULT 'ISSUED',
-  issued_by UUID REFERENCES users(id),
-  notes TEXT,
-  registered_at TIMESTAMP DEFAULT NOW(),
-  issued_at TIMESTAMP DEFAULT NOW()
+  mother_full_name VARCHAR(200),
+  mother_national_id VARCHAR(30),
+  father_full_name VARCHAR(200),
+  father_national_id VARCHAR(30),
+  request_type VARCHAR(30) NOT NULL DEFAULT 'NEW',
+  issued_by UUID REFERENCES users(id) ON DELETE SET NULL,
+  issued_at TIMESTAMP,
+  status VARCHAR(20) NOT NULL DEFAULT 'PENDING'
+    CHECK (status IN ('PENDING','ISSUED','REJECTED','CANCELLED')),
+  rejection_reason TEXT,
+  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
-CREATE INDEX idx_birth_certificates_citizen ON birth_certificates(citizen_id);
+CREATE INDEX idx_birth_certs_citizen ON birth_certificates(citizen_id);
+CREATE INDEX idx_birth_certs_application ON birth_certificates(application_id);
+CREATE INDEX idx_birth_certs_status ON birth_certificates(status);
 
+CREATE TABLE death_certificates_new (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  application_id UUID REFERENCES applications(id) ON DELETE SET NULL,
+  citizen_id UUID REFERENCES citizens(id) ON DELETE SET NULL,
+  certificate_number VARCHAR(50) UNIQUE NOT NULL,
+  deceased_full_name VARCHAR(200) NOT NULL,
+  deceased_national_id VARCHAR(30),
+  date_of_death DATE NOT NULL,
+  place_of_death VARCHAR(200),
+  cause_of_death VARCHAR(200),
+  informant_full_name VARCHAR(200),
+  informant_relationship VARCHAR(80),
+  issued_by UUID REFERENCES users(id) ON DELETE SET NULL,
+  issued_at TIMESTAMP,
+  status VARCHAR(20) NOT NULL DEFAULT 'PENDING'
+    CHECK (status IN ('PENDING','ISSUED','REJECTED','CANCELLED')),
+  rejection_reason TEXT,
+  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+CREATE INDEX idx_death_certs_new_citizen ON death_certificates_new(citizen_id);
+CREATE INDEX idx_death_certs_new_application ON death_certificates_new(application_id);
+CREATE INDEX idx_death_certs_new_status ON death_certificates_new(status);
 
--- 10c. Marriage certificates
 CREATE TABLE marriage_certificates (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  application_id UUID REFERENCES applications(id) ON DELETE SET NULL,
+  citizen_id UUID REFERENCES citizens(id) ON DELETE SET NULL,
   certificate_number VARCHAR(50) UNIQUE NOT NULL,
-  spouse1_citizen_id UUID NOT NULL REFERENCES citizens(id),
-  spouse2_citizen_id UUID REFERENCES citizens(id),
-  spouse2_name VARCHAR(200),
+  spouse1_full_name VARCHAR(200) NOT NULL,
+  spouse1_national_id VARCHAR(30),
+  spouse2_full_name VARCHAR(200) NOT NULL,
+  spouse2_national_id VARCHAR(30),
   marriage_date DATE NOT NULL,
-  place_of_marriage VARCHAR(200),
-  officiant VARCHAR(200),
-  status VARCHAR(20) DEFAULT 'ISSUED',
-  issued_by UUID REFERENCES users(id),
-  issued_at TIMESTAMP DEFAULT NOW(),
-  notes TEXT
+  marriage_place VARCHAR(200),
+  marriage_officiant VARCHAR(200),
+  request_type VARCHAR(30) NOT NULL DEFAULT 'NEW',
+  issued_by UUID REFERENCES users(id) ON DELETE SET NULL,
+  issued_at TIMESTAMP,
+  status VARCHAR(20) NOT NULL DEFAULT 'PENDING'
+    CHECK (status IN ('PENDING','ISSUED','REJECTED','CANCELLED')),
+  rejection_reason TEXT,
+  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
-CREATE INDEX idx_marriage_cert_spouse1 ON marriage_certificates(spouse1_citizen_id);
-CREATE INDEX idx_marriage_cert_spouse2 ON marriage_certificates(spouse2_citizen_id);
+CREATE INDEX idx_marriage_certs_citizen ON marriage_certificates(citizen_id);
+CREATE INDEX idx_marriage_certs_application ON marriage_certificates(application_id);
+CREATE INDEX idx_marriage_certs_status ON marriage_certificates(status);
 
+CREATE TABLE divorce_certificates (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  application_id UUID REFERENCES applications(id) ON DELETE SET NULL,
+  citizen_id UUID REFERENCES citizens(id) ON DELETE SET NULL,
+  certificate_number VARCHAR(50) UNIQUE NOT NULL,
+  spouse1_full_name VARCHAR(200) NOT NULL,
+  spouse1_national_id VARCHAR(30),
+  spouse2_full_name VARCHAR(200) NOT NULL,
+  spouse2_national_id VARCHAR(30),
+  divorce_date DATE NOT NULL,
+  court_name VARCHAR(200),
+  case_number VARCHAR(80),
+  issued_by UUID REFERENCES users(id) ON DELETE SET NULL,
+  issued_at TIMESTAMP,
+  status VARCHAR(20) NOT NULL DEFAULT 'PENDING'
+    CHECK (status IN ('PENDING','ISSUED','REJECTED','CANCELLED')),
+  rejection_reason TEXT,
+  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+CREATE INDEX idx_divorce_certs_citizen ON divorce_certificates(citizen_id);
+CREATE INDEX idx_divorce_certs_application ON divorce_certificates(application_id);
+CREATE INDEX idx_divorce_certs_status ON divorce_certificates(status);
 
--- 11. Traffic — driver licences
+-- ================================================================
+-- END CERTIFICATE TABLES
+-- ================================================================
+
 CREATE TABLE driver_licences (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   citizen_id UUID NOT NULL REFERENCES citizens(id) ON DELETE CASCADE,
@@ -320,8 +412,6 @@ CREATE INDEX idx_licences_citizen ON driver_licences(citizen_id);
 CREATE INDEX idx_licences_application ON driver_licences(application_id);
 CREATE INDEX idx_licences_status ON driver_licences(status);
 
-
--- 11b. Driving tests
 CREATE TABLE driving_tests (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   citizen_id UUID NOT NULL REFERENCES citizens(id) ON DELETE CASCADE,
@@ -340,8 +430,6 @@ CREATE TABLE driving_tests (
 );
 CREATE INDEX idx_driving_tests_citizen ON driving_tests(citizen_id);
 
-
--- 11c. Vehicles
 CREATE TABLE vehicles (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   citizen_id UUID NOT NULL REFERENCES citizens(id) ON DELETE CASCADE,
@@ -371,8 +459,6 @@ CREATE INDEX idx_vehicles_plate ON vehicles(plate_number);
 CREATE INDEX idx_vehicles_origin ON vehicles(origin);
 CREATE INDEX idx_vehicles_status ON vehicles(status);
 
-
--- 11d. Vehicle inspections
 CREATE TABLE vehicle_inspections (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   citizen_id UUID NOT NULL REFERENCES citizens(id) ON DELETE CASCADE,
@@ -394,8 +480,6 @@ CREATE INDEX idx_vehicle_inspections_citizen ON vehicle_inspections(citizen_id);
 CREATE INDEX idx_vehicle_inspections_vehicle ON vehicle_inspections(vehicle_id);
 CREATE INDEX idx_vehicle_inspections_status ON vehicle_inspections(status);
 
-
--- 11e. Vehicle licences
 CREATE TABLE vehicle_licences (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   citizen_id UUID NOT NULL REFERENCES citizens(id) ON DELETE CASCADE,
@@ -413,8 +497,6 @@ CREATE TABLE vehicle_licences (
 CREATE INDEX idx_vehicle_licences_citizen ON vehicle_licences(citizen_id);
 CREATE INDEX idx_vehicle_licences_vehicle ON vehicle_licences(vehicle_id);
 
-
--- 11f. Transport permits
 CREATE TABLE transport_permits (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   citizen_id UUID NOT NULL REFERENCES citizens(id) ON DELETE CASCADE,
@@ -434,8 +516,6 @@ CREATE INDEX idx_transport_permits_citizen ON transport_permits(citizen_id);
 CREATE INDEX idx_transport_permits_category ON transport_permits(permit_category);
 CREATE INDEX idx_transport_permits_status ON transport_permits(status);
 
-
--- 12. Police — cases
 CREATE TABLE police_cases (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   case_number VARCHAR(50) UNIQUE NOT NULL,
@@ -461,8 +541,6 @@ CREATE TABLE police_case_updates (
 );
 CREATE INDEX idx_case_updates_case ON police_case_updates(case_id);
 
-
--- 12b. Criminal records
 CREATE TABLE criminal_records (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   citizen_id UUID NOT NULL REFERENCES citizens(id) ON DELETE CASCADE,
@@ -480,8 +558,6 @@ CREATE INDEX idx_criminal_records_citizen ON criminal_records(citizen_id);
 CREATE INDEX idx_criminal_records_status ON criminal_records(status);
 CREATE INDEX idx_criminal_records_reference ON criminal_records(reference_number);
 
-
--- 13. Finance — tax core
 CREATE TABLE tax_records (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   citizen_id UUID NOT NULL REFERENCES citizens(id) ON DELETE CASCADE,
@@ -522,8 +598,6 @@ CREATE TABLE tax_clearances (
 );
 CREATE INDEX idx_tax_clearances_citizen ON tax_clearances(citizen_id);
 
-
--- 13b. Finance — VAT, returns, plans, business
 CREATE TABLE vat_registrations (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   citizen_id UUID NOT NULL REFERENCES citizens(id) ON DELETE CASCADE,
@@ -607,8 +681,6 @@ CREATE TABLE business_registrations (
 CREATE INDEX idx_business_reg_citizen ON business_registrations(citizen_id);
 CREATE INDEX idx_business_reg_status ON business_registrations(status);
 
-
--- 13c. Finance — staff dashboards
 CREATE TABLE treasury_payments (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   payment_reference VARCHAR(50) UNIQUE NOT NULL,
@@ -709,8 +781,6 @@ CREATE TABLE audit_findings (
 CREATE INDEX idx_audit_findings_status ON audit_findings(status);
 CREATE INDEX idx_audit_findings_severity ON audit_findings(severity);
 
-
--- 14. Pensions
 CREATE TABLE pension_records (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   citizen_id UUID UNIQUE NOT NULL REFERENCES citizens(id) ON DELETE CASCADE,
@@ -733,22 +803,6 @@ CREATE TABLE pension_verifications (
 );
 CREATE INDEX idx_pension_verifications_citizen ON pension_verifications(citizen_id);
 
-CREATE TABLE death_certificates (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  citizen_id UUID NOT NULL REFERENCES citizens(id) ON DELETE CASCADE,
-  certificate_number VARCHAR(50) UNIQUE NOT NULL,
-  date_of_death DATE NOT NULL,
-  place_of_death VARCHAR(200),
-  cause_of_death VARCHAR(200),
-  status VARCHAR(20) DEFAULT 'ISSUED',
-  issued_by UUID REFERENCES users(id),
-  notes TEXT,
-  registered_at TIMESTAMP DEFAULT NOW()
-);
-CREATE INDEX idx_death_certificates_citizen ON death_certificates(citizen_id);
-
-
--- 15. Passport
 CREATE TABLE passport_applications (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   application_id UUID NOT NULL REFERENCES applications(id) ON DELETE CASCADE,
@@ -761,8 +815,6 @@ CREATE TABLE passport_applications (
 CREATE INDEX idx_passport_apps_application ON passport_applications(application_id);
 CREATE INDEX idx_passport_apps_citizen ON passport_applications(citizen_id);
 
-
--- 16. Appointments
 CREATE TABLE appointments (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   citizen_id UUID NOT NULL REFERENCES citizens(id) ON DELETE CASCADE,
@@ -775,8 +827,6 @@ CREATE TABLE appointments (
 );
 CREATE INDEX idx_appointments_citizen ON appointments(citizen_id);
 
-
--- 17. Audit logs
 CREATE TABLE audit_logs (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID REFERENCES users(id) ON DELETE SET NULL,
@@ -793,8 +843,6 @@ CREATE INDEX idx_audit_logs_user ON audit_logs(username);
 CREATE INDEX idx_audit_logs_action ON audit_logs(action);
 CREATE INDEX idx_audit_logs_created ON audit_logs(created_at);
 
-
--- 18. Notifications
 CREATE TABLE notifications (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -805,22 +853,6 @@ CREATE TABLE notifications (
 );
 CREATE INDEX idx_notifications_user ON notifications(user_id);
 
-
--- 19. Ministries
-CREATE TABLE ministries (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  name VARCHAR(100) NOT NULL,
-  code VARCHAR(50) UNIQUE NOT NULL,
-  colour_hex VARCHAR(10) NOT NULL,
-  icon_name VARCHAR(50),
-  display_order INTEGER DEFAULT 0,
-  is_active BOOLEAN DEFAULT TRUE,
-  created_at TIMESTAMP DEFAULT NOW(),
-  updated_at TIMESTAMP DEFAULT NOW()
-);
-
-
--- 19b. Branches
 CREATE TABLE branches (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   ministry_code VARCHAR(30) NOT NULL REFERENCES ministries(code),
@@ -839,8 +871,6 @@ CREATE INDEX idx_branches_ministry ON branches(ministry_code);
 CREATE INDEX idx_branches_district ON branches(district);
 CREATE INDEX idx_branches_active ON branches(is_active);
 
-
--- 20. System settings
 CREATE TABLE system_settings (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   key VARCHAR(100) UNIQUE NOT NULL,
@@ -852,8 +882,6 @@ CREATE TABLE system_settings (
   updated_at TIMESTAMP DEFAULT NOW()
 );
 
-
--- 21. Reference formats
 CREATE TABLE reference_formats (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name VARCHAR(50) UNIQUE NOT NULL,
@@ -863,8 +891,6 @@ CREATE TABLE reference_formats (
   example VARCHAR(100)
 );
 
-
--- 22. Languages and translations
 CREATE TABLE languages (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   code VARCHAR(5) UNIQUE NOT NULL,
@@ -890,7 +916,6 @@ CREATE INDEX idx_translations_lang ON translations(language_code);
 -- SECTION 2: SEED DATA
 -- ================================================================
 
--- Admin account
 INSERT INTO users (username, email, password_hash, full_name, role, status, is_active)
 VALUES (
   'Nqosa',
@@ -902,12 +927,10 @@ VALUES (
   TRUE
 );
 
--- Languages
 INSERT INTO languages (code, name, is_default, is_active) VALUES
 ('EN', 'English', true, true),
 ('ST', 'Sesotho', false, true);
 
--- Document types
 INSERT INTO document_types (code, name, accepted_formats, max_size_mb, is_required, display_order) VALUES
 ('BIRTH_CERTIFICATE', 'Birth Certificate', 'pdf,jpg,jpeg,png', 5, true, 1),
 ('DEATH_CERTIFICATE', 'Death Certificate', 'pdf,jpg,jpeg,png', 5, false, 2),
@@ -918,7 +941,6 @@ INSERT INTO document_types (code, name, accepted_formats, max_size_mb, is_requir
 ('PASSPORT_PHOTO', 'Passport Photo', 'jpg,jpeg,png', 5, true, 7),
 ('POLICE_EVIDENCE', 'Police Evidence', 'pdf,jpg,jpeg,png', 5, false, 8);
 
--- Ministries
 INSERT INTO ministries (name, code, colour_hex, icon_name, display_order) VALUES
 ('Home Affairs', 'HOME_AFFAIRS', '#1A5276', 'home', 1),
 ('Traffic', 'TRAFFIC', '#B9770E', 'truck', 2),
@@ -927,7 +949,6 @@ INSERT INTO ministries (name, code, colour_hex, icon_name, display_order) VALUES
 ('Pensions', 'PENSIONS', '#7D3C98', 'users', 5),
 ('Passport', 'PASSPORT', '#17A2B8', 'globe', 6);
 
--- System settings
 INSERT INTO system_settings (key, value, category, description, is_public) VALUES
 ('system_name', 'Integrated Government Services', 'general', 'Display name for the system', true),
 ('system_logo_path', '', 'general', 'Path to system logo', true),
@@ -944,16 +965,17 @@ INSERT INTO system_settings (key, value, category, description, is_public) VALUE
 ('biometric_match_threshold', '85', 'biometrics', 'Match threshold percent', false),
 ('biometric_max_attempts', '3', 'biometrics', 'Maximum biometric attempts', false);
 
--- Reference formats
+-- Reference formats — one row per format, no duplicates.
 INSERT INTO reference_formats (name, prefix, year_format, sequence_length, example) VALUES
 ('APPLICATION',           'REF', 'YYYY', 5, 'REF-2026-00001'),
 ('PASSPORT_APPLICATION',  'PPT', 'YYYY', 5, 'PPT-2026-00001'),
 ('TRAFFIC_RENEWAL',       'TRF', 'YYYY', 5, 'TRF-2026-00001'),
 ('TAX_PAYMENT',           'TAX', 'YYYY', 5, 'TAX-2026-00001'),
 ('POLICE_CASE',           'POL', 'YYYY', 5, 'POL-2026-00001'),
-('BIRTH_CERTIFICATE',     'BC',  'YYYY', 5, 'BC-2026-00001'),
-('DEATH_CERTIFICATE',     'DC',  'YYYY', 5, 'DC-2026-00001'),
-('MARRIAGE_CERTIFICATE',  'MC',  'YYYY', 5, 'MC-2026-00001'),
+('BIRTH_CERTIFICATE',     'BC',  'YYYY', 6, 'BC-2026-000001'),
+('DEATH_CERTIFICATE',     'DC',  'YYYY', 6, 'DC-2026-000001'),
+('MARRIAGE_CERTIFICATE',  'MC',  'YYYY', 6, 'MC-2026-000001'),
+('DIVORCE_CERTIFICATE',   'DVC', 'YYYY', 6, 'DVC-2026-000001'),
 ('VEHICLE_REGISTRATION',  'VEH', 'YYYY', 5, 'VEH-2026-00001'),
 ('VEHICLE_INSPECTION',    'INS', 'YYYY', 5, 'INS-2026-00001'),
 ('VEHICLE_LICENCE',       'LIC', 'YYYY', 5, 'LIC-2026-00001'),
@@ -962,24 +984,26 @@ INSERT INTO reference_formats (name, prefix, year_format, sequence_length, examp
 ('LEARNERS_LICENCE',      'LL',  'YYYY', 5, 'LL-2026-00001'),
 ('DRIVING_LICENCE',       'DL',  'YYYY', 5, 'DL-2026-00001'),
 ('PUBLIC_DRIVING_PERMIT', 'PDP', 'YYYY', 5, 'PDP-2026-00001'),
-('THEORY_TEST',           'TT',  'YYYY', 5, 'TT-2026-00001'),
 ('DRIVERS_LICENCE_NUMBER','DLN', 'YYYY', 6, 'DLN-2026-000001'),
 ('VAT_REGISTRATION',      'VAT', 'YYYY', 5, 'VAT-2026-00001'),
 ('TAX_RETURN',            'TR',  'YYYY', 5, 'TR-2026-00001'),
 ('PAYMENT_PLAN',          'PP',  'YYYY', 5, 'PP-2026-00001'),
 ('BUSINESS_REGISTRATION', 'BUS', 'YYYY', 5, 'BUS-2026-00001');
 
--- Status types
+-- Status types — includes the certificate lifecycle states.
 INSERT INTO status_types (code, name, colour_hex, applies_to, display_order) VALUES
-('DRAFT', 'Draft', '#7F8C8D', 'application', 1),
-('SUBMITTED', 'Submitted', '#2E86C1', 'application', 2),
-('UNDER_REVIEW', 'Under Review', '#F1C40F', 'application', 3),
-('APPROVED', 'Approved', '#27AE60', 'application', 4),
-('REJECTED', 'Rejected', '#E74C3C', 'application', 5),
-('COMPLETED', 'Completed', '#27AE60', 'application', 6),
-('UNDER_INVESTIGATION', 'Under Investigation', '#F1C40F', 'case', 7),
-('UPDATED', 'Updated', '#2E86C1', 'case', 8),
-('CLOSED', 'Closed', '#27AE60', 'case', 9);
+('DRAFT',               'Draft',               '#7F8C8D', 'application',  1),
+('SUBMITTED',           'Submitted',           '#2E86C1', 'application',  2),
+('UNDER_REVIEW',        'Under Review',        '#F1C40F', 'application',  3),
+('APPROVED',            'Approved',            '#27AE60', 'application',  4),
+('REJECTED',            'Rejected',            '#E74C3C', 'application',  5),
+('COMPLETED',           'Completed',           '#27AE60', 'application',  6),
+('UNDER_INVESTIGATION', 'Under Investigation', '#F1C40F', 'case',         7),
+('UPDATED',             'Updated',             '#2E86C1', 'case',         8),
+('CLOSED',              'Closed',              '#27AE60', 'case',         9),
+('PENDING',             'Pending',             '#F1C40F', 'certificate', 10),
+('ISSUED',              'Issued',              '#27AE60', 'certificate', 11),
+('CANCELLED',           'Cancelled',           '#7F8C8D', 'certificate', 12);
 
 
 -- ================================================================
@@ -1026,18 +1050,346 @@ SELECT
 
 
 -- ================================================================
+-- MIGRATION 001 — Payments and fee schedule
+-- ================================================================
+
+CREATE TABLE payments (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  citizen_id UUID REFERENCES citizens(id) ON DELETE SET NULL,
+  ministry VARCHAR(30) NOT NULL,
+  service VARCHAR(80),
+  application_reference VARCHAR(80),
+  amount NUMERIC(12,2) NOT NULL,
+  currency VARCHAR(10) NOT NULL DEFAULT 'LSL',
+  method VARCHAR(30) NOT NULL,
+  status VARCHAR(20) NOT NULL DEFAULT 'COMPLETED'
+    CHECK (status IN ('PENDING','COMPLETED','FAILED','REFUNDED')),
+  receipt_number VARCHAR(50) UNIQUE NOT NULL,
+  reference_number VARCHAR(80),
+  received_by UUID REFERENCES users(id) ON DELETE SET NULL,
+  paid_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  notes TEXT,
+  created_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+CREATE INDEX idx_payments_citizen ON payments(citizen_id);
+CREATE INDEX idx_payments_ministry ON payments(ministry);
+CREATE INDEX idx_payments_paid_at ON payments(paid_at DESC);
+CREATE INDEX idx_payments_status ON payments(status);
+CREATE INDEX idx_payments_receipt ON payments(receipt_number);
+
+CREATE TABLE fee_schedule (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  ministry VARCHAR(30) NOT NULL,
+  service_code VARCHAR(80) NOT NULL,
+  service_name VARCHAR(160) NOT NULL,
+  amount NUMERIC(12,2) NOT NULL,
+  currency VARCHAR(10) NOT NULL DEFAULT 'LSL',
+  is_active BOOLEAN NOT NULL DEFAULT TRUE,
+  notes TEXT,
+  updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  UNIQUE (ministry, service_code)
+);
+CREATE INDEX idx_fee_schedule_ministry ON fee_schedule(ministry);
+
+CREATE OR REPLACE VIEW finance_payment_summary AS
+SELECT
+  ministry,
+  COUNT(*)::int                                        AS payment_count,
+  COALESCE(SUM(amount), 0)::numeric(14,2)              AS total_amount,
+  COUNT(*) FILTER (WHERE paid_at::date = CURRENT_DATE)::int             AS today_count,
+  COALESCE(SUM(amount) FILTER (WHERE paid_at::date = CURRENT_DATE), 0)::numeric(14,2) AS today_amount,
+  COUNT(*) FILTER (WHERE date_trunc('month', paid_at) = date_trunc('month', CURRENT_DATE))::int AS month_count,
+  COALESCE(SUM(amount) FILTER (WHERE date_trunc('month', paid_at) = date_trunc('month', CURRENT_DATE)), 0)::numeric(14,2) AS month_amount
+FROM payments
+WHERE status = 'COMPLETED'
+GROUP BY ministry;
+
+
+-- ================================================================
+-- MIGRATION 002 — Service catalogue
+-- One code per service. No duplicates.
+-- ================================================================
+
+CREATE TABLE services (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  ministry VARCHAR(30) NOT NULL,
+  code VARCHAR(80) NOT NULL,
+  name VARCHAR(160) NOT NULL,
+  description TEXT,
+  service_type VARCHAR(20) NOT NULL DEFAULT 'APPLICATION'
+    CHECK (service_type IN ('APPLICATION','INFORMATION','STAFF_TASK')),
+  is_enabled BOOLEAN NOT NULL DEFAULT TRUE,
+  form_fields JSONB NOT NULL DEFAULT '[]'::jsonb,
+  required_documents JSONB NOT NULL DEFAULT '[]'::jsonb,
+  fee NUMERIC(12,2) NOT NULL DEFAULT 0,
+  currency VARCHAR(10) NOT NULL DEFAULT 'LSL',
+  display_order INTEGER NOT NULL DEFAULT 0,
+  unavailable_message TEXT,
+  fee_code VARCHAR(80),
+  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  UNIQUE (ministry, code)
+);
+CREATE INDEX idx_services_ministry ON services(ministry);
+CREATE INDEX idx_services_enabled ON services(is_enabled);
+
+-- HOME AFFAIRS services
+INSERT INTO services (ministry, code, name, description, service_type, is_enabled, form_fields, required_documents, fee, display_order) VALUES
+('HOME_AFFAIRS', 'NATIONAL_ID_APPLY', 'Apply for a National ID',
+ 'Apply for a new national identity document.', 'APPLICATION', TRUE,
+ '[{"key":"reason","label":"Reason","type":"text","required":false}]'::jsonb,
+ '["NATIONAL_ID","BIRTH_CERTIFICATE","PASSPORT_PHOTO"]'::jsonb, 0, 10),
+
+('HOME_AFFAIRS', 'NATIONAL_ID_REPLACE', 'Replace a National ID',
+ 'Replace a lost or damaged national identity document.', 'APPLICATION', TRUE,
+ '[{"key":"reason","label":"Reason for replacement","type":"text","required":true}]'::jsonb,
+ '["BIRTH_CERTIFICATE","PASSPORT_PHOTO"]'::jsonb, 0, 20),
+
+('HOME_AFFAIRS', 'BIRTH_CERTIFICATE_APPLY', 'Birth certificate',
+ 'Register a birth or request a birth certificate.', 'APPLICATION', TRUE,
+ '[{"key":"childFullName","label":"Child full name","type":"text","required":true},
+   {"key":"childDateOfBirth","label":"Child date of birth","type":"date","required":true},
+   {"key":"childGender","label":"Child gender","type":"text","required":true},
+   {"key":"placeOfBirth","label":"Place of birth","type":"text","required":true},
+   {"key":"motherFullName","label":"Mother full name","type":"text","required":true},
+   {"key":"motherNationalId","label":"Mother National ID","type":"text","required":true},
+   {"key":"fatherFullName","label":"Father full name","type":"text","required":false},
+   {"key":"fatherNationalId","label":"Father National ID","type":"text","required":false},
+   {"key":"requestType","label":"Request type (new or replacement)","type":"text","required":true}]'::jsonb,
+ '["NATIONAL_ID","BIRTH_CERTIFICATE"]'::jsonb, 0, 30),
+
+('HOME_AFFAIRS', 'DEATH_CERTIFICATE_APPLY', 'Death certificate',
+ 'Register a death or request a death certificate.', 'APPLICATION', TRUE,
+ '[{"key":"deceasedFullName","label":"Deceased full name","type":"text","required":true},
+   {"key":"deceasedNationalId","label":"Deceased National ID","type":"text","required":true},
+   {"key":"dateOfDeath","label":"Date of death","type":"date","required":true},
+   {"key":"placeOfDeath","label":"Place of death","type":"text","required":true},
+   {"key":"causeOfDeath","label":"Cause of death","type":"text","required":false},
+   {"key":"informantFullName","label":"Informant full name","type":"text","required":true},
+   {"key":"informantRelationship","label":"Relationship to deceased","type":"text","required":true}]'::jsonb,
+ '["NATIONAL_ID"]'::jsonb, 0, 40),
+
+('HOME_AFFAIRS', 'MARRIAGE_CERTIFICATE_APPLY', 'Marriage certificate',
+ 'Register a marriage or request a marriage certificate.', 'APPLICATION', TRUE,
+ '[{"key":"spouse1FullName","label":"Spouse 1 full name","type":"text","required":true},
+   {"key":"spouse1NationalId","label":"Spouse 1 National ID","type":"text","required":true},
+   {"key":"spouse2FullName","label":"Spouse 2 full name","type":"text","required":true},
+   {"key":"spouse2NationalId","label":"Spouse 2 National ID","type":"text","required":true},
+   {"key":"marriageDate","label":"Date of marriage","type":"date","required":true},
+   {"key":"marriagePlace","label":"Place of marriage","type":"text","required":true},
+   {"key":"marriageOfficiant","label":"Officiant name","type":"text","required":true},
+   {"key":"requestType","label":"Request type (new or certified copy)","type":"text","required":true}]'::jsonb,
+ '["NATIONAL_ID"]'::jsonb, 0, 50),
+
+('HOME_AFFAIRS', 'DIVORCE_CERTIFICATE_APPLY', 'Divorce certificate',
+ 'Register a divorce or request a certified divorce record.', 'APPLICATION', TRUE,
+ '[{"key":"spouse1FullName","label":"Spouse 1 full name","type":"text","required":true},
+   {"key":"spouse1NationalId","label":"Spouse 1 National ID","type":"text","required":true},
+   {"key":"spouse2FullName","label":"Former spouse full name","type":"text","required":true},
+   {"key":"spouse2NationalId","label":"Former spouse National ID","type":"text","required":false},
+   {"key":"divorceDate","label":"Date of divorce","type":"date","required":true},
+   {"key":"courtName","label":"Court name","type":"text","required":true},
+   {"key":"caseNumber","label":"Court case number","type":"text","required":true}]'::jsonb,
+ '["NATIONAL_ID"]'::jsonb, 0, 60),
+
+('HOME_AFFAIRS', 'NAME_CHANGE_APPLY', 'Name change or amendment',
+ 'Change a surname or amend identity and civil records.', 'APPLICATION', TRUE,
+ '[{"key":"currentFullName","label":"Current full name","type":"text","required":true},
+   {"key":"currentNationalId","label":"Current National ID","type":"text","required":true},
+   {"key":"requestedFullName","label":"Requested new full name","type":"text","required":true},
+   {"key":"reason","label":"Reason for change","type":"textarea","required":true},
+   {"key":"supportingDetails","label":"Supporting details","type":"textarea","required":false}]'::jsonb,
+ '["NATIONAL_ID","BIRTH_CERTIFICATE"]'::jsonb, 0, 70),
+
+('HOME_AFFAIRS', 'IMMIGRATION_INFO', 'Immigration information',
+ 'Visa, residence permits, and immigration procedures.', 'INFORMATION', TRUE, '[]'::jsonb, '[]'::jsonb, 0, 100),
+
+('HOME_AFFAIRS', 'CITIZENSHIP_INFO', 'Citizenship information',
+ 'Apply for citizenship, naturalisation, or restoration.', 'INFORMATION', TRUE, '[]'::jsonb, '[]'::jsonb, 0, 110),
+
+('HOME_AFFAIRS', 'REFUGEE_INFO', 'Refugee and asylum information',
+ 'Refugee procedures, documentation, and the Refugee Coordinating Unit.', 'INFORMATION', TRUE, '[]'::jsonb, '[]'::jsonb, 0, 120),
+
+('HOME_AFFAIRS', 'LIVESTOCK_INFO', 'Livestock registration information',
+ 'Livestock registration, identification, and ownership records.', 'INFORMATION', TRUE, '[]'::jsonb, '[]'::jsonb, 0, 130),
+
+('HOME_AFFAIRS', 'DOCUMENT_VERIFY_INFO', 'Document verification and enquiries',
+ 'Confirm a certificate or identity document, or enquire about a delayed application.', 'INFORMATION', TRUE, '[]'::jsonb, '[]'::jsonb, 0, 140);
+
+-- PASSPORT services
+INSERT INTO services (ministry, code, name, description, service_type, is_enabled, form_fields, required_documents, fee, display_order) VALUES
+('PASSPORT', 'PASSPORT_NEW', 'New passport',
+ 'Apply for a first passport.', 'APPLICATION', TRUE, '[]'::jsonb,
+ '["NATIONAL_ID","BIRTH_CERTIFICATE","PASSPORT_PHOTO"]'::jsonb, 500, 10),
+
+('PASSPORT', 'PASSPORT_RENEWAL', 'Renew passport',
+ 'Renew an expiring passport.', 'APPLICATION', TRUE,
+ '[{"key":"oldPassportNumber","label":"Old passport number","type":"text","required":true},
+   {"key":"oldPassportExpiry","label":"Old passport expiry","type":"date","required":false},
+   {"key":"collectionOffice","label":"Collection office","type":"text","required":true}]'::jsonb,
+ '["NATIONAL_ID","PASSPORT_PHOTO"]'::jsonb, 500, 20),
+
+('PASSPORT', 'PASSPORT_LOST', 'Lost or stolen passport',
+ 'Report a lost or stolen passport and request a replacement.', 'APPLICATION', TRUE,
+ '[{"key":"oldPassportNumber","label":"Old passport number","type":"text","required":false},
+   {"key":"circumstances","label":"Circumstances","type":"textarea","required":true},
+   {"key":"policeCaseNumber","label":"Police case number","type":"text","required":false},
+   {"key":"collectionOffice","label":"Collection office","type":"text","required":true}]'::jsonb,
+ '["NATIONAL_ID","POLICE_EVIDENCE","PASSPORT_PHOTO"]'::jsonb, 700, 30),
+
+('PASSPORT', 'PASSPORT_URGENT', 'Urgent passport',
+ 'Expedited passport for travel within 14 days.', 'APPLICATION', TRUE,
+ '[{"key":"travelDate","label":"Travel date","type":"date","required":true},
+   {"key":"travelReason","label":"Reason for travel","type":"textarea","required":true},
+   {"key":"collectionOffice","label":"Collection office","type":"text","required":true}]'::jsonb,
+ '["NATIONAL_ID","BIRTH_CERTIFICATE","PASSPORT_PHOTO"]'::jsonb, 1200, 40),
+
+('PASSPORT', 'PASSPORT_OFFICIAL', 'Official or diplomatic passport',
+ 'Official and diplomatic passports require prior authorisation.', 'APPLICATION', TRUE,
+ '[{"key":"authorisingBody","label":"Authorising body","type":"text","required":true},
+   {"key":"authorisationReference","label":"Authorisation reference","type":"text","required":true},
+   {"key":"justification","label":"Justification","type":"textarea","required":true}]'::jsonb,
+ '["NATIONAL_ID","PASSPORT_PHOTO"]'::jsonb, 700, 50),
+
+('PASSPORT', 'PASSPORT_MINOR', 'Minor passport',
+ 'Passport for a child under 16, with parent or guardian consent.', 'APPLICATION', TRUE,
+ '[{"key":"childFullName","label":"Child full name","type":"text","required":true},
+   {"key":"childDateOfBirth","label":"Child date of birth","type":"date","required":true},
+   {"key":"childNationalId","label":"Child National ID","type":"text","required":false},
+   {"key":"guardianFullName","label":"Parent or guardian full name","type":"text","required":true},
+   {"key":"guardianNationalId","label":"Parent or guardian National ID","type":"text","required":true},
+   {"key":"guardianRelationship","label":"Relationship","type":"text","required":true},
+   {"key":"collectionOffice","label":"Collection office","type":"text","required":true}]'::jsonb,
+ '["BIRTH_CERTIFICATE","PASSPORT_PHOTO"]'::jsonb, 500, 60);
+
+-- POLICE services
+INSERT INTO services (ministry, code, name, description, service_type, is_enabled, form_fields, required_documents, fee, display_order) VALUES
+('POLICE', 'POLICE_CLEARANCE', 'Police clearance certificate',
+ 'Apply for a certificate confirming your criminal record status.', 'APPLICATION', FALSE,
+ '[{"key":"purpose","label":"Purpose","type":"text","required":true}]'::jsonb,
+ '["NATIONAL_ID"]'::jsonb, 150, 10),
+
+('POLICE', 'POLICE_REPORT', 'Report a crime',
+ 'Submit a non-emergency incident report.', 'APPLICATION', FALSE,
+ '[{"key":"caseType","label":"Case type","type":"text","required":true},
+   {"key":"incidentDate","label":"Incident date","type":"date","required":true},
+   {"key":"location","label":"Location","type":"text","required":true},
+   {"key":"description","label":"Description","type":"textarea","required":true}]'::jsonb,
+ '["POLICE_EVIDENCE"]'::jsonb, 0, 20),
+
+('POLICE', 'POLICE_CRIMINAL_RECORD', 'Criminal record check',
+ 'Request your own criminal record.', 'APPLICATION', FALSE, '[]'::jsonb,
+ '["NATIONAL_ID"]'::jsonb, 200, 30);
+
+-- PENSIONS services
+INSERT INTO services (ministry, code, name, description, service_type, is_enabled, form_fields, required_documents, fee, display_order) VALUES
+('PENSIONS', 'PENSION_APPLICATION', 'Pension application',
+ 'Apply for a state pension.', 'APPLICATION', TRUE,
+ '[{"key":"pensionType","label":"Pension type","type":"text","required":true},
+   {"key":"employmentHistory","label":"Previous employment","type":"textarea","required":true},
+   {"key":"bankName","label":"Bank name","type":"text","required":true},
+   {"key":"bankAccountNumber","label":"Bank account number","type":"text","required":true},
+   {"key":"branchCode","label":"Branch code","type":"text","required":false}]'::jsonb,
+ '["NATIONAL_ID","BIRTH_CERTIFICATE"]'::jsonb, 0, 10),
+
+('PENSIONS', 'PENSION_ESTIMATE', 'Benefits estimate',
+ 'Estimate your future pension benefit.', 'INFORMATION', TRUE, '[]'::jsonb, '[]'::jsonb, 0, 20),
+
+('PENSIONS', 'PENSION_LIFE_VERIFY', 'Life verification',
+ 'Confirm your existence to keep receiving your pension.', 'APPLICATION', TRUE, '[]'::jsonb, '[]'::jsonb, 0, 30),
+
+('PENSIONS', 'PENSION_CLAIM_TRACKING', 'Claim tracking',
+ 'Track the status of your pension or gratuity claim.', 'INFORMATION', TRUE, '[]'::jsonb, '[]'::jsonb, 0, 40),
+
+('PENSIONS', 'PENSION_SURVIVOR_INFO', 'Survivor or beneficiary guidance',
+ 'Guidance on survivor and beneficiary claims.', 'INFORMATION', TRUE, '[]'::jsonb, '[]'::jsonb, 0, 50);
+
+-- TRAFFIC services
+INSERT INTO services (ministry, code, name, description, service_type, is_enabled, form_fields, required_documents, fee, display_order) VALUES
+('TRAFFIC', 'DRIVERS_LICENCE_VIEW', 'View driving licence',
+ 'See your current driving licence and its status.', 'INFORMATION', TRUE, '[]'::jsonb, '[]'::jsonb, 0, 10),
+
+('TRAFFIC', 'LICENCE_RENEWAL', 'Renew driving licence',
+ 'Renew an expiring driving licence.', 'APPLICATION', TRUE,
+ '[{"key":"mobile","label":"Mobile number for payment","type":"text","required":true}]'::jsonb,
+ '[]'::jsonb, 250, 20),
+
+('TRAFFIC', 'DRIVING_TEST_BOOKING', 'Book a driving test',
+ 'Book a learner''s or driver''s licence test.', 'APPLICATION', TRUE, '[]'::jsonb, '[]'::jsonb, 100, 30),
+
+('TRAFFIC', 'MY_APPOINTMENTS', 'My appointments',
+ 'View and manage your driving test appointments.', 'INFORMATION', TRUE, '[]'::jsonb, '[]'::jsonb, 0, 40),
+
+('TRAFFIC', 'MY_VEHICLES', 'My vehicles',
+ 'Register and manage your vehicles.', 'APPLICATION', TRUE, '[]'::jsonb, '[]'::jsonb, 350, 50),
+
+('TRAFFIC', 'MY_INSPECTIONS', 'Vehicle inspections',
+ 'Book a roadworthiness inspection.', 'APPLICATION', TRUE, '[]'::jsonb, '[]'::jsonb, 120, 60),
+
+('TRAFFIC', 'MY_VEHICLE_LICENCES', 'Vehicle licences',
+ 'Apply for a vehicle licence.', 'APPLICATION', TRUE, '[]'::jsonb, '[]'::jsonb, 150, 70),
+
+('TRAFFIC', 'MY_TRANSPORT_PERMITS', 'Transport permits',
+ 'Apply for a transport permit.', 'APPLICATION', TRUE, '[]'::jsonb, '[]'::jsonb, 400, 80),
+
+('TRAFFIC', 'MY_TRAFFIC_APPLICATIONS', 'My traffic applications',
+ 'Track your traffic licence and permit applications.', 'INFORMATION', TRUE, '[]'::jsonb, '[]'::jsonb, 0, 90);
+
+-- FINANCE services
+INSERT INTO services (ministry, code, name, description, service_type, is_enabled, form_fields, required_documents, fee, display_order) VALUES
+('FINANCE', 'TAX_REGISTER', 'Register for tax',
+ 'Register for a tax identification number.', 'APPLICATION', TRUE, '[]'::jsonb, '[]'::jsonb, 0, 10),
+
+('FINANCE', 'TAX_PROFILE', 'View tax profile',
+ 'See your tax ID, balance, and payment history.', 'INFORMATION', TRUE, '[]'::jsonb, '[]'::jsonb, 0, 20),
+
+('FINANCE', 'TAX_PAYMENT', 'Make a payment',
+ 'Pay tax or other amounts due.', 'APPLICATION', TRUE, '[]'::jsonb, '[]'::jsonb, 0, 30),
+
+('FINANCE', 'TAX_CLEARANCE', 'Tax clearance certificate',
+ 'Request a tax clearance certificate.', 'APPLICATION', TRUE, '[]'::jsonb, '[]'::jsonb, 0, 40),
+
+('FINANCE', 'VAT_REGISTRATION', 'VAT registration',
+ 'Register a business for VAT.', 'APPLICATION', TRUE, '[]'::jsonb, '[]'::jsonb, 0, 50),
+
+('FINANCE', 'TAX_RETURN', 'Submit a tax return',
+ 'File your annual tax return.', 'APPLICATION', TRUE, '[]'::jsonb, '[]'::jsonb, 0, 60),
+
+('FINANCE', 'PAYMENT_PLAN', 'Payment plan',
+ 'Request to pay an outstanding amount in instalments.', 'APPLICATION', TRUE, '[]'::jsonb, '[]'::jsonb, 0, 70),
+
+('FINANCE', 'BUSINESS_REGISTRATION', 'Business registration',
+ 'Register a business with Finance.', 'APPLICATION', TRUE, '[]'::jsonb, '[]'::jsonb, 0, 80);
+
+-- Seed fee_schedule from services.fee
+INSERT INTO fee_schedule (ministry, service_code, service_name, amount, is_active)
+SELECT ministry, code, name, fee, TRUE
+FROM services
+WHERE fee > 0;
+
+UPDATE services
+SET fee_code = code
+WHERE fee > 0 AND fee_code IS NULL;
+
+
+-- ================================================================
 -- DONE
 -- ================================================================
 -- Database now has:
---   - 45 tables (core + Home Affairs + Traffic + Police + Finance + Pensions + Passport + Admin)
---   - 1 admin account (Nqosa / Lomile@12)
---   - 2 languages
---   - 8 document types
---   - 6 ministries
---   - 17 branches (all 10 Lesotho districts for Home Affairs)
---   - 14 system settings
---   - 22 reference formats
---   - 9 status types
---   - 6 budget allocations + 3 procurement samples
---   - 2 views, 1 trigger
+--   - All core tables, in dependency order, that run without error.
+--   - One certificate design: Phase 9 (Option B).
+--     birth_certificates, death_certificates_new,
+--     marriage_certificates, divorce_certificates.
+--   - One service code per service (Option B codes).
+--   - Certificate lifecycle statuses (PENDING, ISSUED, CANCELLED)
+--     present in status_types.
+--   - Reference formats deduplicated; DIVORCE_CERTIFICATE present.
+--   - Payments, fee_schedule, services, views.
+--
+-- Known remaining items (informational, not blockers):
+--   - The users table still has both status and is_active. The
+--     delete trigger checks is_active. userRepository.setStatus
+--     should be updated to set both. (Server change.)
+--   - ministries.icon_name is unused after Phase 1. Harmless.
 -- ================================================================

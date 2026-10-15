@@ -1,16 +1,15 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Webcam from 'react-webcam';
-import { FiCamera, FiRefreshCw, FiAlertCircle, FiCheckCircle } from 'react-icons/fi';
 import Button from '../common/Button';
 import useFaceVision from '../../hooks/useFaceVision';
 import { evaluateFrame } from '../../utils/facialChecks';
 import config from '../../config/facialCapture';
 
-const STATUS_ICON = {
-  pass: <FiCheckCircle aria-hidden="true" />,
-  fail: <FiAlertCircle aria-hidden="true" />,
-  checking: <FiRefreshCw aria-hidden="true" />,
-  unknown: <FiRefreshCw aria-hidden="true" />,
+const STATUS_SYMBOL = {
+  pass: '✓',
+  fail: '!',
+  checking: '…',
+  unknown: '…',
 };
 
 const STATUS_LABEL = {
@@ -140,7 +139,9 @@ export default function FacialCamera({ onCapture, onCancel, settings }) {
           <div className="facial-checklist">
             {Object.entries(checks).map(([key, c]) => (
               <div key={key} className={`facial-check facial-check-${c.status}`}>
-                <span className="facial-check-icon">{STATUS_ICON[c.status]}</span>
+                <span className="facial-check-icon" aria-hidden="true">
+                  {STATUS_SYMBOL[c.status]}
+                </span>
                 <span className="facial-check-label">{humanise(key)}</span>
                 <span className="facial-check-status">{STATUS_LABEL[c.status]}</span>
               </div>
@@ -150,7 +151,7 @@ export default function FacialCamera({ onCapture, onCancel, settings }) {
           <div className="facial-actions">
             <Button variant="secondary" onClick={onCancel}>Cancel</Button>
             <Button variant="primary" onClick={handleCapture} disabled={!ready}>
-              <FiCamera /> Capture manually
+              Capture manually
             </Button>
           </div>
         </>
@@ -159,10 +160,10 @@ export default function FacialCamera({ onCapture, onCancel, settings }) {
           <img src={lastCaptured} alt="Captured face" className="facial-image" />
           <div className="facial-actions">
             <Button variant="secondary" onClick={handleRetake}>
-              <FiRefreshCw /> Retake
+              Retake
             </Button>
             <Button variant="primary" onClick={handleCapture}>
-              <FiCheckCircle /> Use this photo
+              Use this photo
             </Button>
           </div>
         </>

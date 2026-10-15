@@ -1,16 +1,10 @@
-import { useEffect, useMemo, useState } from 'react';
-import {
-  FiFileText,
-  FiCheckCircle,
-  FiAlertCircle,
-  FiChevronLeft,
-  FiChevronRight,
-} from 'react-icons/fi';
+import { useEffect, useState } from 'react';
 import AdminLayout from '../../components/layout/AdminLayout';
 import Table from '../../components/common/Table';
 import Button from '../../components/common/Button';
 import EmptyState from '../../components/common/EmptyState';
 import Alert from '../../components/common/Alert';
+import { TableSkeleton } from '../../components/common/SkeletonLoader';
 import { getAuditLogs, exportAuditLogs } from '../../api/auditApi';
 import { formatDate } from '../../utils/formatters';
 
@@ -79,8 +73,7 @@ function AuditLogs() {
       label: 'Result',
       render: (r) => (
         <span className={`audit-result audit-result-${r.result}`}>
-          {r.result === 'SUCCESS' ? <FiCheckCircle /> : <FiAlertCircle />}
-          <span>{r.result === 'SUCCESS' ? 'Success' : 'Failed'}</span>
+          {r.result === 'SUCCESS' ? 'Success' : 'Failed'}
         </span>
       ),
     },
@@ -196,15 +189,16 @@ function AuditLogs() {
 
       {loadError && <Alert type="error" message={loadError} />}
 
-      {loading ? (
-        <p className="text-muted">Loading…</p>
-      ) : data.rows.length === 0 ? (
+      {loading && <TableSkeleton rows={8} columns={5} />}
+
+      {!loading && data.rows.length === 0 && (
         <EmptyState
-          icon={<FiFileText />}
           title="No audit entries match these filters"
           message="Clear filters to view all logs."
         />
-      ) : (
+      )}
+
+      {!loading && data.rows.length > 0 && (
         <>
           <Table columns={columns} data={data.rows} />
           <div className="pagination">
@@ -218,7 +212,7 @@ function AuditLogs() {
                 disabled={page <= 1}
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
               >
-                <FiChevronLeft /> Previous
+                Previous
               </button>
               <button
                 type="button"
@@ -226,7 +220,7 @@ function AuditLogs() {
                 disabled={page >= totalPages}
                 onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
               >
-                Next <FiChevronRight />
+                Next
               </button>
             </div>
           </div>

@@ -1,19 +1,17 @@
-import { FiCheckCircle, FiCircle, FiXCircle, FiClock } from 'react-icons/fi';
-
 function StatusTimeline({ history }) {
   if (!history || history.length === 0) return null;
 
-  const getIcon = (status) => {
+  const getSymbol = (status) => {
     switch (status) {
       case 'COMPLETED':
       case 'APPROVED':
-        return <FiCheckCircle />;
+        return '✓';
       case 'REJECTED':
-        return <FiXCircle />;
+        return '✕';
       case 'UNDER_REVIEW':
-        return <FiClock />;
+        return '…';
       default:
-        return <FiCircle />;
+        return '·';
     }
   };
 
@@ -21,7 +19,7 @@ function StatusTimeline({ history }) {
     <div className="status-timeline">
       {history.map((item, index) => (
         <div key={index} className="timeline-item">
-          <div className="timeline-icon">{getIcon(item.status)}</div>
+          <div className="timeline-icon">{getSymbol(item.status)}</div>
           <div className="timeline-content">
             <span className="timeline-status">{item.statusLabel || item.status}</span>
             <span className="timeline-date">{item.date}</span>

@@ -23,6 +23,10 @@ async function markRead(id, userId) {
   return notificationRepository.markRead(id);
 }
 
+async function markAllRead(userId) {
+  return notificationRepository.markAllRead(userId);
+}
+
 async function deleteForUser(id, userId) {
   const row = await notificationRepository.findById(id);
   if (!row) {
@@ -38,4 +42,4 @@ async function deleteForUser(id, userId) {
   return notificationRepository.deleteById(id);
 }
 
-module.exports = { notify, getForUser, markRead, deleteForUser };
+module.exports = { notify, getForUser, markRead, markAllRead, deleteForUser };

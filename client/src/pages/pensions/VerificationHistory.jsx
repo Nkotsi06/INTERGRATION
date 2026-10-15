@@ -1,9 +1,9 @@
 import { useState, useMemo } from 'react';
-import { FiClock } from 'react-icons/fi';
 import PageWrapper from '../../components/layout/PageWrapper';
 import Table from '../../components/common/Table';
 import StatusBadge from '../../components/common/StatusBadge';
 import EmptyState from '../../components/common/EmptyState';
+import { TableSkeleton } from '../../components/common/SkeletonLoader';
 import useFetch from '../../hooks/useFetch';
 import { getVerificationHistory } from '../../api/pensionsApi';
 import { formatDate } from '../../utils/formatters';
@@ -101,15 +101,16 @@ function VerificationHistory() {
         )}
       </div>
 
-      {loading ? (
-        <p className="text-muted">Loading…</p>
-      ) : filtered.length === 0 ? (
+      {loading && <TableSkeleton rows={5} columns={3} />}
+
+      {!loading && filtered.length === 0 && (
         <EmptyState
-          icon={<FiClock />}
           title="No verifications match"
           message="Change the filters to see more."
         />
-      ) : (
+      )}
+
+      {!loading && filtered.length > 0 && (
         <Table columns={columns} data={filtered} />
       )}
     </PageWrapper>

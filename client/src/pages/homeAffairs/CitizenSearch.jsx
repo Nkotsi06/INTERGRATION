@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FiSearch } from 'react-icons/fi';
 import PageWrapper from '../../components/layout/PageWrapper';
 import Input from '../../components/common/Input';
 import Button from '../../components/common/Button';
@@ -60,9 +59,9 @@ function HACitizenSearch() {
           <Button
             type="submit"
             variant="primary"
-            disabled={loading}
+            loading={loading}
           >
-            <FiSearch /> {loading ? 'Searching…' : 'Search'}
+            Search
           </Button>
         </div>
       </form>

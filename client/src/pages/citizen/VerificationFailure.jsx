@@ -1,5 +1,4 @@
 import { useNavigate, useLocation } from 'react-router-dom';
-import { FiXCircle } from 'react-icons/fi';
 import PageWrapper from '../../components/layout/PageWrapper';
 import Button from '../../components/common/Button';
 
@@ -22,9 +21,7 @@ function VerificationFailure() {
     <PageWrapper title={title}>
       <div className="verification-result-page">
         <div className="result-card">
-          <div className="result-icon error">
-            <FiXCircle />
-          </div>
+          <div className="result-icon error">!</div>
           <h2>{title}</h2>
           <p>{message}</p>
           <div className="result-actions">

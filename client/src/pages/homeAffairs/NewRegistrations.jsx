@@ -1,11 +1,11 @@
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FiUsers } from 'react-icons/fi';
 import PageWrapper from '../../components/layout/PageWrapper';
 import Table from '../../components/common/Table';
 import StatusBadge from '../../components/common/StatusBadge';
 import Button from '../../components/common/Button';
 import EmptyState from '../../components/common/EmptyState';
+import { TableSkeleton } from '../../components/common/SkeletonLoader';
 import useFetch from '../../hooks/useFetch';
 import { getRegistrations } from '../../api/homeAffairsApi';
 import { formatDate } from '../../utils/formatters';
@@ -156,11 +156,10 @@ function NewRegistrations() {
         )}
       </div>
 
-      {loading ? (
-        <p className="text-muted">Loading registrations…</p>
-      ) : filtered.length === 0 ? (
+      {loading && <TableSkeleton rows={6} columns={5} />}
+
+      {!loading && filtered.length === 0 && (
         <EmptyState
-          icon={<FiUsers />}
           title="No registrations found"
           message="Try changing the filters or the search text."
           actionLabel="Clear filters"
@@ -170,7 +169,9 @@ function NewRegistrations() {
             setSearch('');
           }}
         />
-      ) : (
+      )}
+
+      {!loading && filtered.length > 0 && (
         <Table columns={columns} data={filtered} />
       )}
     </PageWrapper>

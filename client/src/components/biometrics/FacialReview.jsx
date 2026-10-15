@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { FiAlertTriangle, FiCheckSquare } from 'react-icons/fi';
 import Button from '../common/Button';
 import Checkbox from '../common/Checkbox';
 import Alert from '../common/Alert';
@@ -63,7 +62,7 @@ export default function FacialReview({ image, onAccept, onRetake, allowOverride 
             className="btn-link"
             onClick={() => setOverrideOpen((v) => !v)}
           >
-            <FiAlertTriangle /> Override for a valid reason
+            <span aria-hidden="true">!</span> Override for a valid reason
           </button>
           {overrideOpen && (
             <>
@@ -90,7 +89,7 @@ export default function FacialReview({ image, onAccept, onRetake, allowOverride 
           onClick={handleAccept}
           disabled={!allConfirmed && !overrideOpen}
         >
-          <FiCheckSquare /> Accept photo
+          Accept photo
         </Button>
       </div>
     </div>

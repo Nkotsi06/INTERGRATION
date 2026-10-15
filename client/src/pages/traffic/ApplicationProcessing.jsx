@@ -1,5 +1,4 @@
 import { useState, useMemo } from 'react';
-import { FiFileText } from 'react-icons/fi';
 import PageWrapper from '../../components/layout/PageWrapper';
 import Table from '../../components/common/Table';
 import StatusBadge from '../../components/common/StatusBadge';
@@ -7,15 +6,17 @@ import Button from '../../components/common/Button';
 import EmptyState from '../../components/common/EmptyState';
 import Modal from '../../components/common/Modal';
 import SignaturePad from '../../components/signature/SignaturePad';
+import { TableSkeleton } from '../../components/common/SkeletonLoader';
 import useFetch from '../../hooks/useFetch';
 import { getStaffApplications, processApplication } from '../../api/trafficApi';
 import { useNotification } from '../../context/NotificationContext';
+import { formatDate } from '../../utils/formatters';
 
 const SUB_TYPE_LABEL = {
-  LEARNERS_LICENCE:      "Learner's licence",
-  DRIVING_LICENCE:       "Driver's licence",
+  LEARNERS_LICENCE: "Learner's licence",
+  DRIVING_LICENCE: "Driver's licence",
   PUBLIC_DRIVING_PERMIT: 'Public driving permit',
-  LICENCE_RENEWAL:       'Licence renewal',
+  LICENCE_RENEWAL: 'Licence renewal',
 };
 
 function TrafficApplicationProcessing() {
@@ -83,11 +84,11 @@ function TrafficApplicationProcessing() {
     { key: 'sub_type', label: 'Type',
       render: (r) => SUB_TYPE_LABEL[r.sub_type] || r.sub_type || '—' },
     { key: 'submitted_at', label: 'Submitted',
-      render: (r) => (r.submitted_at ? new Date(r.submitted_at).toLocaleDateString() : '—') },
+      render: (r) => (r.submitted_at ? formatDate(r.submitted_at) : '—') },
     { key: 'status', label: 'Status',
       render: (r) => <StatusBadge variant="captured" label={r.status} /> },
     { key: 'actions', label: 'Actions', render: (r) => (
-      <div style={{ display: 'flex', gap: 4 }}>
+      <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
         <Button variant="success" size="small"
           onClick={() => (needsSignature(r) ? openIssueModal(r) : handle(r.id, 'APPROVE'))}>
           Approve
@@ -134,12 +135,16 @@ function TrafficApplicationProcessing() {
         )}
       </div>
 
-      {loading ? (
-        <p className="text-muted">Loading…</p>
-      ) : filtered.length === 0 ? (
-        <EmptyState icon={<FiFileText />} title="No applications match"
-          message="Change the filters to see more results." />
-      ) : (
+      {loading && <TableSkeleton rows={6} columns={5} />}
+
+      {!loading && filtered.length === 0 && (
+        <EmptyState
+          title="No applications match"
+          message="Change the filters to see more results."
+        />
+      )}
+
+      {!loading && filtered.length > 0 && (
         <Table columns={columns} data={filtered} />
       )}
 
@@ -156,8 +161,13 @@ function TrafficApplicationProcessing() {
               <Button variant="secondary" onClick={() => setIssuing(null)} disabled={busy}>
                 Cancel
               </Button>
-              <Button variant="primary" onClick={handleIssue} disabled={busy || !signature}>
-                {busy ? 'Issuing…' : 'Issue licence'}
+              <Button
+                variant="primary"
+                onClick={handleIssue}
+                loading={busy}
+                disabled={!signature}
+              >
+                Issue licence
               </Button>
             </div>
           </div>

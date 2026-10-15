@@ -1,18 +1,9 @@
 import { useNavigate } from 'react-router-dom';
-import {
-  FiUsers,
-  FiUserCheck,
-  FiActivity,
-  FiServer,
-  FiUserPlus,
-  FiFileText,
-  FiCheckCircle,
-  FiAlertCircle,
-} from 'react-icons/fi';
 import AdminLayout from '../../components/layout/AdminLayout';
 import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
 import Alert from '../../components/common/Alert';
+import { StatsSkeleton } from '../../components/common/SkeletonLoader';
 import useFetch from '../../hooks/useFetch';
 import { getDashboardStats, getHealth, getRecentActivity } from '../../api/adminApi';
 import { formatDate } from '../../utils/formatters';
@@ -32,43 +23,42 @@ function AdminDashboard() {
         Integrated Government Services · System overview · {today}
       </p>
 
-      <div className="stats-grid">
-        <Card variant="bordered" className="stat-card">
-          <div className="stat-icon"><FiUsers /></div>
-          <div className="stat-body">
-            <div className="stat-value">{loading ? '—' : stats?.totalUsers ?? 0}</div>
-            <div className="stat-label">Total Users</div>
-          </div>
-        </Card>
+      {loading ? (
+        <StatsSkeleton count={4} />
+      ) : (
+        <div className="stats-grid">
+          <Card variant="bordered" className="stat-card">
+            <div className="stat-body">
+              <div className="stat-value">{stats?.totalUsers ?? 0}</div>
+              <div className="stat-label">Total Users</div>
+            </div>
+          </Card>
 
-        <Card variant="bordered" className="stat-card">
-          <div className="stat-icon"><FiUserCheck /></div>
-          <div className="stat-body">
-            <div className="stat-value">{loading ? '—' : stats?.activeStaff ?? 0}</div>
-            <div className="stat-label">Active Staff</div>
-          </div>
-        </Card>
+          <Card variant="bordered" className="stat-card">
+            <div className="stat-body">
+              <div className="stat-value">{stats?.activeStaff ?? 0}</div>
+              <div className="stat-label">Active Staff</div>
+            </div>
+          </Card>
 
-        <Card variant="bordered" className="stat-card">
-          <div className="stat-icon"><FiActivity /></div>
-          <div className="stat-body">
-            <div className="stat-value">{loading ? '—' : stats?.pendingActions ?? 0}</div>
-            <div className="stat-label">Pending Actions</div>
-          </div>
-        </Card>
+          <Card variant="bordered" className="stat-card">
+            <div className="stat-body">
+              <div className="stat-value">{stats?.pendingActions ?? 0}</div>
+              <div className="stat-label">Pending Actions</div>
+            </div>
+          </Card>
 
-        <Card variant="bordered" className="stat-card">
-          <div className="stat-icon"><FiServer /></div>
-          <div className="stat-body">
-            <div className="stat-value">{stats?.systemHealth || 'Healthy'}</div>
-            <div className="stat-label">System Health</div>
-          </div>
-        </Card>
-      </div>
+          <Card variant="bordered" className="stat-card">
+            <div className="stat-body">
+              <div className="stat-value">{stats?.systemHealth || 'Healthy'}</div>
+              <div className="stat-label">System Health</div>
+            </div>
+          </Card>
+        </div>
+      )}
 
       {health?.ok ? (
         <div className="admin-health-banner admin-health-ok">
-          <FiCheckCircle />
           <div>
             <strong>System operational</strong>
             <p className="text-muted">
@@ -78,7 +68,6 @@ function AdminDashboard() {
         </div>
       ) : (
         <div className="admin-health-banner admin-health-error">
-          <FiAlertCircle />
           <div>
             <strong>System check failed</strong>
             <p className="text-muted">
@@ -90,10 +79,10 @@ function AdminDashboard() {
 
       <div className="quick-actions">
         <Button variant="primary" onClick={() => navigate('/admin/users/add')}>
-          <FiUserPlus /> Add New User
+          Add New User
         </Button>
         <Button variant="secondary" onClick={() => navigate('/admin/audit-logs')}>
-          <FiFileText /> View Audit Logs
+          View Audit Logs
         </Button>
       </div>
 

@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { FiCheckCircle, FiEdit2 } from 'react-icons/fi';
 import PageWrapper from '../../components/layout/PageWrapper';
 import Avatar from '../../components/common/Avatar';
 import Button from '../../components/common/Button';
 import Input from '../../components/common/Input';
 import Alert from '../../components/common/Alert';
 import StatusBadge from '../../components/common/StatusBadge';
+import { StatsSkeleton } from '../../components/common/SkeletonLoader';
 import useFetch from '../../hooks/useFetch';
 import useBlobUrl from '../../hooks/useBlobUrl';
 import { getProfile, getPhotoBlob, updateContact } from '../../api/citizenApi';
@@ -76,7 +76,7 @@ function CitizenProfile() {
   if (loading) {
     return (
       <PageWrapper title="My Profile" showBack backPath="/citizen/dashboard">
-        <p className="text-muted">Loading profile…</p>
+        <StatsSkeleton count={2} />
       </PageWrapper>
     );
   }
@@ -110,9 +110,7 @@ function CitizenProfile() {
 
       {profile.isVerified ? (
         <div className="verification-status verified">
-          <span className="verification-status-title">
-            <FiCheckCircle aria-hidden="true" /> Verified
-          </span>
+          <span className="verification-status-title">Verified</span>
           <span className="verification-status-subtitle">
             Identity verified by Home Affairs
           </span>
@@ -149,7 +147,7 @@ function CitizenProfile() {
           <h3 className="form-section-title">Contact and address</h3>
           {!editing && (
             <Button variant="secondary" size="small" onClick={handleEdit}>
-              <FiEdit2 /> Edit contact details
+              Edit contact details
             </Button>
           )}
         </div>

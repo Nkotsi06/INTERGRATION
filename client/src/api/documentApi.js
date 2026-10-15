@@ -1,8 +1,11 @@
 import apiClient from './apiClient';
 
-export const uploadDocument = (formData) =>
+// Accepts an optional second argument with { onUploadProgress, signal }.
+// DocumentUpload passes this through so the progress bar and Cancel button work.
+export const uploadDocument = (formData, config = {}) =>
   apiClient.post('/documents/upload', formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
+    ...config,
   });
 
 export const getDocuments = (params) =>

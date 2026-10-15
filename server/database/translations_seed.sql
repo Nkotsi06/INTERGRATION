@@ -90,7 +90,7 @@ INSERT INTO translations (language_code, translation_key, translation_value) VAL
 ('EN', 'auth.staff_login.back_link', 'Back to citizen login'),
 
 ('ST', 'auth.staff_login.title', 'Kena ha Basebetsi'),
-('ST', 'auth.staff_login.subtitle', 'Kena ka akhaonto ya hao ya mmuso.'),
+('ST', 'auth.staff_login.subtitle', 'Kena ka akhaonto ea hao ea mmuso.'),
 ('ST', 'auth.staff_login.username', 'Lebitso la mosebelisi'),
 ('ST', 'auth.staff_login.password', 'Phasewete'),
 ('ST', 'auth.staff_login.submit', 'Kena'),
@@ -105,8 +105,8 @@ INSERT INTO translations (language_code, translation_key, translation_value) VAL
 ('EN', 'auth.admin_login.submit', 'Login'),
 ('EN', 'auth.admin_login.back_link', 'Back to staff login'),
 
-('ST', 'auth.admin_login.title', 'Kena ha Molaodi'),
-('ST', 'auth.admin_login.subtitle', 'Kena ka akhaonto ya hao ya molaodi.'),
+('ST', 'auth.admin_login.title', 'Kena ha motsamaisi'),
+('ST', 'auth.admin_login.subtitle', 'Kena ka akhaonto ea hao ea motsamaisi.'),
 ('ST', 'auth.admin_login.username', 'Lebitso la mosebelisi'),
 ('ST', 'auth.admin_login.password', 'Phasewete'),
 ('ST', 'auth.admin_login.submit', 'Kena'),
@@ -120,8 +120,8 @@ INSERT INTO translations (language_code, translation_key, translation_value) VAL
 ('EN', 'auth.forgot_password.submit', 'Submit'),
 ('EN', 'auth.forgot_password.back_link', 'Back to login'),
 
-('ST', 'auth.forgot_password.title', 'Seta phasewete ya hao botjha'),
-('ST', 'auth.forgot_password.subtitle', 'Kenya aterese ya hao ya imeile mme re tla romela ditaelo tsa ho e seta botjha.'),
+('ST', 'auth.forgot_password.title', 'Seta phasewete ea hao botjha'),
+('ST', 'auth.forgot_password.subtitle', 'Kenya aterese ea hao ea imeile mme re tla romela litaelo tsa ho e seta botjha.'),
 ('ST', 'auth.forgot_password.email', 'Imeile'),
 ('ST', 'auth.forgot_password.submit', 'Romela'),
 ('ST', 'auth.forgot_password.back_link', 'Khutlela ho kena');
@@ -137,11 +137,11 @@ INSERT INTO translations (language_code, translation_key, translation_value) VAL
 ('EN', 'auth.registration_received.explainer_step_3', 'Access government services online.'),
 
 ('ST', 'auth.registration_received.title', 'Ngoliso e amohetsoe'),
-('ST', 'auth.registration_received.message', 'Akhaonte ya hao e thehiloe. O ka kena hona jwale.'),
+('ST', 'auth.registration_received.message', 'Akhaonte ea hao e thehiloe. O ka kena hona jwale.'),
 ('ST', 'auth.registration_received.login_button', 'Kena'),
 ('ST', 'auth.registration_received.explainer_button', 'Ho tla etsahalang kamora moo?'),
-('ST', 'auth.registration_received.explainer_step_1', 'Kena akhaontong ya hao.'),
-('ST', 'auth.registration_received.explainer_step_2', 'Phetha netefatso ya boitsebiso ofising ya tsa Lehae.'),
+('ST', 'auth.registration_received.explainer_step_1', 'Kena akhaontong ea hao.'),
+('ST', 'auth.registration_received.explainer_step_2', 'Phetha netefatso ea boitsebiso ofising ea tsa Lehae.'),
 ('ST', 'auth.registration_received.explainer_step_3', 'Fumana litšebeletso tsa ’muso inthaneteng.');
 
 -- auth.errors.*
@@ -155,7 +155,7 @@ INSERT INTO translations (language_code, translation_key, translation_value) VAL
 ('EN', 'auth.errors.email_taken', 'This email is already registered.'),
 
 ('ST', 'auth.errors.required', 'Sebaka sena sea hlokahala.'),
-('ST', 'auth.errors.invalid_email', 'Ka kopo kenya aterese ya imeile ha e nepahaleng.'),
+('ST', 'auth.errors.invalid_email', 'Ka kopo kenya aterese ea imeile ha e nepahaleng.'),
 ('ST', 'auth.errors.password_short', 'Phasewete e lokela ho ba bonyane litlhaku tse 8.'),
 ('ST', 'auth.errors.password_no_number', 'Phasewete e lokela ho ba le bonyane nomoro e le nngwe.'),
 ('ST', 'auth.errors.password_mismatch', 'Liphasewete ha li tšoane.'),
@@ -174,7 +174,7 @@ INSERT INTO translations (language_code, translation_key, translation_value) VAL
 ('EN', 'nav.citizen.documents', 'Documents'),
 ('EN', 'nav.citizen.notifications', 'Notifications'),
 
-('ST', 'nav.citizen.dashboard', 'Leqephe la kakaretso'),
+('ST', 'nav.citizen.dashboard', 'Letlapa la litšebeletso'),
 ('ST', 'nav.citizen.profile', 'Profaele'),
 ('ST', 'nav.citizen.applications', 'Likopo'),
 ('ST', 'nav.citizen.documents', 'Litokomane'),
@@ -187,9 +187,9 @@ INSERT INTO translations (language_code, translation_key, translation_value) VAL
 ('EN', 'nav.admin.audit_logs', 'Audit Logs'),
 ('EN', 'nav.admin.settings', 'Settings'),
 
-('ST', 'nav.admin.dashboard', 'Leqephe la kakaretso'),
+('ST', 'nav.admin.dashboard', 'Letlapa la litšebeletso'),
 ('ST', 'nav.admin.users', 'Basebelisi'),
-('ST', 'nav.admin.audit_logs', 'Audit Logs'),
+('ST', 'nav.admin.audit_logs', 'Lirekoto tsa tlhahlobo'),
 ('ST', 'nav.admin.settings', 'Litlhophiso');
 
 -- nav.home_affairs.*
@@ -199,7 +199,7 @@ INSERT INTO translations (language_code, translation_key, translation_value) VAL
 ('EN', 'nav.home_affairs.search', 'Search'),
 ('EN', 'nav.home_affairs.reports', 'Reports'),
 
-('ST', 'nav.home_affairs.dashboard', 'Leqephe la kakaretso'),
+('ST', 'nav.home_affairs.dashboard', 'Letlapa la litšebeletso'),
 ('ST', 'nav.home_affairs.registrations', 'Lingoliso'),
 ('ST', 'nav.home_affairs.search', 'Batla'),
 ('ST', 'nav.home_affairs.reports', 'Litlaleho');
@@ -209,7 +209,7 @@ INSERT INTO translations (language_code, translation_key, translation_value) VAL
 ('EN', 'nav.traffic.dashboard', 'Dashboard'),
 ('EN', 'nav.traffic.processing', 'Processing'),
 
-('ST', 'nav.traffic.dashboard', 'Leqephe la kakaretso'),
+('ST', 'nav.traffic.dashboard', 'Letlapa la litšebeletso'),
 ('ST', 'nav.traffic.processing', 'Tsamaiso');
 
 -- nav.police.*
@@ -217,7 +217,7 @@ INSERT INTO translations (language_code, translation_key, translation_value) VAL
 ('EN', 'nav.police.dashboard', 'Dashboard'),
 ('EN', 'nav.police.cases', 'Cases'),
 
-('ST', 'nav.police.dashboard', 'Leqephe la kakaretso'),
+('ST', 'nav.police.dashboard', 'Letlapa la litšebeletso'),
 ('ST', 'nav.police.cases', 'Dinyewe');
 
 -- nav.finance.*
@@ -225,7 +225,7 @@ INSERT INTO translations (language_code, translation_key, translation_value) VAL
 ('EN', 'nav.finance.dashboard', 'Dashboard'),
 ('EN', 'nav.finance.processing', 'Processing'),
 
-('ST', 'nav.finance.dashboard', 'Leqephe la kakaretso'),
+('ST', 'nav.finance.dashboard', 'Letlapa la litšebeletso'),
 ('ST', 'nav.finance.processing', 'Tsamaiso');
 
 -- nav.pensions.*
@@ -233,7 +233,7 @@ INSERT INTO translations (language_code, translation_key, translation_value) VAL
 ('EN', 'nav.pensions.dashboard', 'Dashboard'),
 ('EN', 'nav.pensions.process', 'Process'),
 
-('ST', 'nav.pensions.dashboard', 'Leqephe la kakaretso'),
+('ST', 'nav.pensions.dashboard', 'Letlapa la litšebeletso'),
 ('ST', 'nav.pensions.process', 'Sebetsa');
 
 -- nav.passport.*
@@ -242,7 +242,7 @@ INSERT INTO translations (language_code, translation_key, translation_value) VAL
 ('EN', 'nav.passport.process', 'Process'),
 ('EN', 'nav.passport.history', 'History'),
 
-('ST', 'nav.passport.dashboard', 'Leqephe la kakaretso'),
+('ST', 'nav.passport.dashboard', 'Letlapa la litšebeletso'),
 ('ST', 'nav.passport.process', 'Sebetsa'),
 ('ST', 'nav.passport.history', 'Histori');
 
@@ -258,7 +258,7 @@ INSERT INTO translations (language_code, translation_key, translation_value) VAL
 ('EN', 'nav.sidebar_label.passport', 'Passport'),
 
 ('ST', 'nav.sidebar_label.citizen', 'Moahi'),
-('ST', 'nav.sidebar_label.admin', 'Molaodi'),
+('ST', 'nav.sidebar_label.admin', 'motsamaisi'),
 ('ST', 'nav.sidebar_label.home_affairs', 'Tsa Lehae'),
 ('ST', 'nav.sidebar_label.traffic', 'Tsa Sephethephethe'),
 ('ST', 'nav.sidebar_label.police', 'Sepolesa'),
@@ -317,7 +317,7 @@ INSERT INTO translations (language_code, translation_key, translation_value) VAL
 ('ST', 'btn.no', 'Che'),
 ('ST', 'btn.search', 'Batla'),
 ('ST', 'btn.filter', 'Sefa'),
-('ST', 'btn.clear_filters', 'Hlakola dikgetho'),
+('ST', 'btn.clear_filters', 'Hlakola likgetho'),
 ('ST', 'btn.logout', 'Tsoa'),
 ('ST', 'btn.login', 'Kena'),
 ('ST', 'btn.register', 'Ngolisa');
@@ -350,10 +350,10 @@ INSERT INTO translations (language_code, translation_key, translation_value) VAL
 ('EN', 'common.please_wait', 'Please wait'),
 
 ('ST', 'common.loading', 'E ntse e kenya'),
-('ST', 'common.no_results', 'Ha ho diphetho tse fumanoeng.'),
+('ST', 'common.no_results', 'Ha ho liphetho tse fumanoeng.'),
 ('ST', 'common.all', 'Tsohle'),
 ('ST', 'common.none', 'Ha ho letho'),
-('ST', 'common.other', 'Tse ding'),
+('ST', 'common.other', 'Tse ling'),
 ('ST', 'common.select', 'Kgetha'),
 ('ST', 'common.choose', 'Kgetha'),
 ('ST', 'common.actions', 'Liketso'),
@@ -388,7 +388,7 @@ INSERT INTO translations (language_code, translation_key, translation_value) VAL
 ('ST', 'err.not_found', 'Ntho e kopilweng ha ea fumanoa.'),
 ('ST', 'err.unauthorized', 'Ha u a dumellwa ho etsa ketso ena.'),
 ('ST', 'err.forbidden', 'Ho kena ho hanetswe.'),
-('ST', 'err.network', 'Phoso ya netweke. Ka kopo hlahloba kgokelo ya hao.'),
+('ST', 'err.network', 'Phoso ea netweke. Ka kopo hlahloba kgokelo ea hao.'),
 ('ST', 'err.timeout', 'Kopo e fetile nako. Ka kopo leka hape.'),
 ('ST', 'err.invalid_credentials', 'Lebitso la mosebelisi kapa phasewete ha ha e nepahale.');
 
@@ -447,13 +447,13 @@ INSERT INTO translations (language_code, translation_key, translation_value) VAL
 ('EN', 'citizen.dashboard.applications_title', 'My Applications'),
 ('EN', 'citizen.dashboard.view_applications', 'View Applications'),
 
-('ST', 'citizen.dashboard.title', 'Leqephe la kakaretso la moahi'),
+('ST', 'citizen.dashboard.title', 'Letlapa la litšebeletso la moahi'),
 ('ST', 'citizen.dashboard.welcome', 'Rea u amohela, {name}'),
 ('ST', 'citizen.dashboard.identity_verified', 'Boitsebiso ba hao bo netefalitsoe.'),
 ('ST', 'citizen.dashboard.verified_by', 'E netefalitsoe ke {ministry}'),
 ('ST', 'citizen.dashboard.verify_now', 'Netefatsa hona jwale'),
 ('ST', 'citizen.dashboard.waiting_for_home_affairs', 'E emetse tsa Lehae'),
-('ST', 'citizen.dashboard.waiting_subtitle', 'Netefatso ya boitsebiso ba hao e emetse.'),
+('ST', 'citizen.dashboard.waiting_subtitle', 'Netefatso ea boitsebiso ba hao e emetse.'),
 ('ST', 'citizen.dashboard.services_title', 'Litšebeletso tse fumanehang'),
 ('ST', 'citizen.dashboard.applications_title', 'Likopo tsa ka'),
 ('ST', 'citizen.dashboard.view_applications', 'Sheba likopo');
@@ -468,7 +468,7 @@ INSERT INTO translations (language_code, translation_key, translation_value) VAL
 ('EN', 'citizen.profile.change_password', 'Change Password'),
 ('EN', 'citizen.profile.visit_home_affairs', 'Visit a Home Affairs office to update your record.'),
 
-('ST', 'citizen.profile.title', 'Profaele ya ka'),
+('ST', 'citizen.profile.title', 'Profaele ea ka'),
 ('ST', 'citizen.profile.subtitle', 'Boitsebiso ba hao ba botho bo bolokilweng.'),
 ('ST', 'citizen.profile.personal_info', 'Boitsebiso ba botho'),
 ('ST', 'citizen.profile.contact_info', 'Boitsebiso ba ho ikopanya'),
@@ -494,16 +494,16 @@ INSERT INTO translations (language_code, translation_key, translation_value) VAL
 ('EN', 'citizen.verify.failure_message', 'We could not verify your identity.'),
 ('EN', 'citizen.verify.try_again', 'Try Again'),
 
-('ST', 'citizen.verify.title', 'Netefatso ya boitsebiso'),
-('ST', 'citizen.verify.explanation', 'Kenya phasewete ya hao ho qala netefatso.'),
+('ST', 'citizen.verify.title', 'Netefatso ea boitsebiso'),
+('ST', 'citizen.verify.explanation', 'Kenya phasewete ea hao ho qala netefatso.'),
 ('ST', 'citizen.verify.password_label', 'Phasewete'),
 ('ST', 'citizen.verify.continue', 'Tsoela pele'),
 ('ST', 'citizen.verify.success_title', 'Netefatso e atlehile'),
 ('ST', 'citizen.verify.success_message', 'Boitsebiso ba hao bo netefalitsoe.'),
 ('ST', 'citizen.verify.access_service', 'Fumana tshebeletso'),
 ('ST', 'citizen.verify.pending_title', 'Netefatso e emetse'),
-('ST', 'citizen.verify.pending_message', 'Netefatso ya hao e ntse e sebetswa.'),
-('ST', 'citizen.verify.back_to_dashboard', 'Khutlela ho Leqephe la kakaretso'),
+('ST', 'citizen.verify.pending_message', 'Netefatso ea hao e ntse e sebetswa.'),
+('ST', 'citizen.verify.back_to_dashboard', 'Khutlela ho Letlapa la litšebeletso'),
 ('ST', 'citizen.verify.find_office', 'Fumana ofisi'),
 ('ST', 'citizen.verify.failure_title', 'Netefatso e hlotsoe'),
 ('ST', 'citizen.verify.failure_wrong_password', 'Phasewete eo o e kentseng ha ha e nepahale.'),
@@ -521,8 +521,8 @@ INSERT INTO translations (language_code, translation_key, translation_value) VAL
 ('EN', 'citizen.change_password.password_hint', 'At least 8 characters, including one number.'),
 
 ('ST', 'citizen.change_password.title', 'Fetola phasewete'),
-('ST', 'citizen.change_password.subtitle', 'Kenya phasewete ya hao ya hona joale mme o kgetha e ntjha.'),
-('ST', 'citizen.change_password.current_password', 'Phasewete ya hona joale'),
+('ST', 'citizen.change_password.subtitle', 'Kenya phasewete ea hao ea hona joale mme o kgetha e ntjha.'),
+('ST', 'citizen.change_password.current_password', 'Phasewete ea hona joale'),
 ('ST', 'citizen.change_password.new_password', 'Phasewete e ntjha'),
 ('ST', 'citizen.change_password.confirm_password', 'Netefatsa phasewete e ntjha'),
 ('ST', 'citizen.change_password.save_password', 'Boloka phasewete'),
@@ -580,7 +580,7 @@ INSERT INTO translations (language_code, translation_key, translation_value) VAL
 ('EN', 'home_affairs.dashboard.review_button', 'Review'),
 ('EN', 'home_affairs.dashboard.search_button', 'Search Citizens'),
 
-('ST', 'home_affairs.dashboard.title', 'Leqephe la kakaretso ya tsa Lehae'),
+('ST', 'home_affairs.dashboard.title', 'Letlapa la litšebeletso ea tsa Lehae'),
 ('ST', 'home_affairs.dashboard.new_registrations', 'Lingoliso tse ntjha'),
 ('ST', 'home_affairs.dashboard.details_captured', 'Lintlha tse nkilweng'),
 ('ST', 'home_affairs.dashboard.verified_citizens', 'Baahi ba netefalitsoeng'),
@@ -609,11 +609,11 @@ INSERT INTO translations (language_code, translation_key, translation_value) VAL
 ('ST', 'home_affairs.registrations.filter_status', 'Boemo'),
 ('ST', 'home_affairs.registrations.filter_date', 'Letsatsi'),
 ('ST', 'home_affairs.registrations.filter_search', 'Batla'),
-('ST', 'home_affairs.registrations.clear_filters', 'Hlakola dikgetho'),
+('ST', 'home_affairs.registrations.clear_filters', 'Hlakola likgetho'),
 ('ST', 'home_affairs.registrations.table_username', 'Lebitso la mosebelisi'),
 ('ST', 'home_affairs.registrations.table_date', 'Letsatsi la ngoliso'),
 ('ST', 'home_affairs.registrations.table_status', 'Boemo'),
-('ST', 'home_affairs.registrations.table_national_id', 'Nomoro ya boitsebiso'),
+('ST', 'home_affairs.registrations.table_national_id', 'Nomoro ea boitsebiso'),
 ('ST', 'home_affairs.registrations.table_actions', 'Liketso'),
 ('ST', 'home_affairs.registrations.open_button', 'Bula'),
 ('ST', 'home_affairs.registrations.no_results', 'Ha ho lingoliso tse fumanoeng.');
@@ -649,10 +649,10 @@ INSERT INTO translations (language_code, translation_key, translation_value) VAL
 ('EN', 'home_affairs.complete_record.prints_captured', 'Fingerprints captured'),
 ('EN', 'home_affairs.complete_record.capture_required', 'Capture required'),
 
-('ST', 'home_affairs.complete_record.title', 'Phetha rekoto ya moahi'),
+('ST', 'home_affairs.complete_record.title', 'Phetha rekoto ea moahi'),
 ('ST', 'home_affairs.complete_record.username', 'Lebitso la mosebelisi'),
 ('ST', 'home_affairs.complete_record.date_registered', 'Letsatsi la ngoliso'),
-('ST', 'home_affairs.complete_record.national_id_label', 'Nomoro ya boitsebiso'),
+('ST', 'home_affairs.complete_record.national_id_label', 'Nomoro ea boitsebiso'),
 ('ST', 'home_affairs.complete_record.national_id_auto', 'Nomoro e tla iketsetsoa ha u boloka rekoto.'),
 ('ST', 'home_affairs.complete_record.section_personal', 'Lintlha tsa botho'),
 ('ST', 'home_affairs.complete_record.section_contact', 'Lintlha tsa ho ikopanya'),
@@ -667,7 +667,7 @@ INSERT INTO translations (language_code, translation_key, translation_value) VAL
 ('ST', 'home_affairs.complete_record.email', 'Imeile'),
 ('ST', 'home_affairs.complete_record.village', 'Motse'),
 ('ST', 'home_affairs.complete_record.district', 'Setereke'),
-('ST', 'home_affairs.complete_record.postal_address', 'Aterese ya poso'),
+('ST', 'home_affairs.complete_record.postal_address', 'Aterese ea poso'),
 ('ST', 'home_affairs.complete_record.upload_national_id', 'Kenya tokomane ea boitsebiso'),
 ('ST', 'home_affairs.complete_record.upload_birth_certificate', 'Kenya setifikeiti sa tsoalo'),
 ('ST', 'home_affairs.complete_record.upload_photo', 'Kenya senepe'),
@@ -688,8 +688,8 @@ INSERT INTO translations (language_code, translation_key, translation_value) VAL
 ('EN', 'home_affairs.record_saved.back_to_registrations', 'Back to Registrations'),
 
 ('ST', 'home_affairs.record_saved.title', 'Rekoto e bolokilwe'),
-('ST', 'home_affairs.record_saved.message', 'Rekoto ya moahi e bolokilwe ka katleho.'),
-('ST', 'home_affairs.record_saved.national_id_label', 'Nomoro ya boitsebiso'),
+('ST', 'home_affairs.record_saved.message', 'Rekoto ea moahi e bolokilwe ka katleho.'),
+('ST', 'home_affairs.record_saved.national_id_label', 'Nomoro ea boitsebiso'),
 ('ST', 'home_affairs.record_saved.print_slip', 'Hatisa setlankana'),
 ('ST', 'home_affairs.record_saved.continue_to_verification', 'Tsoela pele ho netefatso'),
 ('ST', 'home_affairs.record_saved.back_to_registrations', 'Khutlela ho lingoliso');
@@ -706,7 +706,7 @@ INSERT INTO translations (language_code, translation_key, translation_value) VAL
 ('EN', 'home_affairs.verify.verified_by_message', 'Verified by {name} on {date}'),
 
 ('ST', 'home_affairs.verify.title', 'Netefatsa moahi'),
-('ST', 'home_affairs.verify.checklist_id', 'Tokomane ya nomoro ya boitsebiso e hlahlobilwe'),
+('ST', 'home_affairs.verify.checklist_id', 'Tokomane ea nomoro ea boitsebiso e hlahlobilwe'),
 ('ST', 'home_affairs.verify.checklist_birth', 'Setifikeiti sa tsoalo se hlahlobilwe'),
 ('ST', 'home_affairs.verify.checklist_address', 'Bopaki ba aterese bo hlahlobilwe'),
 ('ST', 'home_affairs.verify.checklist_photo', 'Senepe se tšoana le moahi'),
@@ -725,12 +725,12 @@ INSERT INTO translations (language_code, translation_key, translation_value) VAL
 ('EN', 'home_affairs.search.no_citizen', 'No citizen found matching your search.'),
 
 ('ST', 'home_affairs.search.title', 'Batla baahi'),
-('ST', 'home_affairs.search.search_label', 'Batla ka lebitso kapa nomoro ya boitsebiso'),
+('ST', 'home_affairs.search.search_label', 'Batla ka lebitso kapa nomoro ea boitsebiso'),
 ('ST', 'home_affairs.search.search_hint', 'Kenya bonyane litlhaku tse tharo.'),
 ('ST', 'home_affairs.search.search_button', 'Batla'),
 ('ST', 'home_affairs.search.citizen_found', 'Moahi o fumanoe'),
 ('ST', 'home_affairs.search.view_profile', 'Sheba profaele'),
-('ST', 'home_affairs.search.no_citizen', 'Ha ho moahi ya fumanoeng ho latela patlisiso ya hao.');
+('ST', 'home_affairs.search.no_citizen', 'Ha ho moahi ea fumanoeng ho latela patlisiso ea hao.');
 
 -- home_affairs.reports.*
 INSERT INTO translations (language_code, translation_key, translation_value) VALUES
@@ -749,9 +749,9 @@ INSERT INTO translations (language_code, translation_key, translation_value) VAL
 ('ST', 'home_affairs.reports.title', 'Litlaleho'),
 ('ST', 'home_affairs.reports.subtitle', 'Hlahisa le ho romela litlaleho tsa ngoliso.'),
 ('ST', 'home_affairs.reports.report_type', 'Mofuta wa tlaleho'),
-('ST', 'home_affairs.reports.date_range', 'Nako ya matsatsi'),
+('ST', 'home_affairs.reports.date_range', 'Nako ea matsatsi'),
 ('ST', 'home_affairs.reports.generate_preview', 'Hlahisa ponelopele'),
-('ST', 'home_affairs.reports.clear_filters', 'Hlakola dikgetho'),
+('ST', 'home_affairs.reports.clear_filters', 'Hlakola likgetho'),
 ('ST', 'home_affairs.reports.citizens_registered', 'Baahi ba ngolisitsweng'),
 ('ST', 'home_affairs.reports.citizens_verified', 'Baahi ba netefalitsoeng'),
 ('ST', 'home_affairs.reports.pending', 'E emetse'),
@@ -791,8 +791,8 @@ INSERT INTO translations (language_code, translation_key, translation_value) VAL
 ('EN', 'traffic.licence.renew_button', 'Renew'),
 ('EN', 'traffic.licence.back_button', 'Back'),
 
-('ST', 'traffic.licence.title', 'Laesense ya ho kgweetsa'),
-('ST', 'traffic.licence.licence_number', 'Nomoro ya laesense'),
+('ST', 'traffic.licence.title', 'Laesense ea ho kgweetsa'),
+('ST', 'traffic.licence.licence_number', 'Nomoro ea laesense'),
 ('ST', 'traffic.licence.full_name', 'Lebitso le felletseng'),
 ('ST', 'traffic.licence.licence_type', 'Mofuta wa laesense'),
 ('ST', 'traffic.licence.issue_date', 'Letsatsi la ho ntshwa'),
@@ -827,10 +827,10 @@ INSERT INTO translations (language_code, translation_key, translation_value) VAL
 ('ST', 'traffic.renew.review_subtitle', 'Netefatsa boitsebiso ba hao pele ho tefo.'),
 ('ST', 'traffic.renew.continue_payment', 'Tsoela pele ho tefo'),
 ('ST', 'traffic.renew.payment_title', 'Tefo'),
-('ST', 'traffic.renew.mobile_number', 'Nomoro ya mohala'),
+('ST', 'traffic.renew.mobile_number', 'Nomoro ea mohala'),
 ('ST', 'traffic.renew.pay_button', 'Lefa'),
 ('ST', 'traffic.renew.confirmation_title', 'Tefo e netefalitsoe'),
-('ST', 'traffic.renew.reference_number', 'Nomoro ya nomoro ea tšupiso'),
+('ST', 'traffic.renew.reference_number', 'Nomoro ea nomoro ea tšupiso'),
 ('ST', 'traffic.renew.download_receipt', 'Khoasolla risiti'),
 ('ST', 'traffic.renew.view_licence', 'Sheba laesense');
 
@@ -874,7 +874,7 @@ INSERT INTO translations (language_code, translation_key, translation_value) VAL
 ('ST', 'traffic.appointments.title', 'Dikopano tsa ka'),
 ('ST', 'traffic.appointments.filter_status', 'Boemo'),
 ('ST', 'traffic.appointments.filter_date', 'Letsatsi'),
-('ST', 'traffic.appointments.clear_filters', 'Hlakola dikgetho'),
+('ST', 'traffic.appointments.clear_filters', 'Hlakola likgetho'),
 ('ST', 'traffic.appointments.table_date', 'Letsatsi'),
 ('ST', 'traffic.appointments.table_time', 'Nako'),
 ('ST', 'traffic.appointments.table_type', 'Mofuta'),
@@ -882,7 +882,7 @@ INSERT INTO translations (language_code, translation_key, translation_value) VAL
 ('ST', 'traffic.appointments.table_status', 'Boemo'),
 ('ST', 'traffic.appointments.table_actions', 'Liketso'),
 ('ST', 'traffic.appointments.cancel_button', 'Hlakola'),
-('ST', 'traffic.appointments.no_results', 'Ha ho dikopano tse fumanoeng.');
+('ST', 'traffic.appointments.no_results', 'Ha ho likopano tse fumanoeng.');
 
 -- traffic.staff_dashboard.*
 INSERT INTO translations (language_code, translation_key, translation_value) VALUES
@@ -892,7 +892,7 @@ INSERT INTO translations (language_code, translation_key, translation_value) VAL
 ('EN', 'traffic.staff_dashboard.licences_issued', 'Licences Issued'),
 ('EN', 'traffic.staff_dashboard.process_button', 'Process'),
 
-('ST', 'traffic.staff_dashboard.title', 'Leqephe la kakaretso ya basebetsi ba Sephethephethe'),
+('ST', 'traffic.staff_dashboard.title', 'Letlapa la litšebeletso ea basebetsi ba Sephethephethe'),
 ('ST', 'traffic.staff_dashboard.pending_applications', 'Likopo tse emetseng'),
 ('ST', 'traffic.staff_dashboard.today_appointments', 'Dikopano tsa kajeno'),
 ('ST', 'traffic.staff_dashboard.licences_issued', 'Dilaesense tse ntshitsweng'),
@@ -920,10 +920,10 @@ INSERT INTO translations (language_code, translation_key, translation_value) VAL
 ('ST', 'traffic.processing.subtitle', 'Hlahloba le ho sebetsa likopo tse emetseng tsa laesense.'),
 ('ST', 'traffic.processing.filter_status', 'Boemo'),
 ('ST', 'traffic.processing.filter_date', 'Letsatsi'),
-('ST', 'traffic.processing.clear_filters', 'Hlakola dikgetho'),
+('ST', 'traffic.processing.clear_filters', 'Hlakola likgetho'),
 ('ST', 'traffic.processing.table_reference', 'Nomoro ea tšupiso'),
 ('ST', 'traffic.processing.table_citizen', 'Moahi'),
-('ST', 'traffic.processing.table_national_id', 'Nomoro ya boitsebiso'),
+('ST', 'traffic.processing.table_national_id', 'Nomoro ea boitsebiso'),
 ('ST', 'traffic.processing.table_date', 'Letsatsi'),
 ('ST', 'traffic.processing.table_status', 'Boemo'),
 ('ST', 'traffic.processing.table_actions', 'Liketso'),
@@ -989,14 +989,14 @@ INSERT INTO translations (language_code, translation_key, translation_value) VAL
 ('ST', 'police.report.case_type_theft', 'Bosholu'),
 ('ST', 'police.report.case_type_assault', 'Tlhaselo'),
 ('ST', 'police.report.case_type_fraud', 'Bomenemene'),
-('ST', 'police.report.case_type_missing', 'Motho ya lahlehileng'),
-('ST', 'police.report.case_type_other', 'Tse ding'),
+('ST', 'police.report.case_type_missing', 'Motho ea lahlehileng'),
+('ST', 'police.report.case_type_other', 'Tse ling'),
 ('ST', 'police.report.incident_date', 'Letsatsi la ketsahalo'),
 ('ST', 'police.report.location', 'Sebaka'),
 ('ST', 'police.report.description', 'Tlhaloso'),
 ('ST', 'police.report.upload_evidence', 'Kenya bopaki'),
 ('ST', 'police.report.declaration', 'Boitlamo'),
-('ST', 'police.report.declaration_text', 'Ke tiisa hore tlhahisoleseling e fanoeng ke ya nnete.'),
+('ST', 'police.report.declaration_text', 'Ke tiisa hore tlhahisoleseling e fanoeng ke ea nnete.'),
 ('ST', 'police.report.submit_button', 'Romela'),
 ('ST', 'police.report.cancel_button', 'Hlakola');
 
@@ -1017,14 +1017,14 @@ INSERT INTO translations (language_code, translation_key, translation_value) VAL
 ('ST', 'police.cases.title', 'Dinyewe tsa ka'),
 ('ST', 'police.cases.filter_status', 'Boemo'),
 ('ST', 'police.cases.filter_date', 'Letsatsi'),
-('ST', 'police.cases.clear_filters', 'Hlakola dikgetho'),
-('ST', 'police.cases.table_number', 'Nomoro ya nyeoe'),
+('ST', 'police.cases.clear_filters', 'Hlakola likgetho'),
+('ST', 'police.cases.table_number', 'Nomoro ea nyeoe'),
 ('ST', 'police.cases.table_type', 'Mofuta'),
 ('ST', 'police.cases.table_date', 'Letsatsi'),
 ('ST', 'police.cases.table_status', 'Boemo'),
 ('ST', 'police.cases.table_actions', 'Liketso'),
 ('ST', 'police.cases.view_button', 'Sheba'),
-('ST', 'police.cases.no_results', 'Ha ho dinyewe tse fumanoeng.');
+('ST', 'police.cases.no_results', 'Ha ho linyewe tse fumanoeng.');
 
 -- police.case_details.*
 INSERT INTO translations (language_code, translation_key, translation_value) VALUES
@@ -1045,7 +1045,7 @@ INSERT INTO translations (language_code, translation_key, translation_value) VAL
 ('ST', 'police.case_details.location', 'Sebaka'),
 ('ST', 'police.case_details.officer', 'Ofisiri'),
 ('ST', 'police.case_details.description', 'Tlhaloso'),
-('ST', 'police.case_details.status_timeline', 'Tatelano ya boemo'),
+('ST', 'police.case_details.status_timeline', 'Tatelano ea boemo'),
 ('ST', 'police.case_details.back_button', 'Khutlela');
 
 -- police.clearance.*
@@ -1062,15 +1062,15 @@ INSERT INTO translations (language_code, translation_key, translation_value) VAL
 ('EN', 'police.clearance.submit_button', 'Submit'),
 ('EN', 'police.clearance.cancel_button', 'Cancel'),
 
-('ST', 'police.clearance.title', 'Tumello ya sepolesa'),
-('ST', 'police.clearance.subtitle', 'Etsa kopo ya setifikeiti sa tumello ya sepolesa.'),
+('ST', 'police.clearance.title', 'Tumello ea sepolesa'),
+('ST', 'police.clearance.subtitle', 'Etsa kopo ea setifikeiti sa tumello ea sepolesa.'),
 ('ST', 'police.clearance.purpose', 'Sepheo'),
 ('ST', 'police.clearance.station', 'Seteishene sa sepolesa'),
-('ST', 'police.clearance.contact_number', 'Nomoro ya ho ikopanya'),
+('ST', 'police.clearance.contact_number', 'Nomoro ea ho ikopanya'),
 ('ST', 'police.clearance.email', 'Imeile'),
-('ST', 'police.clearance.upload_national_id', 'Kenya nomoro ya boitsebiso'),
+('ST', 'police.clearance.upload_national_id', 'Kenya nomoro ea boitsebiso'),
 ('ST', 'police.clearance.declaration', 'Boitlamo'),
-('ST', 'police.clearance.declaration_text', 'Ke tiisa hore tlhahisoleseling e fanoeng ke ya nnete.'),
+('ST', 'police.clearance.declaration_text', 'Ke tiisa hore tlhahisoleseling e fanoeng ke ea nnete.'),
 ('ST', 'police.clearance.submit_button', 'Romela'),
 ('ST', 'police.clearance.cancel_button', 'Hlakola');
 
@@ -1082,7 +1082,7 @@ INSERT INTO translations (language_code, translation_key, translation_value) VAL
 ('EN', 'police.staff_dashboard.pending_updates', 'Pending Updates'),
 ('EN', 'police.staff_dashboard.manage_button', 'Manage'),
 
-('ST', 'police.staff_dashboard.title', 'Leqephe la kakaretso ya basebetsi ba Sepolesa'),
+('ST', 'police.staff_dashboard.title', 'Letlapa la litšebeletso ea basebetsi ba Sepolesa'),
 ('ST', 'police.staff_dashboard.open_cases', 'Dinyewe tse butsweng'),
 ('ST', 'police.staff_dashboard.closed_cases', 'Dinyewe tse kwetsweng'),
 ('ST', 'police.staff_dashboard.pending_updates', 'Dintjhafatso tse emetseng'),
@@ -1104,19 +1104,19 @@ INSERT INTO translations (language_code, translation_key, translation_value) VAL
 ('EN', 'police.manage.update_button', 'Update'),
 ('EN', 'police.manage.no_results', 'No cases found.'),
 
-('ST', 'police.manage.title', 'Laola dinyewe'),
-('ST', 'police.manage.subtitle', 'Hlahloba le ho ntlafatsa maemo a dinyewe.'),
+('ST', 'police.manage.title', 'Laola linyewe'),
+('ST', 'police.manage.subtitle', 'Hlahloba le ho ntlafatsa maemo a linyewe.'),
 ('ST', 'police.manage.filter_status', 'Boemo'),
 ('ST', 'police.manage.filter_date', 'Letsatsi'),
-('ST', 'police.manage.clear_filters', 'Hlakola dikgetho'),
-('ST', 'police.manage.table_number', 'Nomoro ya nyeoe'),
+('ST', 'police.manage.clear_filters', 'Hlakola likgetho'),
+('ST', 'police.manage.table_number', 'Nomoro ea nyeoe'),
 ('ST', 'police.manage.table_citizen', 'Moahi'),
 ('ST', 'police.manage.table_type', 'Mofuta'),
 ('ST', 'police.manage.table_date', 'Letsatsi'),
 ('ST', 'police.manage.table_status', 'Boemo'),
 ('ST', 'police.manage.table_actions', 'Liketso'),
 ('ST', 'police.manage.update_button', 'Ntlafatsa'),
-('ST', 'police.manage.no_results', 'Ha ho dinyewe tse fumanoeng.');
+('ST', 'police.manage.no_results', 'Ha ho linyewe tse fumanoeng.');
 
 -- police.update.*
 INSERT INTO translations (language_code, translation_key, translation_value) VALUES
@@ -1147,12 +1147,12 @@ INSERT INTO translations (language_code, translation_key, translation_value) VAL
 ('EN', 'finance.dashboard.tax_clearance', 'Tax Clearance'),
 
 ('ST', 'finance.dashboard.title', 'Litšebeletso tsa Lichelete'),
-('ST', 'finance.dashboard.subtitle', 'Laola lekgetho le ditefo tsa hao.'),
+('ST', 'finance.dashboard.subtitle', 'Laola lekgetho le litefo tsa hao.'),
 ('ST', 'finance.dashboard.register_tax', 'Ngolisa lekgetho'),
-('ST', 'finance.dashboard.view_profile', 'Sheba profaele ya lekgetho'),
+('ST', 'finance.dashboard.view_profile', 'Sheba profaele ea lekgetho'),
 ('ST', 'finance.dashboard.make_payment', 'Etsa tefo'),
-('ST', 'finance.dashboard.payment_history', 'Histori ya ditefo'),
-('ST', 'finance.dashboard.tax_clearance', 'Tumello ya lekgetho');
+('ST', 'finance.dashboard.payment_history', 'Histori ea litefo'),
+('ST', 'finance.dashboard.tax_clearance', 'Tumello ea lekgetho');
 
 -- finance.register.*
 INSERT INTO translations (language_code, translation_key, translation_value) VALUES
@@ -1178,7 +1178,7 @@ INSERT INTO translations (language_code, translation_key, translation_value) VAL
 ('ST', 'finance.register.tax_year', 'Selemo sa lekgetho'),
 ('ST', 'finance.register.employer', 'Mokgethisi'),
 ('ST', 'finance.register.declaration', 'Boitlamo'),
-('ST', 'finance.register.declaration_text', 'Ke tiisa hore tlhahisoleseling e fanoeng ke ya nnete.'),
+('ST', 'finance.register.declaration_text', 'Ke tiisa hore tlhahisoleseling e fanoeng ke ea nnete.'),
 ('ST', 'finance.register.submit_button', 'Romela'),
 ('ST', 'finance.register.cancel_button', 'Hlakola');
 
@@ -1198,8 +1198,8 @@ INSERT INTO translations (language_code, translation_key, translation_value) VAL
 ('EN', 'finance.profile.tax_clearance_button', 'Tax Clearance'),
 ('EN', 'finance.profile.no_payments', 'No payments recorded.'),
 
-('ST', 'finance.profile.title', 'Profaele ya lekgetho'),
-('ST', 'finance.profile.tax_id', 'Nomoro ya lekgetho'),
+('ST', 'finance.profile.title', 'Profaele ea lekgetho'),
+('ST', 'finance.profile.tax_id', 'Nomoro ea lekgetho'),
 ('ST', 'finance.profile.status', 'Boemo'),
 ('ST', 'finance.profile.outstanding_balance', 'Sekoloto se saletseng'),
 ('ST', 'finance.profile.recent_payments', 'Ditefo tsa morao tjena'),
@@ -1209,8 +1209,8 @@ INSERT INTO translations (language_code, translation_key, translation_value) VAL
 ('ST', 'finance.profile.table_method', 'Mokgwa'),
 ('ST', 'finance.profile.table_status', 'Boemo'),
 ('ST', 'finance.profile.make_payment_button', 'Etsa tefo'),
-('ST', 'finance.profile.tax_clearance_button', 'Tumello ya lekgetho'),
-('ST', 'finance.profile.no_payments', 'Ha ho ditefo tse tlalehilweng.');
+('ST', 'finance.profile.tax_clearance_button', 'Tumello ea lekgetho'),
+('ST', 'finance.profile.no_payments', 'Ha ho litefo tse tlalehilweng.');
 
 -- finance.payment.*
 INSERT INTO translations (language_code, translation_key, translation_value) VALUES
@@ -1229,10 +1229,10 @@ INSERT INTO translations (language_code, translation_key, translation_value) VAL
 ('ST', 'finance.payment.subtitle', 'Kenya lintlha tsa tefo ho lefa lekgetho la hao.'),
 ('ST', 'finance.payment.amount_label', 'Chelete'),
 ('ST', 'finance.payment.method_label', 'Mokgwa wa tefo'),
-('ST', 'finance.payment.method_mobile', 'Chelete ya mohala'),
-('ST', 'finance.payment.method_bank', 'Phetiso ya banka'),
+('ST', 'finance.payment.method_mobile', 'Chelete ea mohala'),
+('ST', 'finance.payment.method_bank', 'Phetiso ea banka'),
 ('ST', 'finance.payment.method_card', 'Karete'),
-('ST', 'finance.payment.mobile_number', 'Nomoro ya mohala'),
+('ST', 'finance.payment.mobile_number', 'Nomoro ea mohala'),
 ('ST', 'finance.payment.pay_button', 'Lefa'),
 ('ST', 'finance.payment.cancel_button', 'Hlakola');
 
@@ -1249,7 +1249,7 @@ INSERT INTO translations (language_code, translation_key, translation_value) VAL
 ('EN', 'finance.payment_confirmation.view_profile', 'View Profile'),
 
 ('ST', 'finance.payment_confirmation.title', 'Tefo e netefalitsoe'),
-('ST', 'finance.payment_confirmation.message', 'Tefo ya hao e amohetsoe.'),
+('ST', 'finance.payment_confirmation.message', 'Tefo ea hao e amohetsoe.'),
 ('ST', 'finance.payment_confirmation.reference_label', 'Nomoro ea tšupiso'),
 ('ST', 'finance.payment_confirmation.amount_label', 'Chelete'),
 ('ST', 'finance.payment_confirmation.balance_label', 'Sekoloto se setjha'),
@@ -1276,7 +1276,7 @@ INSERT INTO translations (language_code, translation_key, translation_value) VAL
 
 ('ST', 'finance.clearance.title', 'Setifikeiti sa tumello ea lekhetho'),
 ('ST', 'finance.clearance.subtitle', 'Setifikeiti sa hao sa tumello ea lekhetho.'),
-('ST', 'finance.clearance.certificate_id', 'Nomoro ya setifikeiti'),
+('ST', 'finance.clearance.certificate_id', 'Nomoro ea setifikeiti'),
 ('ST', 'finance.clearance.tin', 'TIN'),
 ('ST', 'finance.clearance.legal_name', 'Lebitso la molao'),
 ('ST', 'finance.clearance.trading_name', 'Lebitso la kgwebo'),
@@ -1296,7 +1296,7 @@ INSERT INTO translations (language_code, translation_key, translation_value) VAL
 ('EN', 'finance.staff_dashboard.outstanding_balances', 'Outstanding Balances'),
 ('EN', 'finance.staff_dashboard.process_button', 'Process'),
 
-('ST', 'finance.staff_dashboard.title', 'Leqephe la kakaretso ya basebetsi ba Lichelete'),
+('ST', 'finance.staff_dashboard.title', 'Letlapa la litšebeletso ea basebetsi ba Lichelete'),
 ('ST', 'finance.staff_dashboard.registered_taxpayers', 'Bakhafi ba ngolisitsoeng'),
 ('ST', 'finance.staff_dashboard.payments_today', 'Ditefo tsa kajeno'),
 ('ST', 'finance.staff_dashboard.outstanding_balances', 'Dikoloto tse saletseng'),
@@ -1323,10 +1323,10 @@ INSERT INTO translations (language_code, translation_key, translation_value) VAL
 ('ST', 'finance.processing.subtitle', 'Hlahloba le ho sebetsa lingoliso tsa lekgetho tse emetseng.'),
 ('ST', 'finance.processing.filter_status', 'Boemo'),
 ('ST', 'finance.processing.filter_date', 'Letsatsi'),
-('ST', 'finance.processing.clear_filters', 'Hlakola dikgetho'),
+('ST', 'finance.processing.clear_filters', 'Hlakola likgetho'),
 ('ST', 'finance.processing.table_reference', 'Nomoro ea tšupiso'),
 ('ST', 'finance.processing.table_citizen', 'Moahi'),
-('ST', 'finance.processing.table_national_id', 'Nomoro ya boitsebiso'),
+('ST', 'finance.processing.table_national_id', 'Nomoro ea boitsebiso'),
 ('ST', 'finance.processing.table_income', 'Mohlodi wa lekeno'),
 ('ST', 'finance.processing.table_status', 'Boemo'),
 ('ST', 'finance.processing.table_actions', 'Liketso'),
@@ -1350,7 +1350,7 @@ INSERT INTO translations (language_code, translation_key, translation_value) VAL
 ('ST', 'pensions.dashboard.subtitle', 'Sheba lintlha tsa penshene ea hao ’me u netefatse hore li nepahetse.'),
 ('ST', 'pensions.dashboard.view_info', 'Sheba lintlha tsa penshene'),
 ('ST', 'pensions.dashboard.perform_verification', 'Etsa netefatso'),
-('ST', 'pensions.dashboard.verification_history', 'Histori ya netefatso');
+('ST', 'pensions.dashboard.verification_history', 'Histori ea netefatso');
 
 -- pensions.info.*
 INSERT INTO translations (language_code, translation_key, translation_value) VALUES
@@ -1366,7 +1366,7 @@ INSERT INTO translations (language_code, translation_key, translation_value) VAL
 ('ST', 'pensions.info.title', 'Lintlha tsa penshene'),
 ('ST', 'pensions.info.pension_type', 'Mofuta oa penshene'),
 ('ST', 'pensions.info.pension_number', 'Nomoro ea penshene'),
-('ST', 'pensions.info.monthly_amount', 'Chelete ya kgwedi le kgwedi'),
+('ST', 'pensions.info.monthly_amount', 'Chelete ea kgwedi le kgwedi'),
 ('ST', 'pensions.info.next_payment_date', 'Letsatsi le latelang la tefo'),
 ('ST', 'pensions.info.payment_status', 'Boemo ba tefo'),
 ('ST', 'pensions.info.back_button', 'Khutlela'),
@@ -1382,8 +1382,8 @@ INSERT INTO translations (language_code, translation_key, translation_value) VAL
 ('EN', 'pensions.verify.cancel_button', 'Cancel'),
 
 ('ST', 'pensions.verify.title', 'Netefatso ea penshene'),
-('ST', 'pensions.verify.subtitle', 'Araba potso ya tšireletso ho netefatsa.'),
-('ST', 'pensions.verify.security_question', 'Potso ya tšireletso'),
+('ST', 'pensions.verify.subtitle', 'Araba potso ea tšireletso ho netefatsa.'),
+('ST', 'pensions.verify.security_question', 'Potso ea tšireletso'),
 ('ST', 'pensions.verify.answer_label', 'Karabo'),
 ('ST', 'pensions.verify.verify_button', 'Netefatsa'),
 ('ST', 'pensions.verify.cancel_button', 'Hlakola');
@@ -1416,11 +1416,11 @@ INSERT INTO translations (language_code, translation_key, translation_value) VAL
 ('EN', 'pensions.history.table_method', 'Method'),
 ('EN', 'pensions.history.no_results', 'No verifications found.'),
 
-('ST', 'pensions.history.title', 'Histori ya netefatso'),
+('ST', 'pensions.history.title', 'Histori ea netefatso'),
 ('ST', 'pensions.history.filter_status', 'Boemo'),
 ('ST', 'pensions.history.filter_method', 'Mokgwa'),
 ('ST', 'pensions.history.filter_date', 'Letsatsi'),
-('ST', 'pensions.history.clear_filters', 'Hlakola dikgetho'),
+('ST', 'pensions.history.clear_filters', 'Hlakola likgetho'),
 ('ST', 'pensions.history.table_date', 'Letsatsi'),
 ('ST', 'pensions.history.table_status', 'Boemo'),
 ('ST', 'pensions.history.table_method', 'Mokgwa'),
@@ -1434,7 +1434,7 @@ INSERT INTO translations (language_code, translation_key, translation_value) VAL
 ('EN', 'pensions.staff_dashboard.payments_processed', 'Payments Processed'),
 ('EN', 'pensions.staff_dashboard.process_button', 'Process'),
 
-('ST', 'pensions.staff_dashboard.title', 'Leqephe la kakaretso ya basebetsi ba Penshene'),
+('ST', 'pensions.staff_dashboard.title', 'Letlapa la litšebeletso ea basebetsi ba Penshene'),
 ('ST', 'pensions.staff_dashboard.active_pensioners', 'Batho ba fumanang penshene ba ntseng ba e fumana'),
 ('ST', 'pensions.staff_dashboard.verifications_due', 'Netefatso tse lokelang ho etsoa'),
 ('ST', 'pensions.staff_dashboard.payments_processed', 'Ditefo tse sebetsitsweng'),
@@ -1457,14 +1457,14 @@ INSERT INTO translations (language_code, translation_key, translation_value) VAL
 ('ST', 'pensions.process.title', 'Sebetsa likopo tsa penshene'),
 ('ST', 'pensions.process.subtitle', 'Hlahloba le ho netefatsa lintlha tsa batho ba fumanang penshene.'),
 ('ST', 'pensions.process.filter_status', 'Boemo'),
-('ST', 'pensions.process.clear_filters', 'Hlakola dikgetho'),
+('ST', 'pensions.process.clear_filters', 'Hlakola likgetho'),
 ('ST', 'pensions.process.table_citizen', 'Motho ea fumanang penshene'),
-('ST', 'pensions.process.table_national_id', 'Nomoro ya boitsebiso'),
+('ST', 'pensions.process.table_national_id', 'Nomoro ea boitsebiso'),
 ('ST', 'pensions.process.table_last_verified', 'E netefalitsoeng la ho qetela'),
 ('ST', 'pensions.process.table_status', 'Boemo'),
 ('ST', 'pensions.process.table_actions', 'Liketso'),
 ('ST', 'pensions.process.confirm_button', 'Tiisa'),
-('ST', 'pensions.process.no_results', 'Ha ho dintlafatso tse fumanoeng.');
+('ST', 'pensions.process.no_results', 'Ha ho lintlafatso tse fumanoeng.');
 
 -- ============================================================
 -- PASSPORT AREA
@@ -1479,8 +1479,8 @@ INSERT INTO translations (language_code, translation_key, translation_value) VAL
 ('EN', 'passport.dashboard.check_status', 'Check Status'),
 
 ('ST', 'passport.dashboard.title', 'Litšebeletso tsa Pasepoto'),
-('ST', 'passport.dashboard.subtitle', 'Etsa kopo ya pasepoto, ntlafatsa, kapa hlahloba boemo.'),
-('ST', 'passport.dashboard.apply', 'Etsa kopo ya pasepoto'),
+('ST', 'passport.dashboard.subtitle', 'Etsa kopo ea pasepoto, ntlafatsa, kapa hlahloba boemo.'),
+('ST', 'passport.dashboard.apply', 'Etsa kopo ea pasepoto'),
 ('ST', 'passport.dashboard.renew', 'Ntlafatsa pasepoto'),
 ('ST', 'passport.dashboard.check_status', 'Hlahloba boemo');
 
@@ -1513,29 +1513,29 @@ INSERT INTO translations (language_code, translation_key, translation_value) VAL
 ('EN', 'passport.apply.back_button', 'Back'),
 ('EN', 'passport.apply.save_draft', 'Save Draft'),
 
-('ST', 'passport.apply.title', 'Etsa kopo ya pasepoto'),
+('ST', 'passport.apply.title', 'Etsa kopo ea pasepoto'),
 ('ST', 'passport.apply.step_review', 'Hlahloba'),
 ('ST', 'passport.apply.step_details', 'Lintlha'),
 ('ST', 'passport.apply.step_documents', 'Litokomane'),
 ('ST', 'passport.apply.step_submit', 'Romela'),
-('ST', 'passport.apply.review_title', 'Hlahloba tlhahisoleseling ya hao'),
+('ST', 'passport.apply.review_title', 'Hlahloba tlhahisoleseling ea hao'),
 ('ST', 'passport.apply.review_subtitle', 'Netefatsa hore lintlha tsa hao di nepahetse pele o tswela pele.'),
 ('ST', 'passport.apply.continue', 'Tsoela pele'),
 ('ST', 'passport.apply.details_title', 'Lintlha tsa pasepoto'),
 ('ST', 'passport.apply.passport_type', 'Mofuta wa pasepoto'),
 ('ST', 'passport.apply.passport_type_ordinary', 'E tlwaelehileng'),
-('ST', 'passport.apply.passport_type_official', 'Ya semmuso'),
-('ST', 'passport.apply.collection_office', 'Ofisi ya ho nka'),
+('ST', 'passport.apply.passport_type_official', 'ea semmuso'),
+('ST', 'passport.apply.collection_office', 'Ofisi ea ho nka'),
 ('ST', 'passport.apply.reason', 'Lebaka la kopo'),
 ('ST', 'passport.apply.documents_title', 'Kenya litokomane'),
-('ST', 'passport.apply.upload_national_id', 'Kenya nomoro ya boitsebiso'),
+('ST', 'passport.apply.upload_national_id', 'Kenya nomoro ea boitsebiso'),
 ('ST', 'passport.apply.upload_birth', 'Kenya setifikeiti sa tsoalo'),
 ('ST', 'passport.apply.upload_photo', 'Kenya senepe'),
 ('ST', 'passport.apply.photo_requirement', 'Senepe se lokela ho ba sa morao tjena, bokamorao bo hlakileng, ’me u se ke ua roala likhalase.'),
 ('ST', 'passport.apply.review_submit_title', 'Hlahloba le ho romela'),
 ('ST', 'passport.apply.summary_title', 'Kakaretso'),
 ('ST', 'passport.apply.declaration', 'Boitlamo'),
-('ST', 'passport.apply.declaration_text', 'Ke tiisa hore tlhahisoleseling e fanoeng ke ya nnete.'),
+('ST', 'passport.apply.declaration_text', 'Ke tiisa hore tlhahisoleseling e fanoeng ke ea nnete.'),
 ('ST', 'passport.apply.submit_button', 'Romela'),
 ('ST', 'passport.apply.back_button', 'Khutlela'),
 ('ST', 'passport.apply.save_draft', 'Boloka morero');
@@ -1554,12 +1554,12 @@ INSERT INTO translations (language_code, translation_key, translation_value) VAL
 ('EN', 'passport.confirmation.track_button', 'Track Application'),
 
 ('ST', 'passport.confirmation.title', 'Kopo e rometsoeng'),
-('ST', 'passport.confirmation.message', 'Kopo ya hao ya pasepoto e rometsoeng.'),
+('ST', 'passport.confirmation.message', 'Kopo ea hao ea pasepoto e rometsoeng.'),
 ('ST', 'passport.confirmation.reference_label', 'Nomoro ea tšupiso'),
 ('ST', 'passport.confirmation.applicant_label', 'Mokopi'),
 ('ST', 'passport.confirmation.date_label', 'Letsatsi'),
 ('ST', 'passport.confirmation.passport_type_label', 'Mofuta wa pasepoto'),
-('ST', 'passport.confirmation.office_label', 'Ofisi ya ho nka'),
+('ST', 'passport.confirmation.office_label', 'Ofisi ea ho nka'),
 ('ST', 'passport.confirmation.keep_safe', 'Boloka nomoro ea tšupiso sebakeng se sireletsehileng.'),
 ('ST', 'passport.confirmation.download_receipt', 'Khoasolla risiti'),
 ('ST', 'passport.confirmation.track_button', 'Latela kopo');
@@ -1578,7 +1578,7 @@ INSERT INTO translations (language_code, translation_key, translation_value) VAL
 ('ST', 'passport.status.title', 'Boemo ba kopo'),
 ('ST', 'passport.status.filter_status', 'Boemo'),
 ('ST', 'passport.status.filter_date', 'Letsatsi'),
-('ST', 'passport.status.clear_filters', 'Hlakola dikgetho'),
+('ST', 'passport.status.clear_filters', 'Hlakola likgetho'),
 ('ST', 'passport.status.table_reference', 'Nomoro ea tšupiso'),
 ('ST', 'passport.status.table_date', 'Letsatsi'),
 ('ST', 'passport.status.table_status', 'Boemo'),
@@ -1593,7 +1593,7 @@ INSERT INTO translations (language_code, translation_key, translation_value) VAL
 ('EN', 'passport.staff_dashboard.process_button', 'Process'),
 ('EN', 'passport.staff_dashboard.history_button', 'History'),
 
-('ST', 'passport.staff_dashboard.title', 'Leqephe la kakaretso ya basebetsi ba Pasepoto'),
+('ST', 'passport.staff_dashboard.title', 'Letlapa la litšebeletso ea basebetsi ba Pasepoto'),
 ('ST', 'passport.staff_dashboard.pending', 'E emetse'),
 ('ST', 'passport.staff_dashboard.approved_today', 'E amohetsoeng kajeno'),
 ('ST', 'passport.staff_dashboard.rejected_today', 'E lahlilweng kajeno'),
@@ -1622,10 +1622,10 @@ INSERT INTO translations (language_code, translation_key, translation_value) VAL
 ('ST', 'passport.process.subtitle', 'Hlahloba le ho sebetsa likopo tsa pasepoto tse emetseng.'),
 ('ST', 'passport.process.filter_status', 'Boemo'),
 ('ST', 'passport.process.filter_date', 'Letsatsi'),
-('ST', 'passport.process.clear_filters', 'Hlakola dikgetho'),
+('ST', 'passport.process.clear_filters', 'Hlakola likgetho'),
 ('ST', 'passport.process.table_reference', 'Nomoro ea tšupiso'),
 ('ST', 'passport.process.table_citizen', 'Mokopi'),
-('ST', 'passport.process.table_national_id', 'Nomoro ya boitsebiso'),
+('ST', 'passport.process.table_national_id', 'Nomoro ea boitsebiso'),
 ('ST', 'passport.process.table_date', 'Letsatsi'),
 ('ST', 'passport.process.table_status', 'Boemo'),
 ('ST', 'passport.process.table_actions', 'Liketso'),
@@ -1648,10 +1648,10 @@ INSERT INTO translations (language_code, translation_key, translation_value) VAL
 ('EN', 'passport.history.export_button', 'Export'),
 ('EN', 'passport.history.no_results', 'No history found.'),
 
-('ST', 'passport.history.title', 'Histori ya tsamaiso'),
+('ST', 'passport.history.title', 'Histori ea tsamaiso'),
 ('ST', 'passport.history.filter_status', 'Boemo'),
 ('ST', 'passport.history.filter_date', 'Letsatsi'),
-('ST', 'passport.history.clear_filters', 'Hlakola dikgetho'),
+('ST', 'passport.history.clear_filters', 'Hlakola likgetho'),
 ('ST', 'passport.history.table_reference', 'Nomoro ea tšupiso'),
 ('ST', 'passport.history.table_citizen', 'Mokopi'),
 ('ST', 'passport.history.table_date', 'Letsatsi'),
@@ -1680,19 +1680,19 @@ INSERT INTO translations (language_code, translation_key, translation_value) VAL
 ('EN', 'admin.dashboard.recent_activity', 'Recent Activity'),
 ('EN', 'admin.dashboard.no_activity', 'No recent activity.'),
 
-('ST', 'admin.dashboard.title', 'Leqephe la kakaretso la motsamaisi'),
-('ST', 'admin.dashboard.subtitle', 'Kakaretso ya sistimi le tsamaiso.'),
-('ST', 'admin.dashboard.total_users', 'Kakaretso ya basebelisi'),
+('ST', 'admin.dashboard.title', 'Letlapa la litšebeletso la motsamaisi'),
+('ST', 'admin.dashboard.subtitle', 'Kakaretso ea sistimi le tsamaiso.'),
+('ST', 'admin.dashboard.total_users', 'Kakaretso ea basebelisi'),
 ('ST', 'admin.dashboard.active_staff', 'Basebetsi ba sebetsang'),
 ('ST', 'admin.dashboard.pending_actions', 'Liketso tse emetseng'),
 ('ST', 'admin.dashboard.system_health', 'Bophelo ba sistimi'),
 ('ST', 'admin.dashboard.health_operational', 'E sebetsa'),
 ('ST', 'admin.dashboard.health_last_checked', 'E hlahlobilweng la ho qetela {time}'),
-('ST', 'admin.dashboard.health_failed', 'Tlhahlobo ya bophelo e hlotsoe'),
+('ST', 'admin.dashboard.health_failed', 'Tlhahlobo ea bophelo e hlotsoe'),
 ('ST', 'admin.dashboard.add_user', 'Kenya mosebelisi'),
-('ST', 'admin.dashboard.view_audit', 'Sheba Audit Logs'),
-('ST', 'admin.dashboard.recent_activity', 'Ketso ya morao tjena'),
-('ST', 'admin.dashboard.no_activity', 'Ha ho ketso ya morao tjena.');
+('ST', 'admin.dashboard.view_audit', 'Sheba Lirekoto tsa tlhahlobo'),
+('ST', 'admin.dashboard.recent_activity', 'Ketso ea morao tjena'),
+('ST', 'admin.dashboard.no_activity', 'Ha ho ketso ea morao tjena.');
 
 -- admin.users.*
 INSERT INTO translations (language_code, translation_key, translation_value) VALUES
@@ -1719,12 +1719,12 @@ INSERT INTO translations (language_code, translation_key, translation_value) VAL
 ('EN', 'admin.users.ministry_not_applicable', 'Not Applicable'),
 ('EN', 'admin.users.ministry_administration', 'Administration'),
 
-('ST', 'admin.users.title', 'Tsamaiso ya basebelisi'),
+('ST', 'admin.users.title', 'Tsamaiso ea basebelisi'),
 ('ST', 'admin.users.subtitle', 'Laola liakhaonto tsa baahi, basebetsi le balaodi.'),
 ('ST', 'admin.users.filter_username', 'Lebitso la mosebelisi'),
 ('ST', 'admin.users.filter_role', 'Karolo'),
 ('ST', 'admin.users.filter_status', 'Boemo'),
-('ST', 'admin.users.clear_filters', 'Hlakola dikgetho'),
+('ST', 'admin.users.clear_filters', 'Hlakola likgetho'),
 ('ST', 'admin.users.add_user', 'Kenya mosebelisi'),
 ('ST', 'admin.users.table_username', 'Lebitso la mosebelisi'),
 ('ST', 'admin.users.table_role', 'Karolo'),
@@ -1738,7 +1738,7 @@ INSERT INTO translations (language_code, translation_key, translation_value) VAL
 ('ST', 'admin.users.no_results', 'Ha ho basebelisi ba fumanoeng.'),
 ('ST', 'admin.users.role_citizen', 'Moahi'),
 ('ST', 'admin.users.role_staff', 'Mosebetsi'),
-('ST', 'admin.users.role_admin', 'Molaodi'),
+('ST', 'admin.users.role_admin', 'motsamaisi'),
 ('ST', 'admin.users.ministry_not_applicable', 'Ha e sebetse'),
 ('ST', 'admin.users.ministry_administration', 'Tsamaiso');
 
@@ -1770,7 +1770,7 @@ INSERT INTO translations (language_code, translation_key, translation_value) VAL
 ('ST', 'admin.add_user.username', 'Lebitso la mosebelisi'),
 ('ST', 'admin.add_user.email', 'Imeile'),
 ('ST', 'admin.add_user.role', 'Karolo'),
-('ST', 'admin.add_user.role_hint', 'Kgetha karolo ya akhaonto ena.'),
+('ST', 'admin.add_user.role_hint', 'Kgetha karolo ea akhaonto ena.'),
 ('ST', 'admin.add_user.ministry', 'Lefapha'),
 ('ST', 'admin.add_user.ministry_hint', 'E hlokahala bakeng sa liakhaonto tsa basebetsi.'),
 ('ST', 'admin.add_user.status', 'Boemo'),
@@ -1815,9 +1815,9 @@ INSERT INTO translations (language_code, translation_key, translation_value) VAL
 ('ST', 'admin.edit_user.status', 'Boemo'),
 ('ST', 'admin.edit_user.section_password', 'Phasewete'),
 ('ST', 'admin.edit_user.new_password', 'Phasewete e ntjha'),
-('ST', 'admin.edit_user.new_password_hint', 'Tlohela ho se na letho ho boloka phasewete ya hona joale.'),
+('ST', 'admin.edit_user.new_password_hint', 'Tlohela ho se na letho ho boloka phasewete ea hona joale.'),
 ('ST', 'admin.edit_user.confirm_password', 'Netefatsa phasewete'),
-('ST', 'admin.edit_user.save_changes', 'Boloka diphetoho'),
+('ST', 'admin.edit_user.save_changes', 'Boloka liphetoho'),
 ('ST', 'admin.edit_user.cancel_button', 'Hlakola'),
 ('ST', 'admin.edit_user.danger_zone', 'Sebaka se kotsi'),
 ('ST', 'admin.edit_user.danger_zone_message', 'Liketso tsena di ke ke tsa kgutlisetswa morao.'),
@@ -1843,12 +1843,12 @@ INSERT INTO translations (language_code, translation_key, translation_value) VAL
 ('EN', 'admin.audit.print_button', 'Print'),
 ('EN', 'admin.audit.no_results', 'No audit entries found.'),
 
-('ST', 'admin.audit.title', 'Audit Logs'),
-('ST', 'admin.audit.subtitle', 'Rekoto ya diketsahalo tsa sistimi.'),
+('ST', 'admin.audit.title', 'Lirekoto tsa tlhahlobo'),
+('ST', 'admin.audit.subtitle', 'Rekoto ea liketsahalo tsa sistimi.'),
 ('ST', 'admin.audit.filter_user', 'Mosebelisi'),
 ('ST', 'admin.audit.filter_action', 'Ketso'),
 ('ST', 'admin.audit.filter_date', 'Letsatsi'),
-('ST', 'admin.audit.clear_filters', 'Hlakola dikgetho'),
+('ST', 'admin.audit.clear_filters', 'Hlakola likgetho'),
 ('ST', 'admin.audit.table_timestamp', 'Nako'),
 ('ST', 'admin.audit.table_user', 'Mosebelisi'),
 ('ST', 'admin.audit.table_action', 'Ketso'),
@@ -1858,7 +1858,7 @@ INSERT INTO translations (language_code, translation_key, translation_value) VAL
 ('ST', 'admin.audit.result_failed', 'E hlotsoe'),
 ('ST', 'admin.audit.export_button', 'Romela'),
 ('ST', 'admin.audit.print_button', 'Hatisa'),
-('ST', 'admin.audit.no_results', 'Ha ho direkoto tsa audit tse fumanoeng.');
+('ST', 'admin.audit.no_results', 'Ha ho lirekoto tsa audit tse fumanoeng.');
 
 -- admin.settings.*
 INSERT INTO translations (language_code, translation_key, translation_value) VALUES
@@ -1886,15 +1886,15 @@ INSERT INTO translations (language_code, translation_key, translation_value) VAL
 ('ST', 'admin.settings.title', 'Litlhophiso tsa sistimi'),
 ('ST', 'admin.settings.section_general', 'Kakaretso'),
 ('ST', 'admin.settings.system_name', 'Lebitso la sistimi'),
-('ST', 'admin.settings.default_language', 'Puo ya kamehla'),
+('ST', 'admin.settings.default_language', 'Puo ea kamehla'),
 ('ST', 'admin.settings.section_security', 'Tšireletso'),
-('ST', 'admin.settings.session_timeout', 'Nako ya ho fela ha seshene (metsotso)'),
-('ST', 'admin.settings.session_timeout_hint', 'Metsotso ya ho se sebetse pele o tswa.'),
+('ST', 'admin.settings.session_timeout', 'Nako ea ho fela ha seshene (metsotso)'),
+('ST', 'admin.settings.session_timeout_hint', 'Metsotso ea ho se sebetse pele o tswa.'),
 ('ST', 'admin.settings.password_policy', 'Leano la phasewete'),
 ('ST', 'admin.settings.password_policy_hint', 'Litlhoko tse fokolang tsa liphasewete.'),
 ('ST', 'admin.settings.failed_login_limit', 'Moedi wa ho hloleha ho kena'),
-('ST', 'admin.settings.failed_login_hint', 'Palo ya diteko tse hlotsoengng pele ho notlellwa.'),
-('ST', 'admin.settings.lockout_duration', 'Nako ya ho notlellwa (metsotso)'),
+('ST', 'admin.settings.failed_login_hint', 'Palo ea liteko tse hlotsoengng pele ho notlellwa.'),
+('ST', 'admin.settings.lockout_duration', 'Nako ea ho notlellwa (metsotso)'),
 ('ST', 'admin.settings.lockout_hint', 'Nako eo akhaonto e dula e notletswe.'),
 ('ST', 'admin.settings.section_notifications', 'Litsebiso'),
 ('ST', 'admin.settings.email_notifications', 'Litsebiso tsa imeile'),
@@ -1931,13 +1931,13 @@ INSERT INTO translations (language_code, translation_key, translation_value) VAL
 ('ST', 'admin.confirm.activate_message', 'Na u na le bonnete ba hore o batla ho dumella {username}?'),
 ('ST', 'admin.confirm.activate_confirm', 'Dumella'),
 ('ST', 'admin.confirm.delete_title_template', 'Hlakola {username}'),
-('ST', 'admin.confirm.delete_message', 'Ketso ena e ke ke ya kgutlisetswa morao.'),
-('ST', 'admin.confirm.delete_message_citizen', 'Sena se tla hlakola rekoto ya moahi ka ho sa feleng.'),
+('ST', 'admin.confirm.delete_message', 'Ketso ena e ke ke ea kgutlisetswa morao.'),
+('ST', 'admin.confirm.delete_message_citizen', 'Sena se tla hlakola rekoto ea moahi ka ho sa feleng.'),
 ('ST', 'admin.confirm.delete_confirm_type', 'Ngola DELETE ho netefatsa'),
 ('ST', 'admin.confirm.delete_confirm_button', 'Hlakola'),
 ('ST', 'admin.confirm.delete_cancel', 'Hlakola'),
 ('ST', 'admin.confirm.unsaved_title', 'Diphetoho tse sa bolokwang'),
-('ST', 'admin.confirm.unsaved_message', 'U na le diphetoho tse sa bolokwang. O tlohela?'),
+('ST', 'admin.confirm.unsaved_message', 'U na le liphetoho tse sa bolokwang. O tlohela?'),
 ('ST', 'admin.confirm.unsaved_confirm', 'Tlohela');
 
 -- admin.pagination.*
@@ -1986,9 +1986,9 @@ INSERT INTO translations (language_code, translation_key, translation_value) VAL
 ('ST', 'misc.shared.are_you_sure_delete', 'Na u na le bonnete ba hore o batla ho hlakola ntho ena?'),
 ('ST', 'misc.shared.operation_successful', 'Ketso e phethilwe ka katleho.'),
 ('ST', 'misc.shared.operation_failed', 'Ketso e hlotsoe. Ka kopo leka hape.'),
-('ST', 'misc.shared.no_permission', 'Ha u na tumello ya ho bona sena.'),
-('ST', 'misc.shared.session_expired', 'Seshene ya hao e fedile. Ka kopo kena hape.'),
-('ST', 'misc.shared.unsaved_changes', 'U na le diphetoho tse sa bolokwang.'),
+('ST', 'misc.shared.no_permission', 'Ha u na tumello ea ho bona sena.'),
+('ST', 'misc.shared.session_expired', 'Seshene ea hao e fedile. Ka kopo kena hape.'),
+('ST', 'misc.shared.unsaved_changes', 'U na le liphetoho tse sa bolokwang.'),
 ('ST', 'misc.shared.saved_successfully', 'E bolokilwe ka katleho.'),
 ('ST', 'misc.shared.deleted_successfully', 'E hlakotsoeng ka katleho.'),
 ('ST', 'misc.shared.updated_successfully', 'E ntlafalitsoe ka katleho.'),
@@ -2054,9 +2054,9 @@ INSERT INTO translations (language_code, translation_key, translation_value) VAL
 ('ST', 'aria.back', 'Khutlela'),
 ('ST', 'aria.signature_pad', 'Sebaka sa ho saena'),
 ('ST', 'aria.clear_signature', 'Hlakola ho saena'),
-('ST', 'aria.capture_fingerprint', 'Nka kgati ya monwana'),
+('ST', 'aria.capture_fingerprint', 'Nka kgati ea monwana'),
 ('ST', 'aria.capture_face', 'Nka setshwantsho sa sefahleho'),
-('ST', 'aria.status_badge', 'Boemo: {status}');
+('ST', 'aria.status_badge', 'Boemo: {Boemo}');
 
 -- ============================================================
 -- DOCUMENTS / BIOMETRICS / SIGNATURE / FILTERS SHARED LABELS
@@ -2090,7 +2090,7 @@ INSERT INTO translations (language_code, translation_key, translation_value) VAL
 ('ST', 'documents.list.view', 'Sheba'),
 ('ST', 'documents.list.download', 'Khoasolla'),
 ('ST', 'documents.list.delete', 'Hlakola'),
-('ST', 'documents.preview.title', 'Ponelopele ya tokomane'),
+('ST', 'documents.preview.title', 'Ponelopele ea tokomane'),
 ('ST', 'documents.preview.close', 'Kwala'),
 ('ST', 'documents.status.pending', 'E emetse'),
 ('ST', 'documents.status.approved', 'E amohetsoe'),
@@ -2111,9 +2111,9 @@ INSERT INTO translations (language_code, translation_key, translation_value) VAL
 ('EN', 'biometrics.captured', 'Captured'),
 ('EN', 'biometrics.not_captured', 'Not captured'),
 
-('ST', 'biometrics.enrollment.title', 'Ngoliso ya biometrics'),
-('ST', 'biometrics.enrollment.instruction', 'Nka dikgati le setshwantsho sa sefahleho.'),
-('ST', 'biometrics.fingerprint.title', 'Ho nka kgati ya monwana'),
+('ST', 'biometrics.enrollment.title', 'Ngoliso ea biometrics'),
+('ST', 'biometrics.enrollment.instruction', 'Nka likgati le setshwantsho sa sefahleho.'),
+('ST', 'biometrics.fingerprint.title', 'Ho nka kgati ea monwana'),
 ('ST', 'biometrics.fingerprint.instruction', 'Beha monwana hodima sekena.'),
 ('ST', 'biometrics.fingerprint.capture_button', 'Nka'),
 ('ST', 'biometrics.fingerprint.retry_button', 'Leka hape'),
@@ -2151,10 +2151,10 @@ INSERT INTO translations (language_code, translation_key, translation_value) VAL
 ('EN', 'filters.bar.reset', 'Reset'),
 ('EN', 'filters.clear.button', 'Clear Filters'),
 
-('ST', 'filters.bar.apply', 'Sebedisa dikgetho'),
+('ST', 'filters.bar.apply', 'Sebedisa likgetho'),
 ('ST', 'filters.bar.clear', 'Hlakola'),
 ('ST', 'filters.bar.reset', 'Seta botjha'),
-('ST', 'filters.clear.button', 'Hlakola dikgetho');
+('ST', 'filters.clear.button', 'Hlakola likgetho');
 
 -- ============================================================
 -- MINISTRY SHARED LABELS
@@ -2170,7 +2170,7 @@ INSERT INTO translations (language_code, translation_key, translation_value) VAL
 ('EN', 'ministry.shared.service_card.unavailable', 'Unavailable'),
 ('EN', 'ministry.shared.service_card.start', 'Start'),
 
-('ST', 'ministry.shared.citizen_information', 'Tlhahisoleseling ya moahi'),
+('ST', 'ministry.shared.citizen_information', 'Tlhahisoleseling ea moahi'),
 ('ST', 'ministry.shared.verified_details', 'Lintlha tse netefalitsoeng'),
 ('ST', 'ministry.shared.not_verified', 'Ha e so netefatswe'),
 ('ST', 'ministry.shared.read_only', 'Tlhahisoleseling ena e ka balwa feela.'),
@@ -2201,8 +2201,8 @@ INSERT INTO translations (language_code, translation_key, translation_value) VAL
 ('EN', 'layout.staff.title', 'Staff Portal'),
 
 ('ST', 'layout.admin.title', 'Tsamaiso'),
-('ST', 'layout.citizen.title', 'Portal ya Moahi'),
-('ST', 'layout.staff.title', 'Portal ya Basebetsi');
+('ST', 'layout.citizen.title', 'Portal ea Moahi'),
+('ST', 'layout.staff.title', 'Portal ea Basebetsi');
 
 -- ============================================================
 -- CONFIRM / DIALOG SHARED

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import PageWrapper from '../../components/layout/PageWrapper';
-import ProgressIndicator from '../../components/common/ProgressIndicator';
+import StepIndicator from '../../components/common/StepIndicator';
 import Select from '../../components/common/Select';
 import Input from '../../components/common/Input';
 import Checkbox from '../../components/common/Checkbox';
@@ -10,18 +10,23 @@ import Alert from '../../components/common/Alert';
 import CitizenReadOnlyBlock from '../../components/ministry/CitizenReadOnlyBlock';
 import DocumentUpload from '../../components/documents/DocumentUpload';
 import useFetch from '../../hooks/useFetch';
+import useServiceFee from '../../hooks/useServiceFees';
 import { getProfile } from '../../api/citizenApi';
 import { applyForPassport } from '../../api/passportApi';
 import { uploadDocument } from '../../api/documentApi';
 import { useNotification } from '../../context/NotificationContext';
+import { formatCurrency } from '../../utils/formatters';
 
 function ApplyForPassport() {
   const { data: profile } = useFetch(getProfile, []);
+  const { fee, currency } = useServiceFee('PASSPORT', 'PASSPORT_APPLY');
   const [step, setStep] = useState(1);
   const [details, setDetails] = useState({
     passportType: 'ORDINARY',
     reason: '',
     collectionOffice: 'MASERU',
+    method: 'MOBILE_MONEY',
+    mobile: '',
   });
   const [confirmed, setConfirmed] = useState(false);
   const [error, setError] = useState(null);
@@ -33,6 +38,10 @@ function ApplyForPassport() {
     setError(null);
     if (!confirmed) {
       setError('Please confirm your information before submitting.');
+      return;
+    }
+    if (details.method === 'MOBILE_MONEY' && !details.mobile.trim()) {
+      setError('Please enter your mobile number for payment.');
       return;
     }
     setLoading(true);
@@ -56,9 +65,9 @@ function ApplyForPassport() {
     >
       <h1>Apply for passport</h1>
 
-      <ProgressIndicator
-        currentStep={step}
-        totalSteps={4}
+      <StepIndicator
+        current={step}
+        total={4}
         labels={['Review info', 'Passport details', 'Documents', 'Review & submit']}
       />
 
@@ -110,6 +119,37 @@ function ApplyForPassport() {
             />
           </div>
 
+          {fee > 0 && (
+            <div className="form-section">
+              <h3 className="form-section-title">Payment</h3>
+              <p className="text-muted">
+                Application fee: <strong>{formatCurrency(fee, currency)}</strong>
+              </p>
+              <div className="form-grid">
+                <Select
+                  label="Payment method"
+                  value={details.method}
+                  onChange={(e) => setDetails({ ...details, method: e.target.value })}
+                  options={[
+                    { value: 'MOBILE_MONEY', label: 'Mobile money' },
+                    { value: 'BANK_TRANSFER', label: 'Bank transfer' },
+                    { value: 'CARD', label: 'Card' },
+                  ]}
+                  required
+                />
+                {details.method === 'MOBILE_MONEY' && (
+                  <Input
+                    label="Mobile number"
+                    value={details.mobile}
+                    onChange={(e) => setDetails({ ...details, mobile: e.target.value })}
+                    placeholder="+266 5888 2140"
+                    required
+                  />
+                )}
+              </div>
+            </div>
+          )}
+
           <FormActions
             primaryLabel="Continue"
             onPrimary={() => setStep(3)}
@@ -123,24 +163,24 @@ function ApplyForPassport() {
           <DocumentUpload
             documentType="NATIONAL_ID"
             label="National ID copy"
-            onUpload={async (formData) => {
-              await uploadDocument(formData);
+            onUpload={async (formData, config) => {
+              await uploadDocument(formData, config);
               success('Document uploaded');
             }}
           />
           <DocumentUpload
             documentType="BIRTH_CERTIFICATE"
             label="Birth certificate"
-            onUpload={async (formData) => {
-              await uploadDocument(formData);
+            onUpload={async (formData, config) => {
+              await uploadDocument(formData, config);
               success('Document uploaded');
             }}
           />
           <DocumentUpload
             documentType="PASSPORT_PHOTO"
             label="Passport photograph"
-            onUpload={async (formData) => {
-              await uploadDocument(formData);
+            onUpload={async (formData, config) => {
+              await uploadDocument(formData, config);
               success('Document uploaded');
             }}
           />
@@ -162,6 +202,12 @@ function ApplyForPassport() {
               <ReadOnly label="National ID" value={profile?.nationalId} />
               <ReadOnly label="Passport type" value={details.passportType} />
               <ReadOnly label="Collection office" value={details.collectionOffice} />
+              {fee > 0 && (
+                <ReadOnly label="Application fee" value={formatCurrency(fee, currency)} />
+              )}
+              {fee > 0 && (
+                <ReadOnly label="Payment method" value={details.method} />
+              )}
             </div>
           </div>
 
@@ -172,7 +218,11 @@ function ApplyForPassport() {
           />
 
           <FormActions
-            primaryLabel="Submit application"
+            primaryLabel={
+              fee > 0
+                ? `Pay ${formatCurrency(fee, currency)} and submit`
+                : 'Submit application'
+            }
             primaryLoading={loading}
             onPrimary={handleSubmit}
             onSecondary={() => setStep(3)}

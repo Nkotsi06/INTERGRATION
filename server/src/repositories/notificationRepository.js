@@ -26,8 +26,15 @@ async function markRead(id) {
   await query('UPDATE notifications SET is_read = true WHERE id = $1', [id]);
 }
 
+async function markAllRead(userId) {
+  await query(
+    'UPDATE notifications SET is_read = true WHERE user_id = $1 AND is_read = false',
+    [userId]
+  );
+}
+
 async function deleteById(id) {
   await query('DELETE FROM notifications WHERE id = $1', [id]);
 }
 
-module.exports = { create, findByUser, findById, markRead, deleteById };
+module.exports = { create, findByUser, findById, markRead, markAllRead, deleteById };

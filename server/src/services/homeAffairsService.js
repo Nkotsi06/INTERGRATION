@@ -9,7 +9,6 @@ const marriageCertificateRepository = require('../repositories/marriageCertifica
 const { generateNationalId, generateReference } = require('../utils/referenceGenerator');
 const logger = require('../utils/logger');
 
-// Fields the officer may edit after the citizen is created.
 const EDITABLE_FIELDS = [
   'first_name',
   'last_name',
@@ -19,9 +18,6 @@ const EDITABLE_FIELDS = [
   'email',
 ];
 
-// ─────────────────────────────────────────────────────────────────────
-// Helpers
-// ─────────────────────────────────────────────────────────────────────
 function badRequestError(message) {
   const err = new Error(message);
   err.statusCode = 400;
@@ -33,9 +29,6 @@ function notFoundError(message) {
   return err;
 }
 
-// ─────────────────────────────────────────────────────────────────────
-// Read operations
-// ─────────────────────────────────────────────────────────────────────
 async function searchByQuery({ query }) {
   if (!query) return null;
   const citizen = await citizenRepository.findByAny(query);
@@ -45,14 +38,8 @@ async function searchByQuery({ query }) {
 async function getById(id) {
   const citizen = await citizenRepository.findById(id);
   if (!citizen) return null;
-
-  // Look up the linked user row by citizen_id.
   const owner = await userRepository.findByCitizenId(citizen.id);
-
-  return {
-    ...citizen,
-    registrationId: owner ? owner.id : null,
-  };
+  return { ...citizen, registrationId: owner ? owner.id : null };
 }
 
 async function getRegistrations(filters = {}) {
@@ -63,9 +50,6 @@ async function getRegistrationById(id) {
   return citizenRepository.findRegistrationById(id);
 }
 
-// ─────────────────────────────────────────────────────────────────────
-// Complete a citizen record
-// ─────────────────────────────────────────────────────────────────────
 async function completeRecord(registrationId, data, staffUser) {
   const registration = await citizenRepository.findRegistrationById(registrationId);
   if (!registration) throw notFoundError('Registration not found');
@@ -76,7 +60,6 @@ async function completeRecord(registrationId, data, staffUser) {
     throw err;
   }
 
-  // Step 1 — Generate a unique National ID
   let nationalId;
   let attempts = 0;
   const maxAttempts = 10;
@@ -91,17 +74,14 @@ async function completeRecord(registrationId, data, staffUser) {
     throw new Error('Could not generate a unique National ID. Please try again.');
   }
 
-  // Step 2 — Split name
   const fullName = (data.fullName || '').trim();
   const nameParts = fullName.split(/\s+/);
   const firstName = nameParts[0] || '';
   const lastName = nameParts.slice(1).join(' ') || '';
 
-  // Step 3 — Compose address
   const addressParts = [data.village, data.district, data.postalAddress].filter(Boolean);
   const address = addressParts.join(', ');
 
-  // Step 4 — Create citizen
   const citizen = await citizenRepository.create({
     nationalId,
     firstName,
@@ -119,10 +99,8 @@ async function completeRecord(registrationId, data, staffUser) {
     `Citizen record created for ${registration.username}: National ID ${nationalId}`
   );
 
-  // Step 5 — Link user to citizen
   await userRepository.linkCitizen(registration.id, citizen.id);
 
-  // Step 5.5 — Re-link documents
   try {
     await documentService.relinkRegistrationDocuments(registration.id, citizen.id);
     logger.info(
@@ -134,7 +112,6 @@ async function completeRecord(registrationId, data, staffUser) {
     );
   }
 
-  // Step 6 — Biometrics (facial required, fingerprints optional)
   if (data.biometrics && typeof data.biometrics === 'object') {
     try {
       const fingerprints = data.biometrics.fingerprints || {};
@@ -161,7 +138,6 @@ async function completeRecord(registrationId, data, staffUser) {
     }
   }
 
-  // Step 7 — Audit
   await auditService.log({
     userId: staffUser.userId,
     username: staffUser.username,
@@ -179,9 +155,6 @@ async function completeRecord(registrationId, data, staffUser) {
   };
 }
 
-// ─────────────────────────────────────────────────────────────────────
-// Verification
-// ─────────────────────────────────────────────────────────────────────
 async function verifyCitizen(citizenId, { checks, notes }, staffUser) {
   const citizen = await citizenRepository.findById(citizenId);
   if (!citizen) throw new Error('Citizen not found');
@@ -234,9 +207,6 @@ async function updateCitizen(citizenId, data, staffUser) {
   return updated;
 }
 
-// ─────────────────────────────────────────────────────────────────────
-// Certificates — Birth, Death, Marriage
-// ─────────────────────────────────────────────────────────────────────
 async function getCertificatesForCitizen(citizenId) {
   const [birth, death, marriage] = await Promise.all([
     birthCertificateRepository.findByCitizen(citizenId),
@@ -257,12 +227,19 @@ async function issueBirthCertificate(citizenId, data, staffUser) {
   const created = await birthCertificateRepository.create({
     citizenId,
     certificateNumber,
-    dateOfBirth: data.dateOfBirth || citizen.date_of_birth,
+    childFullName:
+      data.childFullName ||
+      `${citizen.first_name} ${citizen.last_name}`.trim(),
+    childDateOfBirth: data.childDateOfBirth || citizen.date_of_birth,
+    childGender: data.childGender || citizen.gender,
     placeOfBirth: data.placeOfBirth || citizen.place_of_birth,
-    fatherName: data.fatherName,
-    motherName: data.motherName,
+    fatherFullName: data.fatherFullName || null,
+    fatherNationalId: data.fatherNationalId || null,
+    motherFullName: data.motherFullName || null,
+    motherNationalId: data.motherNationalId || null,
+    requestType: data.requestType || 'NEW',
+    status: 'ISSUED',
     issuedBy: staffUser.userId,
-    notes: data.notes,
   });
 
   await auditService.log({
@@ -288,11 +265,17 @@ async function issueDeathCertificate(citizenId, data, staffUser) {
   const created = await deathCertificateRepository.create({
     citizenId,
     certificateNumber,
+    deceasedFullName:
+      data.deceasedFullName ||
+      `${citizen.first_name} ${citizen.last_name}`.trim(),
+    deceasedNationalId: data.deceasedNationalId || citizen.national_id,
     dateOfDeath: data.dateOfDeath,
-    placeOfDeath: data.placeOfDeath,
-    causeOfDeath: data.causeOfDeath,
+    placeOfDeath: data.placeOfDeath || null,
+    causeOfDeath: data.causeOfDeath || null,
+    informantFullName: data.informantFullName || null,
+    informantRelationship: data.informantRelationship || null,
+    status: 'ISSUED',
     issuedBy: staffUser.userId,
-    notes: data.notes,
   });
 
   await auditService.log({
@@ -312,29 +295,27 @@ async function issueMarriageCertificate(citizenId, data, staffUser) {
   if (!citizen) throw notFoundError('Citizen not found');
 
   if (!data.marriageDate) throw badRequestError('Marriage date is required.');
-  if (!data.spouse2Name && !data.spouse2CitizenId) {
-    throw badRequestError('Provide spouse 2 name or citizen ID.');
-  }
-
-  let spouse2CitizenId = null;
-  if (data.spouse2CitizenId) {
-    const spouse = await citizenRepository.findById(data.spouse2CitizenId);
-    if (!spouse) throw notFoundError('Spouse 2 citizen not found');
-    spouse2CitizenId = spouse.id;
+  if (!data.spouse2FullName && !data.spouse2NationalId) {
+    throw badRequestError('Provide spouse 2 name or National ID.');
   }
 
   const certificateNumber = await generateReference('MARRIAGE_CERTIFICATE');
 
   const created = await marriageCertificateRepository.create({
+    citizenId,
     certificateNumber,
-    spouse1CitizenId: citizenId,
-    spouse2CitizenId,
-    spouse2Name: data.spouse2Name,
+    spouse1FullName:
+      data.spouse1FullName ||
+      `${citizen.first_name} ${citizen.last_name}`.trim(),
+    spouse1NationalId: data.spouse1NationalId || citizen.national_id,
+    spouse2FullName: data.spouse2FullName || null,
+    spouse2NationalId: data.spouse2NationalId || null,
     marriageDate: data.marriageDate,
-    placeOfMarriage: data.placeOfMarriage,
-    officiant: data.officiant,
+    marriagePlace: data.marriagePlace || null,
+    marriageOfficiant: data.marriageOfficiant || null,
+    requestType: data.requestType || 'NEW',
+    status: 'ISSUED',
     issuedBy: staffUser.userId,
-    notes: data.notes,
   });
 
   await auditService.log({
@@ -349,9 +330,6 @@ async function issueMarriageCertificate(citizenId, data, staffUser) {
   return created;
 }
 
-// ─────────────────────────────────────────────────────────────────────
-// Dashboard and reports
-// ─────────────────────────────────────────────────────────────────────
 async function getDashboardStats() {
   return citizenRepository.getDashboardStats();
 }

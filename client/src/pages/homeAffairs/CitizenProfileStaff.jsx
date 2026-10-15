@@ -1,14 +1,9 @@
 import { useParams, useNavigate } from 'react-router-dom';
-import {
-  FiEdit,
-  FiPrinter,
-  FiCheckCircle,
-  FiFileText,
-} from 'react-icons/fi';
 import PageWrapper from '../../components/layout/PageWrapper';
 import Avatar from '../../components/common/Avatar';
 import Button from '../../components/common/Button';
 import StatusBadge from '../../components/common/StatusBadge';
+import { StatsSkeleton } from '../../components/common/SkeletonLoader';
 import useFetch from '../../hooks/useFetch';
 import useBlobUrl from '../../hooks/useBlobUrl';
 import {
@@ -37,7 +32,7 @@ function HACitizenProfile() {
         backPath="/home-affairs/search"
         accentColour="#1A5276"
       >
-        <p className="text-muted">Loading…</p>
+        <StatsSkeleton count={2} />
       </PageWrapper>
     );
   }
@@ -115,7 +110,7 @@ function HACitizenProfile() {
               variant="success"
               onClick={() => navigate(`/home-affairs/verify/${id}`)}
             >
-              <FiCheckCircle /> Verify citizen
+              Verify citizen
             </Button>
           )}
 
@@ -131,11 +126,11 @@ function HACitizenProfile() {
                 : 'Registration link unavailable'
             }
           >
-            <FiEdit /> Edit record
+            Edit record
           </Button>
 
           <Button variant="secondary" onClick={() => window.print()}>
-            <FiPrinter /> Print profile
+            Print profile
           </Button>
 
           <Button
@@ -144,7 +139,7 @@ function HACitizenProfile() {
               navigate(`/home-affairs/citizen/${id}/documents`)
             }
           >
-            <FiFileText /> View documents
+            View documents
           </Button>
         </div>
       </div>

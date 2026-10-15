@@ -32,11 +32,6 @@ const emptyForm = {
   postalAddress: '',
 };
 
-// Facial meta comes back from BiometricEnrollment as:
-//   { confirmed: { noSunglasses, noHat, plainBackground },
-//     override:  { enabled, reason } }
-// A photo is accepted if the officer confirmed all three checks,
-// or provided an override with a reason.
 function facialMetaSatisfied(meta) {
   if (!meta) return false;
   if (meta.override?.enabled && meta.override?.reason) return true;
@@ -69,11 +64,9 @@ function CompleteCitizenRecord() {
 
     async function load() {
       try {
-        // 1. Try to load this as a pending registration (user id).
         const reg = await getRegistrationById(id);
         if (cancelled) return;
 
-        // If the registration is already linked to a citizen, we're in edit mode.
         if (reg && reg.citizen_id) {
           const c = await getCitizenById(reg.citizen_id);
           if (cancelled) return;
@@ -97,7 +90,6 @@ function CompleteCitizenRecord() {
           return;
         }
 
-        // Otherwise, this is a fresh registration.
         setRegistration(reg || {});
         setForm((prev) => ({
           ...prev,
@@ -106,9 +98,7 @@ function CompleteCitizenRecord() {
           gender: reg?.gender || '',
         }));
       } catch (err) {
-        if (!cancelled) {
-          setServerError('Could not load this record.');
-        }
+        if (!cancelled) setServerError('Could not load this record.');
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -136,10 +126,6 @@ function CompleteCitizenRecord() {
     return Object.keys(next).length === 0;
   };
 
-  // In edit mode, no biometric capture is required.
-  // In create mode:
-  //   - a facial image is required
-  //   - the officer must have confirmed or overridden the three checks
   const facialPresent = !!biometrics?.facialImage;
   const facialAccepted = facialMetaSatisfied(biometrics?.facialMeta);
   const biometricsReady = isEditMode || (facialPresent && facialAccepted);
@@ -162,7 +148,6 @@ function CompleteCitizenRecord() {
     setSaving(true);
     try {
       if (isEditMode) {
-        // Save editable fields only. Server ignores anything else.
         await updateCitizen(existingCitizenId, {
           first_name: form.firstName || undefined,
           last_name: form.lastName || undefined,
@@ -349,27 +334,27 @@ function CompleteCitizenRecord() {
             <DocumentUpload
               documentType="NATIONAL_ID"
               label="Identity document"
-              onUpload={async (formData) => {
+              onUpload={async (formData, config) => {
                 formData.append('registrationId', id);
-                await uploadDocument(formData);
+                await uploadDocument(formData, config);
                 success('Document uploaded');
               }}
             />
             <DocumentUpload
               documentType="BIRTH_CERTIFICATE"
               label="Birth certificate"
-              onUpload={async (formData) => {
+              onUpload={async (formData, config) => {
                 formData.append('registrationId', id);
-                await uploadDocument(formData);
+                await uploadDocument(formData, config);
                 success('Document uploaded');
               }}
             />
             <DocumentUpload
               documentType="PASSPORT_PHOTO"
               label="Passport photograph"
-              onUpload={async (formData) => {
+              onUpload={async (formData, config) => {
                 formData.append('registrationId', id);
-                await uploadDocument(formData);
+                await uploadDocument(formData, config);
                 success('Document uploaded');
               }}
             />

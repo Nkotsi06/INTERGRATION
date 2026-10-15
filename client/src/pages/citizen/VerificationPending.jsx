@@ -1,5 +1,4 @@
 import { useNavigate } from 'react-router-dom';
-import { FiClock } from 'react-icons/fi';
 import PageWrapper from '../../components/layout/PageWrapper';
 import Button from '../../components/common/Button';
 
@@ -10,9 +9,7 @@ function VerificationPending() {
     <PageWrapper title="Still awaiting verification">
       <div className="verification-result-page">
         <div className="result-card">
-          <div className="result-icon warning">
-            <FiClock />
-          </div>
+          <div className="result-icon warning">…</div>
           <h2>Home Affairs has not verified you yet</h2>
           <p>
             Your details are still being captured. You will be able to use this

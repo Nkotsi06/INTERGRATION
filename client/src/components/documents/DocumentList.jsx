@@ -1,12 +1,10 @@
 import DocumentPreview from './DocumentPreview';
 import EmptyState from '../common/EmptyState';
-import { FiFileText } from 'react-icons/fi';
 
 function DocumentList({ documents, onDownload, onView, onDelete }) {
   if (!documents || documents.length === 0) {
     return (
       <EmptyState
-        icon={<FiFileText />}
         title="No documents yet"
         message="Documents you upload will appear here."
       />

@@ -1,4 +1,3 @@
-import { FiX, FiAlertCircle } from 'react-icons/fi';
 import Button from '../common/Button';
 
 const RULES = [
@@ -23,7 +22,7 @@ export default function FacialInstructions({ onStart, onCancel, disabled, error 
       </ul>
 
       <div className="facial-consent" role="note">
-        <FiAlertCircle aria-hidden="true" />
+        <span aria-hidden="true">!</span>
         <p>
           Your face photo is a biometric record. It will be seen only by Home
           Affairs staff and you. Nothing is sent to the server until an officer
@@ -39,7 +38,7 @@ export default function FacialInstructions({ onStart, onCancel, disabled, error 
 
       <div className="facial-actions">
         <Button variant="secondary" onClick={onCancel} disabled={disabled}>
-          <FiX /> Cancel
+          Cancel
         </Button>
         <Button variant="primary" onClick={onStart} disabled={disabled}>
           Start camera

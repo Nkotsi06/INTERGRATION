@@ -1,11 +1,11 @@
 const taxRecordRepository = require('../repositories/taxRecordRepository');
-const taxPaymentRepository = require('../repositories/taxPaymentRepository');
 const taxClearanceRepository = require('../repositories/taxClearanceRepository');
 const vatRepository = require('../repositories/vatRepository');
 const taxReturnRepository = require('../repositories/taxReturnRepository');
 const paymentPlanRepository = require('../repositories/paymentPlanRepository');
 const businessRegistrationRepository = require('../repositories/businessRegistrationRepository');
 const notificationService = require('./notificationService');
+const paymentService = require('./paymentService');
 const userRepository = require('../repositories/userRepository');
 const { generateReference } = require('../utils/referenceGenerator');
 const { generateTaxClearancePDF } = require('../utils/pdfGenerator');
@@ -48,9 +48,18 @@ async function makePayment(citizenId, data, user) {
   if (!taxRecord) throw notFound('No tax record found');
 
   const referenceNumber = await generateReference('TAX_PAYMENT');
-  const payment = await taxPaymentRepository.create({
-    citizenId, taxRecordId: taxRecord.id, referenceNumber,
-    amount: data.amount, paymentMethod: data.method,
+
+  // Record in the shared payments table.
+  const payment = await paymentService.recordPayment({
+    citizenId,
+    ministry: 'FINANCE',
+    service: 'TAX_PAYMENT',
+    applicationReference: taxRecord.tax_id,
+    amount: data.amount,
+    method: data.method || 'MOBILE_MONEY',
+    mobile: data.mobile,
+    referenceNumber,
+    receivedBy: user.userId,
   });
 
   const newBalance = Math.max(0,
@@ -60,13 +69,14 @@ async function makePayment(citizenId, data, user) {
   await auditService.log({
     userId: user.userId, username: user.username,
     action: 'TAX_PAYMENT',
-    recordType: 'TAX_PAYMENT', recordId: payment.id, result: 'SUCCESS',
+    recordType: 'PAYMENT', recordId: payment.id, result: 'SUCCESS',
   });
   await notifyCitizen(citizenId, 'Payment received',
-    `Your payment ${referenceNumber} has been received.`);
+    `Your payment ${payment.receipt_number} has been received.`);
 
   return {
     referenceNumber,
+    receiptNumber: payment.receipt_number,
     amount: data.amount,
     date: new Date().toISOString().slice(0, 10),
     newBalance,
@@ -74,7 +84,7 @@ async function makePayment(citizenId, data, user) {
 }
 
 async function getPayments(citizenId) {
-  return taxPaymentRepository.findByCitizen(citizenId);
+  return paymentService.listForCitizen(citizenId);
 }
 
 async function generateTaxClearance(citizenId, user) {
@@ -161,7 +171,7 @@ async function submitTaxReturn(citizenId, data, user) {
   const income = parseFloat(data.incomeDeclared);
   const deductions = parseFloat(data.deductions || 0);
   const taxable = Math.max(0, income - deductions);
-  const taxDue = Math.round(taxable * 0.2 * 100) / 100; // simple 20% flat for prototype
+  const taxDue = Math.round(taxable * 0.2 * 100) / 100;
   const taxPaid = 0;
 
   const referenceNumber = await generateReference('TAX_RETURN');

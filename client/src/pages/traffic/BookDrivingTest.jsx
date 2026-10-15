@@ -2,18 +2,24 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import PageWrapper from '../../components/layout/PageWrapper';
 import Select from '../../components/common/Select';
+import Input from '../../components/common/Input';
 import DatePicker from '../../components/common/DatePicker';
 import FormActions from '../../components/common/FormActions';
 import Alert from '../../components/common/Alert';
+import useServiceFee from '../../hooks/useServiceFees';
 import { bookDrivingTest } from '../../api/trafficApi';
 import { useNotification } from '../../context/NotificationContext';
+import { formatCurrency } from '../../utils/formatters';
 
 function BookDrivingTest() {
+  const { fee, currency } = useServiceFee('TRAFFIC', 'DRIVING_TEST_BOOKING');
   const [form, setForm] = useState({
     testType: '',
     date: '',
     time: '',
     location: '',
+    method: 'MOBILE_MONEY',
+    mobile: '',
   });
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -26,9 +32,14 @@ function BookDrivingTest() {
       setError('Please complete every field.');
       return;
     }
+    if (form.method === 'MOBILE_MONEY' && !form.mobile.trim()) {
+      setError('Please enter your mobile number for payment.');
+      return;
+    }
+
     setLoading(true);
     try {
-      await bookDrivingTest(form);
+      await bookDrivingTest({ ...form, amount: fee });
       success('Test booked');
       navigate('/traffic/appointments');
     } catch (err) {
@@ -92,8 +103,41 @@ function BookDrivingTest() {
         required
       />
 
+      {fee > 0 && (
+        <div className="form-section">
+          <h3 className="form-section-title">Payment</h3>
+          <p className="text-muted">
+            Test fee: <strong>{formatCurrency(fee, currency)}</strong>
+          </p>
+          <Select
+            label="Payment method"
+            value={form.method}
+            onChange={(e) => setForm({ ...form, method: e.target.value })}
+            options={[
+              { value: 'MOBILE_MONEY', label: 'Mobile money' },
+              { value: 'BANK_TRANSFER', label: 'Bank transfer' },
+              { value: 'CARD', label: 'Card' },
+            ]}
+            required
+          />
+          {form.method === 'MOBILE_MONEY' && (
+            <Input
+              label="Mobile number"
+              value={form.mobile}
+              onChange={(e) => setForm({ ...form, mobile: e.target.value })}
+              placeholder="+266 5888 2140"
+              required
+            />
+          )}
+        </div>
+      )}
+
       <FormActions
-        primaryLabel="Book appointment"
+        primaryLabel={
+          fee > 0
+            ? `Pay ${formatCurrency(fee, currency)} and book`
+            : 'Book appointment'
+        }
         primaryLoading={loading}
         onPrimary={handleBook}
         onSecondary={() => navigate('/traffic/dashboard')}

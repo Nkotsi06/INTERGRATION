@@ -1,9 +1,7 @@
-import { FiX } from 'react-icons/fi';
-
 function ClearFilters({ onClear }) {
   return (
     <button className="clear-filters" onClick={onClear}>
-      <FiX />
+      <span aria-hidden="true">✕</span>
       <span>Clear filters</span>
     </button>
   );
