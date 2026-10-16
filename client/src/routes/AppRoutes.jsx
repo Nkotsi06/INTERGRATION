@@ -25,6 +25,7 @@ import MyBiometrics from '../pages/citizen/MyBiometrics';
 import MyCertificates from '../pages/citizen/MyCertificates';
 import Notifications from '../pages/citizen/Notifications';
 import ServiceApply from '../pages/citizen/ServiceApply';
+import Services from '../pages/citizen/Services';
 
 // Home Affairs
 import HAStaffDashboard from '../pages/homeAffairs/StaffDashboard';
@@ -176,6 +177,7 @@ function AppRoutes() {
       <Route path="/citizen/certificates" element={<ProtectedRoute><MyCertificates /></ProtectedRoute>} />
       <Route path="/citizen/biometrics" element={<ProtectedRoute><MyBiometrics /></ProtectedRoute>} />
       <Route path="/citizen/notifications" element={<Navigate to="/notifications" replace />} />
+      <Route path="/citizen/services" element={<ProtectedRoute><Services /></ProtectedRoute>} />
       <Route path="/citizen/services/:id/apply" element={<ProtectedRoute><ServiceApply /></ProtectedRoute>} />
 
       {/* Home Affairs staff */}

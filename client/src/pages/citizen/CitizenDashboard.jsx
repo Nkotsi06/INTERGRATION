@@ -8,15 +8,6 @@ import Card from '../../components/common/Card';
 import { StatsSkeleton } from '../../components/common/SkeletonLoader';
 import { getProfile } from '../../api/citizenApi';
 
-const MINISTRY_PREFIX = {
-  HOME_AFFAIRS: 'home-affairs',
-  TRAFFIC: 'traffic',
-  POLICE: 'police',
-  FINANCE: 'finance',
-  PENSIONS: 'pensions',
-  PASSPORT: 'passport',
-};
-
 function CitizenDashboard() {
   const { user } = useAuth();
   const { session } = useSession();
@@ -46,11 +37,12 @@ function CitizenDashboard() {
 
   const handleMinistryClick = (ministry) => {
     if (!isVerified || !session?.identityVerified) {
-      navigate('/citizen/verify', { state: { targetMinistry: ministry.code } });
+      navigate('/citizen/verify', {
+        state: { targetMinistry: ministry.code },
+      });
       return;
     }
-    const prefix = MINISTRY_PREFIX[ministry.code];
-    if (prefix) navigate(`/${prefix}/dashboard`);
+    navigate(`/citizen/services?ministry=${ministry.code}`);
   };
 
   const ministries = settings.ministries || [];
