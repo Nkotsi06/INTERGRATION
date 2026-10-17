@@ -8,7 +8,6 @@ import BirthCertificateView from '../../components/documents/BirthCertificateVie
 import DeathCertificateView from '../../components/documents/DeathCertificateView';
 import NationalIdCardView from '../../components/documents/NationalIdCardView';
 import Button from '../../components/common/Button';
-import '../../styles/print.css'; // Ensure print styles are loaded
 
 function MyDocuments() {
   const { data: certificates, loading } = useFetch(getMyCertificates, []);

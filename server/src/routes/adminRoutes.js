@@ -3,7 +3,6 @@ const authMiddleware = require('../middleware/authMiddleware');
 const roleMiddleware = require('../middleware/roleMiddleware');
 const adminController = require('../controllers/adminController');
 const branchController = require('../controllers/branchController');
-const { logoUpload } = require('../middleware/uploadMiddleware');
 
 router.use(authMiddleware, roleMiddleware(['ADMIN']));
 
@@ -22,7 +21,6 @@ router.delete('/users/:id', adminController.deleteUser);
 
 router.get('/settings', adminController.getSettings);
 router.put('/settings', adminController.updateSettings);
-router.post('/settings/logo', logoUpload.single('logo'), adminController.uploadLogo);
 
 router.get('/settings/biometrics', adminController.getBiometricSettings);
 router.put('/settings/biometrics', adminController.updateBiometricSettings);
