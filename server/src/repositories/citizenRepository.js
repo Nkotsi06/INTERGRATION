@@ -124,7 +124,6 @@ async function createFromRegistration(reg) {
   });
 }
 
-// Include nationality in the updatable set.
 const UPDATEABLE_FIELDS = ['first_name', 'last_name', 'address', 'phone', 'email', 'place_of_birth', 'nationality'];
 
 async function update(id, data) {
@@ -226,18 +225,22 @@ async function getDashboardStats() {
 }
 
 async function getReports({ type, fromDate, toDate }) {
+  // ROOT CAUSE FIX: If dates are blank, fallback to a very wide range (1970 to 2100)
+  const start = fromDate || '1970-01-01';
+  const end = toDate || '2100-12-31';
+
   const result = await query(`
     SELECT
       (SELECT COUNT(*) FROM citizens
-        WHERE created_at >= COALESCE($1::date, '1970-01-01')
-          AND created_at <= COALESCE($2::date, CURRENT_DATE)) AS citizens_registered,
+        WHERE created_at::date >= $1::date
+          AND created_at::date <= $2::date) AS citizens_registered,
       (SELECT COUNT(*) FROM citizens
         WHERE is_verified = true
-          AND verified_at >= COALESCE($1::date, '1970-01-01')
-          AND verified_at <= COALESCE($2::date, CURRENT_DATE)) AS citizens_verified,
+          AND verified_at::date >= $1::date
+          AND verified_at::date <= $2::date) AS citizens_verified,
       (SELECT COUNT(*) FROM citizens
         WHERE is_verified = false AND national_id IS NOT NULL) AS pending
-  `, [fromDate || null, toDate || null]);
+  `, [start, end]);
 
   const row = result.rows[0];
   return {

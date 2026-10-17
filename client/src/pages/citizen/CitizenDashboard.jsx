@@ -8,6 +8,15 @@ import Card from '../../components/common/Card';
 import { StatsSkeleton } from '../../components/common/SkeletonLoader';
 import { getProfile } from '../../api/citizenApi';
 
+const MINISTRY_PREFIX = {
+  HOME_AFFAIRS: 'home-affairs',
+  TRAFFIC: 'traffic',
+  POLICE: 'police',
+  FINANCE: 'finance',
+  PENSIONS: 'pensions',
+  PASSPORT: 'passport',
+};
+
 function CitizenDashboard() {
   const { user } = useAuth();
   const { session } = useSession();
@@ -24,7 +33,7 @@ function CitizenDashboard() {
         const data = await getProfile();
         if (!cancelled) setProfile(data);
       } catch {
-        // 401 handled by the interceptor
+        // 401 handled by interceptor
       } finally {
         if (!cancelled) setLoadingProfile(false);
       }
@@ -37,12 +46,11 @@ function CitizenDashboard() {
 
   const handleMinistryClick = (ministry) => {
     if (!isVerified || !session?.identityVerified) {
-      navigate('/citizen/verify', {
-        state: { targetMinistry: ministry.code },
-      });
+      navigate('/citizen/verify', { state: { targetMinistry: ministry.code } });
       return;
     }
-    navigate(`/citizen/services?ministry=${ministry.code}`);
+    const prefix = MINISTRY_PREFIX[ministry.code];
+    if (prefix) navigate(`/${prefix}/dashboard`);
   };
 
   const ministries = settings.ministries || [];
@@ -93,9 +101,7 @@ function CitizenDashboard() {
               <div className="service-card-body">
                 <span className="service-card-name">{ministry.name}</span>
                 <span className="text-muted">
-                  {isVerified
-                    ? 'Open services'
-                    : 'Verification required'}
+                  {isVerified ? 'Open services' : 'Verification required'}
                 </span>
               </div>
             </Card>
@@ -103,27 +109,7 @@ function CitizenDashboard() {
         </div>
       </section>
 
-      <section className="dashboard-section">
-        <h2>My applications</h2>
-        <button
-          type="button"
-          className="btn btn-secondary"
-          onClick={() => navigate('/citizen/applications')}
-        >
-          View all applications
-        </button>
-      </section>
-
-      <section className="dashboard-section">
-        <h2>Help and support</h2>
-        <button
-          type="button"
-          className="btn btn-secondary"
-          onClick={() => navigate('/help')}
-        >
-          Open Help
-        </button>
-      </section>
+      {/* REMOVED: My applications and Help sections to be kept in sidebar only */}
     </PageWrapper>
   );
 }

@@ -4,6 +4,16 @@ const notificationService = require('../services/notificationService');
 
 router.use(authMiddleware);
 
+// Get all notifications for the logged-in user (citizen, staff, or admin)
+router.get('/', async (req, res, next) => {
+  try {
+    const rows = await notificationService.getForUser(req.user.userId);
+    res.json(rows);
+  } catch (err) {
+    next(err);
+  }
+});
+
 // Unread count for the sidebar badge
 router.get('/unread-count', async (req, res, next) => {
   try {
@@ -15,11 +25,11 @@ router.get('/unread-count', async (req, res, next) => {
   }
 });
 
-// All notifications for the logged-in user
-router.get('/', async (req, res, next) => {
+// Mark all as read
+router.put('/read-all', async (req, res, next) => {
   try {
-    const rows = await notificationService.getForUser(req.user.userId);
-    res.json(rows);
+    await notificationService.markAllRead(req.user.userId);
+    res.json({ message: 'All notifications marked as read' });
   } catch (err) {
     next(err);
   }
@@ -30,16 +40,6 @@ router.put('/:id/read', async (req, res, next) => {
   try {
     await notificationService.markRead(req.params.id, req.user.userId);
     res.json({ message: 'Notification marked as read' });
-  } catch (err) {
-    next(err);
-  }
-});
-
-// Mark every unread notification as read (called when the page is opened)
-router.put('/read-all', async (req, res, next) => {
-  try {
-    await notificationService.markAllRead(req.user.userId);
-    res.json({ message: 'All notifications marked as read' });
   } catch (err) {
     next(err);
   }

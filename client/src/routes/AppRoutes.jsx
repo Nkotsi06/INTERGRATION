@@ -23,7 +23,10 @@ import ApplicationStatus from '../pages/citizen/ApplicationStatus';
 import MyDocuments from '../pages/citizen/MyDocuments';
 import MyBiometrics from '../pages/citizen/MyBiometrics';
 import MyCertificates from '../pages/citizen/MyCertificates';
-import Notifications from '../pages/citizen/Notifications';
+
+// FIX: Point Notifications to the shared common folder so staff and admins can see them too
+import Notifications from '../pages/common/Notifications';
+
 import ServiceApply from '../pages/citizen/ServiceApply';
 import Services from '../pages/citizen/Services';
 

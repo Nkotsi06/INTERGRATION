@@ -11,7 +11,7 @@ async function create(n) {
 
 async function findByUser(userId) {
   const result = await query(
-    'SELECT * FROM notifications WHERE user_id = $1 ORDER BY created_at DESC LIMIT 50',
+    'SELECT * FROM notifications WHERE user_id = $1 ORDER BY created_at DESC',
     [userId]
   );
   return result.rows;

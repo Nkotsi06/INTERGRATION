@@ -4,26 +4,22 @@ import EmptyState from '../../components/common/EmptyState';
 import Alert from '../../components/common/Alert';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
 import useFetch from '../../hooks/useFetch';
-import {
-  getNotifications,
-  deleteNotification,
-  markNotificationRead,
-} from '../../api/citizenApi';
 import apiClient from '../../api/apiClient';
 import { useNotification } from '../../context/NotificationContext';
 import { useNotificationPoller } from '../../context/NotificationPollerContext';
 import { formatDate } from '../../utils/formatters';
 
 function Notifications() {
-  const { data, loading, error, refetch } = useFetch(getNotifications, []);
+  const { data, loading, error, refetch } = useFetch(
+    () => apiClient.get('/notifications'),
+    []
+  );
   const [pendingDelete, setPendingDelete] = useState(null);
   const { success, error: showError } = useNotification();
   const { clearAll } = useNotificationPoller();
 
   const notifications = Array.isArray(data) ? data : [];
 
-  // When the page opens with unread items, tell the server they're read
-  // and reset the sidebar badge.
   useEffect(() => {
     if (loading || error) return;
     if (!notifications.some((n) => !n.is_read)) return;
@@ -34,9 +30,7 @@ function Notifications() {
       .then(() => {
         if (!cancelled) clearAll();
       })
-      .catch(() => {
-        // Non-fatal. The count will correct on the next poll.
-      });
+      .catch(() => {});
     return () => {
       cancelled = true;
     };
@@ -45,7 +39,7 @@ function Notifications() {
   const handleDelete = async () => {
     if (!pendingDelete) return;
     try {
-      await deleteNotification(pendingDelete.id);
+      await apiClient.delete(`/notifications/${pendingDelete.id}`);
       success('Notification deleted');
       setPendingDelete(null);
       refetch();
@@ -57,11 +51,9 @@ function Notifications() {
   const handleMarkRead = async (n) => {
     if (n.is_read) return;
     try {
-      await markNotificationRead(n.id);
+      await apiClient.put(`/notifications/${n.id}/read`);
       refetch();
-    } catch (err) {
-      // Silent — the read-all call above usually covers this.
-    }
+    } catch (err) {}
   };
 
   return (
@@ -77,7 +69,7 @@ function Notifications() {
       {!loading && !error && notifications.length === 0 && (
         <EmptyState
           title="No notifications"
-          message="Updates about your applications will appear here."
+          message="Updates will appear here."
         />
       )}
 

@@ -27,7 +27,7 @@ const settingsRoutes = require('./routes/settingsRoutes');
 const referenceRoutes = require('./routes/referenceRoutes');
 const auditRoutes = require('./routes/auditRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
-const paymentRoutes = require('./routes/paymentRoutes');          // ← NEW
+const paymentRoutes = require('./routes/paymentRoutes');
 const serviceRoutes = require('./routes/serviceRoutes');
 const feeScheduleRoutes = require('./routes/feeScheduleRoutes');
 const certificateRoutes = require('./routes/certificateRoutes');
@@ -88,8 +88,11 @@ app.use('/api/verification', verificationRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/references', referenceRoutes);
 app.use('/api/audit', auditRoutes);
+
+// SHARED NOTIFICATIONS ROUTE
 app.use('/api/notifications', notificationRoutes);
-app.use('/api/payments', paymentRoutes);                          // ← NEW
+
+app.use('/api/payments', paymentRoutes);
 app.use('/api/services', serviceRoutes);
 app.use('/api/fee-schedule', feeScheduleRoutes);
 app.use('/api/certificates', certificateRoutes);
