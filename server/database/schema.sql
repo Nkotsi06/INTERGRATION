@@ -1472,3 +1472,96 @@ $$;
 --   005_translations_group_i.sql
 --   006_collection_columns_guard.sql
 -- ================================================================
+
+
+-- ================================================================
+-- 007_home_affairs_cleanup.sql
+-- ================================================================
+-- Purpose:
+--   Fixes four data issues that have accumulated in the seed:
+--
+--   1. Police services were seeded with is_enabled = FALSE.
+--      This migration turns them on.
+--
+--   2. DRIVERS_LICENCE_VIEW was seeded with service_type
+--      'APPLICATION' (a typo). It is an information-only entry
+--      and should render without an Apply button.
+--
+--   3. NATIONAL_ID_APPLY and NATIONAL_ID_REPLACE required a
+--      PASSPORT_PHOTO upload. The citizen's photo now comes from
+--      their verified biometrics record, so the upload is no
+--      longer needed. This migration removes it from
+--      required_documents.
+--
+--   4. BIRTH_CERTIFICATE_APPLY required motherNationalId, which
+--      the applicant cannot know because the parents' records
+--      are not always in the system. This migration makes both
+--      parent national IDs optional in the form_fields.
+--
+-- Safe to run more than once:
+--   All statements are UPDATEs with a WHERE clause that only
+--   touches the affected rows. Re-running is a no-op once the
+--   data is already correct.
+--
+-- Where to run it:
+--   Neon / Supabase SQL editor, connected to the project database,
+--   as the role that applied schema.sql. Run the whole file.
+--
+-- Verify after running:
+--   SELECT code, is_enabled FROM services WHERE ministry = 'POLICE';
+--   -- Expected: three rows, all is_enabled = TRUE.
+--
+--   SELECT code, service_type FROM services WHERE code = 'DRIVERS_LICENCE_VIEW';
+--   -- Expected: INFORMATION.
+--
+--   SELECT code, required_documents FROM services
+--   WHERE code IN ('NATIONAL_ID_APPLY', 'NATIONAL_ID_REPLACE');
+--   -- Expected: neither array contains 'PASSPORT_PHOTO'.
+--
+--   SELECT form_fields FROM services WHERE code = 'BIRTH_CERTIFICATE_APPLY';
+--   -- Expected: motherNationalId and fatherNationalId have required = false.
+-- ================================================================
+
+BEGIN;
+
+-- 1. Enable the three Police services
+UPDATE services
+SET is_enabled = TRUE,
+    updated_at = NOW()
+WHERE ministry = 'POLICE'
+  AND is_enabled = FALSE;
+
+-- 2. Fix DRIVERS_LICENCE_VIEW to be information-only
+UPDATE services
+SET service_type = 'INFORMATION',
+    updated_at = NOW()
+WHERE code = 'DRIVERS_LICENCE_VIEW'
+  AND service_type <> 'INFORMATION';
+
+-- 3. Remove PASSPORT_PHOTO from the two national-ID services
+UPDATE services
+SET required_documents = (
+      SELECT COALESCE(jsonb_agg(doc), '[]'::jsonb)
+      FROM jsonb_array_elements_text(required_documents) AS doc
+      WHERE doc <> 'PASSPORT_PHOTO'
+    ),
+    updated_at = NOW()
+WHERE code IN ('NATIONAL_ID_APPLY', 'NATIONAL_ID_REPLACE')
+  AND required_documents @> '["PASSPORT_PHOTO"]'::jsonb;
+
+-- 4. Make parent national IDs optional in BIRTH_CERTIFICATE_APPLY
+UPDATE services
+SET form_fields = (
+      SELECT jsonb_agg(
+        CASE
+          WHEN field->>'key' IN ('motherNationalId', 'fatherNationalId')
+            THEN jsonb_set(field, '{required}', 'false'::jsonb)
+          ELSE field
+        END
+      )
+      FROM jsonb_array_elements(form_fields) AS field
+    ),
+    updated_at = NOW()
+WHERE code = 'BIRTH_CERTIFICATE_APPLY';
+
+COMMIT;

@@ -20,7 +20,6 @@ const MINISTRY_LABELS = {
 function Services() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  // Uppercase to match the values stored in the services table.
   const ministry = (searchParams.get('ministry') || 'HOME_AFFAIRS').toUpperCase();
 
   const [services, setServices] = useState([]);
@@ -56,6 +55,14 @@ function Services() {
 
   const ministryLabel = MINISTRY_LABELS[ministry] || ministry;
 
+  // Only APPLICATION services appear as cards. Information services
+  // (immigration, citizenship, refugee, livestock, document verify)
+  // are read through the Help and Support section instead, per the
+  // master prompt: information is not on the citizen dashboard.
+  const applicationServices = services.filter(
+    (s) => s.service_type === 'APPLICATION'
+  );
+
   return (
     <PageWrapper
       title={`${ministryLabel} Services`}
@@ -72,7 +79,7 @@ function Services() {
 
       {!loading && error && <Alert type="error" message={error} />}
 
-      {!loading && !error && services.length === 0 && (
+      {!loading && !error && applicationServices.length === 0 && (
         <EmptyState
           title={`No services available from ${ministryLabel}`}
           message="This ministry has no services enabled at the moment. Please check back later, or choose a different ministry from your dashboard."
@@ -81,9 +88,9 @@ function Services() {
         />
       )}
 
-      {!loading && !error && services.length > 0 && (
+      {!loading && !error && applicationServices.length > 0 && (
         <div className="services-grid">
-          {services.map((service) => (
+          {applicationServices.map((service) => (
             <Card
               key={service.id}
               variant="bordered"
@@ -94,25 +101,27 @@ function Services() {
                 {service.description && (
                   <span className="text-muted">{service.description}</span>
                 )}
-
-                {service.service_type === 'INFORMATION' ? (
-                  <span className="text-muted">
-                    Information only — no application required.
-                  </span>
-                ) : (
-                  <Button
-                    variant="primary"
-                    onClick={() =>
-                      navigate(`/citizen/services/${service.id}/apply`)
-                    }
-                  >
-                    Apply
-                  </Button>
-                )}
+                <Button
+                  variant="primary"
+                  onClick={() =>
+                    navigate(`/citizen/services/${service.id}/apply`)
+                  }
+                >
+                  Apply
+                </Button>
               </div>
             </Card>
           ))}
         </div>
+      )}
+
+      {/* Information services (if any) are read through Help. */}
+      {!loading && !error && (
+        <p className="text-muted" style={{ marginTop: 24 }}>
+          Need information on immigration, citizenship, refugee services,
+          livestock registration, or document verification?{' '}
+          <a href="/help">Visit Help and Support</a>.
+        </p>
       )}
     </PageWrapper>
   );

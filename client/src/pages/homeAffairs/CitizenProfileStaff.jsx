@@ -26,7 +26,7 @@ function labelForEmployerType(code) {
 function HACitizenProfile() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { data: citizen, loading } = useFetch(
+  const { data: citizen, loading, error } = useFetch(
     () => getCitizenById(id),
     [id]
   );
@@ -48,7 +48,7 @@ function HACitizenProfile() {
     );
   }
 
-  if (!citizen) {
+  if (error || !citizen) {
     return (
       <PageWrapper
         title="Citizen Profile"
@@ -56,7 +56,16 @@ function HACitizenProfile() {
         backPath="/home-affairs/search"
         accentColour="#1A5276"
       >
-        <p className="text-muted">Citizen not found.</p>
+        <p className="text-muted">
+          {error || 'Citizen not found.'}
+        </p>
+        <div className="form-actions">
+          <div className="form-actions-primary-group">
+            <Button variant="secondary" onClick={() => navigate('/home-affairs/search')}>
+              Back to search
+            </Button>
+          </div>
+        </div>
       </PageWrapper>
     );
   }
@@ -65,6 +74,7 @@ function HACitizenProfile() {
   const nationalId = citizen.national_id;
   const fullName =
     `${citizen.first_name || ''} ${citizen.last_name || ''}`.trim();
+  const hasRegistrationId = !!citizen.registrationId;
 
   const statusVariant = isVerified
     ? 'verified'
@@ -149,12 +159,10 @@ function HACitizenProfile() {
 
           <Button
             variant="secondary"
-            onClick={() =>
-              navigate(`/home-affairs/registrations/${citizen.registrationId}`)
-            }
-            disabled={!citizen.registrationId}
+            onClick={() => navigate(`/home-affairs/registrations/${citizen.registrationId}`)}
+            disabled={!hasRegistrationId}
             title={
-              citizen.registrationId
+              hasRegistrationId
                 ? 'Edit this citizen record'
                 : 'Registration link unavailable — use Citizen Search to find the registration'
             }
@@ -168,9 +176,7 @@ function HACitizenProfile() {
 
           <Button
             variant="ghost"
-            onClick={() =>
-              navigate(`/home-affairs/citizen/${id}/documents`)
-            }
+            onClick={() => navigate(`/home-affairs/citizen/${id}/documents`)}
           >
             View documents
           </Button>

@@ -7,7 +7,6 @@ import DatePicker from '../../components/common/DatePicker';
 import FormActions from '../../components/common/FormActions';
 import Alert from '../../components/common/Alert';
 import Button from '../../components/common/Button';
-import DocumentUpload from '../../components/documents/DocumentUpload';
 import BiometricEnrollment from '../../components/biometrics/BiometricEnrollment';
 import {
   getRegistrationById,
@@ -17,7 +16,6 @@ import {
   recordEmployment,
   updateEmployment,
 } from '../../api/homeAffairsApi';
-import { uploadDocument } from '../../api/documentApi';
 import { useNotification } from '../../context/NotificationContext';
 
 const emptyForm = {
@@ -144,7 +142,6 @@ function CompleteCitizenRecord() {
     return Object.keys(next).length === 0;
   };
 
-  // Edit mode does not require a new biometric capture.
   const facialPresent = !!biometrics?.facialImage;
   const facialAccepted = facialMetaSatisfied(biometrics?.facialMeta);
   const biometricsReady = isEditMode || (facialPresent && facialAccepted);
@@ -562,40 +559,10 @@ function CompleteCitizenRecord() {
 
       {!isEditMode && (
         <>
-          <div className="form-section">
-            <h3 className="form-section-title">Documents</h3>
-            <Alert
-              type="info"
-              message="Documents uploaded now will be linked to the citizen when you save the record."
-            />
-            <DocumentUpload
-              documentType="NATIONAL_ID"
-              label="Identity document"
-              onUpload={async (formData, config) => {
-                formData.append('registrationId', id);
-                await uploadDocument(formData, config);
-                success('Document uploaded');
-              }}
-            />
-            <DocumentUpload
-              documentType="BIRTH_CERTIFICATE"
-              label="Birth certificate"
-              onUpload={async (formData, config) => {
-                formData.append('registrationId', id);
-                await uploadDocument(formData, config);
-                success('Document uploaded');
-              }}
-            />
-            <DocumentUpload
-              documentType="PASSPORT_PHOTO"
-              label="Passport photograph"
-              onUpload={async (formData, config) => {
-                formData.append('registrationId', id);
-                await uploadDocument(formData, config);
-                success('Document uploaded');
-              }}
-            />
-          </div>
+          {/* Documents section removed. The officer no longer uploads an
+              identity document, birth certificate, or passport photograph.
+              The citizen's photo is captured in the biometrics step below,
+              and the identity data is entered directly on this form. */}
 
           <div className="form-section">
             <h3 className="form-section-title">Biometric enrollment</h3>

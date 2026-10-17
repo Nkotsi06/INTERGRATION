@@ -37,18 +37,39 @@ async function searchByQuery({ query }) {
 }
 
 // Returns the citizen record plus the linked registration id (the user id)
-// and the employment history. The staff profile page uses registrationId
-// for its "Edit record" button and employmentHistory for the read-only panel.
+// and the employment history. Bad uuids or missing rows return null so the
+// controller can respond 404 instead of 500.
 async function getById(id) {
-  const citizen = await citizenRepository.findById(id);
-  if (!citizen) return null;
-  const owner = await userRepository.findByCitizenId(citizen.id);
-  const employment = await employmentHistoryRepository.findByCitizen(citizen.id);
-  return {
-    ...citizen,
-    registrationId: owner ? owner.id : null,
-    employmentHistory: employment,
-  };
+  try {
+    const citizen = await citizenRepository.findById(id);
+    if (!citizen) return null;
+
+    const owner = await userRepository.findByCitizenId(citizen.id);
+
+    let employment = [];
+    try {
+      employment = await employmentHistoryRepository.findByCitizen(citizen.id);
+    } catch (err) {
+      // If migration 002 has not been applied the table is missing. Do not
+      // crash the whole profile page because of a missing optional table.
+      logger.warn(
+        `[homeAffairsService.getById] employment history load failed for citizen ${citizen.id}: ${err.message}`
+      );
+      employment = [];
+    }
+
+    return {
+      ...citizen,
+      registrationId: owner ? owner.id : null,
+      employmentHistory: employment,
+    };
+  } catch (err) {
+    // A malformed id reaches Postgres as an invalid-uuid error.
+    if (err.code === '22P02' || /invalid input syntax for type uuid/i.test(err.message || '')) {
+      return null;
+    }
+    throw err;
+  }
 }
 
 async function getRegistrations(filters = {}) {
@@ -63,8 +84,6 @@ async function completeRecord(registrationId, data, staffUser) {
   const registration = await citizenRepository.findRegistrationById(registrationId);
   if (!registration) throw notFoundError('Registration not found');
 
-  // Safe-to-call-twice guard: if the registration already has a citizen
-  // record, do not generate a second National ID.
   if (registration.citizen_id) {
     const err = new Error(
       'This registration already has a citizen record. Use Edit record to make changes.'
@@ -116,9 +135,6 @@ async function completeRecord(registrationId, data, staffUser) {
 
   try {
     await documentService.relinkRegistrationDocuments(registration.id, citizen.id);
-    logger.info(
-      `Documents re-linked for registration ${registration.id} → citizen ${citizen.id}`
-    );
   } catch (err) {
     logger.error(
       `Could not relink documents for registration ${registration.id}: ${err.message}`
@@ -136,13 +152,9 @@ async function completeRecord(registrationId, data, staffUser) {
 
       if (Object.keys(fingerprints).length > 0) {
         await biometricService.enrollFingerprints(citizen.id, fingerprints, staffUser);
-        logger.info(
-          `Fingerprints enrolled for citizen ${citizen.id} (${Object.keys(fingerprints).length} prints)`
-        );
       }
 
       await biometricService.enrollFacial(citizen.id, facialImage, staffUser);
-      logger.info(`Facial photo enrolled for citizen ${citizen.id}`);
     } catch (err) {
       logger.error(
         `Biometric enrollment failed for citizen ${citizen.id}: ${err.message}`
@@ -171,16 +183,13 @@ async function completeRecord(registrationId, data, staffUser) {
 async function verifyCitizen(citizenId, { checks, notes }, staffUser) {
   const citizen = await citizenRepository.findById(citizenId);
   if (!citizen) throw new Error('Citizen not found');
-
   if (!citizen.national_id) {
     throw badRequestError('Record must be completed before verification');
   }
-
   const updated = await citizenRepository.markVerified(citizenId, {
     verifiedBy: staffUser.userId,
     notes,
   });
-
   await auditService.log({
     userId: staffUser.userId,
     username: staffUser.username,
@@ -189,7 +198,6 @@ async function verifyCitizen(citizenId, { checks, notes }, staffUser) {
     recordId: citizenId,
     result: 'SUCCESS',
   });
-
   return updated;
 }
 
@@ -201,13 +209,11 @@ async function updateCitizen(citizenId, data, staffUser) {
   if (Object.keys(patch).length === 0) {
     throw badRequestError('No editable fields supplied.');
   }
-
   const updated = await citizenRepository.updateWithHistory(
     citizenId,
     patch,
     staffUser.userId
   );
-
   await auditService.log({
     userId: staffUser.userId,
     username: staffUser.username,
@@ -216,16 +222,13 @@ async function updateCitizen(citizenId, data, staffUser) {
     recordId: citizenId,
     result: 'SUCCESS',
   });
-
   return updated;
 }
 
-// ── Employment history (Group C) ────────────────────────────────
 async function recordEmploymentHistory(citizenId, data, staffUser) {
   if (!data.employerName) throw badRequestError('Employer name is required.');
   if (!data.employerType) throw badRequestError('Employer type is required.');
   if (!data.startDate) throw badRequestError('Start date is required.');
-
   const created = await employmentHistoryRepository.create({
     citizenId,
     employerName: data.employerName,
@@ -237,7 +240,6 @@ async function recordEmploymentHistory(citizenId, data, staffUser) {
     recordedBy: staffUser.userId,
     notes: data.notes,
   });
-
   await auditService.log({
     userId: staffUser.userId,
     username: staffUser.username,
@@ -246,7 +248,6 @@ async function recordEmploymentHistory(citizenId, data, staffUser) {
     recordId: created.id,
     result: 'SUCCESS',
   });
-
   return created;
 }
 
@@ -289,15 +290,11 @@ async function getCertificatesForCitizen(citizenId) {
 async function issueBirthCertificate(citizenId, data, staffUser) {
   const citizen = await citizenRepository.findById(citizenId);
   if (!citizen) throw notFoundError('Citizen not found');
-
   const certificateNumber = await generateReference('BIRTH_CERTIFICATE');
-
   const created = await birthCertificateRepository.create({
     citizenId,
     certificateNumber,
-    childFullName:
-      data.childFullName ||
-      `${citizen.first_name} ${citizen.last_name}`.trim(),
+    childFullName: data.childFullName || `${citizen.first_name} ${citizen.last_name}`.trim(),
     childDateOfBirth: data.childDateOfBirth || citizen.date_of_birth,
     childGender: data.childGender || citizen.gender,
     placeOfBirth: data.placeOfBirth || citizen.place_of_birth,
@@ -309,7 +306,6 @@ async function issueBirthCertificate(citizenId, data, staffUser) {
     status: 'ISSUED',
     issuedBy: staffUser.userId,
   });
-
   await auditService.log({
     userId: staffUser.userId,
     username: staffUser.username,
@@ -318,24 +314,18 @@ async function issueBirthCertificate(citizenId, data, staffUser) {
     recordId: created.id,
     result: 'SUCCESS',
   });
-
   return created;
 }
 
 async function issueDeathCertificate(citizenId, data, staffUser) {
   const citizen = await citizenRepository.findById(citizenId);
   if (!citizen) throw notFoundError('Citizen not found');
-
   if (!data.dateOfDeath) throw badRequestError('Date of death is required.');
-
   const certificateNumber = await generateReference('DEATH_CERTIFICATE');
-
   const created = await deathCertificateRepository.create({
     citizenId,
     certificateNumber,
-    deceasedFullName:
-      data.deceasedFullName ||
-      `${citizen.first_name} ${citizen.last_name}`.trim(),
+    deceasedFullName: data.deceasedFullName || `${citizen.first_name} ${citizen.last_name}`.trim(),
     deceasedNationalId: data.deceasedNationalId || citizen.national_id,
     dateOfDeath: data.dateOfDeath,
     placeOfDeath: data.placeOfDeath || null,
@@ -345,7 +335,6 @@ async function issueDeathCertificate(citizenId, data, staffUser) {
     status: 'ISSUED',
     issuedBy: staffUser.userId,
   });
-
   await auditService.log({
     userId: staffUser.userId,
     username: staffUser.username,
@@ -354,27 +343,21 @@ async function issueDeathCertificate(citizenId, data, staffUser) {
     recordId: created.id,
     result: 'SUCCESS',
   });
-
   return created;
 }
 
 async function issueMarriageCertificate(citizenId, data, staffUser) {
   const citizen = await citizenRepository.findById(citizenId);
   if (!citizen) throw notFoundError('Citizen not found');
-
   if (!data.marriageDate) throw badRequestError('Marriage date is required.');
   if (!data.spouse2FullName && !data.spouse2NationalId) {
     throw badRequestError('Provide spouse 2 name or National ID.');
   }
-
   const certificateNumber = await generateReference('MARRIAGE_CERTIFICATE');
-
   const created = await marriageCertificateRepository.create({
     citizenId,
     certificateNumber,
-    spouse1FullName:
-      data.spouse1FullName ||
-      `${citizen.first_name} ${citizen.last_name}`.trim(),
+    spouse1FullName: data.spouse1FullName || `${citizen.first_name} ${citizen.last_name}`.trim(),
     spouse1NationalId: data.spouse1NationalId || citizen.national_id,
     spouse2FullName: data.spouse2FullName || null,
     spouse2NationalId: data.spouse2NationalId || null,
@@ -385,7 +368,6 @@ async function issueMarriageCertificate(citizenId, data, staffUser) {
     status: 'ISSUED',
     issuedBy: staffUser.userId,
   });
-
   await auditService.log({
     userId: staffUser.userId,
     username: staffUser.username,
@@ -394,7 +376,6 @@ async function issueMarriageCertificate(citizenId, data, staffUser) {
     recordId: created.id,
     result: 'SUCCESS',
   });
-
   return created;
 }
 
