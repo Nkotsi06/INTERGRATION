@@ -2,6 +2,7 @@ const router = require('express').Router();
 const authMiddleware = require('../middleware/authMiddleware');
 const roleMiddleware = require('../middleware/roleMiddleware');
 const controller = require('../controllers/homeAffairsController');
+const appController = require('../controllers/homeAffairsApplicationController');
 
 router.use(authMiddleware, roleMiddleware(['HOME_AFFAIRS']));
 
@@ -30,5 +31,11 @@ router.post('/citizen/:id/certificates/marriage', controller.issueMarriageCertif
 // Dashboard and reports
 router.get('/stats', controller.getStats);
 router.get('/reports', controller.getReports);
+
+// NEW: Applications Processing & Collection
+router.get('/applications', appController.listApplications);
+router.get('/applications/:id', appController.getApplication);
+router.put('/applications/:id/status', appController.updateStatus);
+router.post('/applications/:id/collect', appController.recordCollection);
 
 module.exports = router;

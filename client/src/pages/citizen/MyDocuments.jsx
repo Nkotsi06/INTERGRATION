@@ -1,66 +1,65 @@
 import { useState } from 'react';
 import PageWrapper from '../../components/layout/PageWrapper';
-import DocumentList from '../../components/documents/DocumentList';
-import ConfirmDialog from '../../components/common/ConfirmDialog';
 import useFetch from '../../hooks/useFetch';
-import { getDocuments, downloadDocument, deleteDocument } from '../../api/documentApi';
-import { useNotification } from '../../context/NotificationContext';
+import { getMyCertificates } from '../../api/certificateApi';
+import { getProfile } from '../../api/citizenApi';
+import apiClient from '../../api/apiClient';
+import BirthCertificateView from '../../components/documents/BirthCertificateView';
+import DeathCertificateView from '../../components/documents/DeathCertificateView';
+import NationalIdCardView from '../../components/documents/NationalIdCardView';
+import Button from '../../components/common/Button';
+import '../../styles/print.css'; // Ensure print styles are loaded
 
 function MyDocuments() {
-  const { data: documents, loading, refetch } = useFetch(getDocuments, []);
-  const [pendingDelete, setPendingDelete] = useState(null);
-  const { success, error: showError } = useNotification();
+  const { data: certificates, loading } = useFetch(getMyCertificates, []);
+  const { data: profile } = useFetch(getProfile, []);
+  const [selectedDoc, setSelectedDoc] = useState(null);
+  const [photoUrl, setPhotoUrl] = useState(null);
 
-  const handleDownload = async (doc) => {
-    try {
-      const blob = await downloadDocument(doc.id);
-      const url = window.URL.createObjectURL(blob);
-      const anchor = document.createElement('a');
-      anchor.href = url;
-      anchor.download = doc.fileName || 'document';
-      document.body.appendChild(anchor);
-      anchor.click();
-      document.body.removeChild(anchor);
-      window.URL.revokeObjectURL(url);
-    } catch (err) {
-      showError('Could not download this document.');
-    }
-  };
-
-  const handleDeleteConfirmed = async () => {
-    if (!pendingDelete) return;
-    try {
-      await deleteDocument(pendingDelete.id);
-      success('Document deleted');
-      setPendingDelete(null);
-      refetch();
-    } catch (err) {
-      showError('Could not delete this document.');
+  const handleView = async (cert) => {
+    setSelectedDoc(cert);
+    // Fetch photo if viewing an ID Card
+    if (cert.certificate_type === 'ID_CARD') {
+      try {
+        const blob = await apiClient.get('/citizen/photo', { responseType: 'blob' });
+        setPhotoUrl(URL.createObjectURL(blob));
+      } catch (err) {
+        setPhotoUrl(null);
+      }
     }
   };
 
   return (
     <PageWrapper title="My Documents" showBack backPath="/citizen/dashboard">
-      <h1>My documents</h1>
-      {loading ? (
-        <p className="text-muted">Loading…</p>
-      ) : (
-        <DocumentList
-          documents={documents}
-          onDownload={handleDownload}
-          onDelete={(doc) => setPendingDelete(doc)}
-        />
-      )}
+      <h1>My Documents</h1>
+      <p className="text-muted">View and print your official government documents.</p>
 
-      <ConfirmDialog
-        isOpen={!!pendingDelete}
-        onClose={() => setPendingDelete(null)}
-        onConfirm={handleDeleteConfirmed}
-        title="Delete this document?"
-        message="This cannot be undone. You will need to upload it again if it is required later."
-        confirmLabel="Delete document"
-        variant="danger"
-      />
+      {loading && <p>Loading documents...</p>}
+
+      {/* List of documents */}
+      {!selectedDoc && certificates?.map((cert) => (
+        <div key={cert.id} className="card card-flat" style={{ marginBottom: 10, padding: 15, display: 'flex', justifyContent: 'space-between' }}>
+          <div>
+            <strong>{cert.certificate_type} CERTIFICATE</strong>
+            <p className="text-muted">{cert.certificate_number}</p>
+          </div>
+          <Button variant="primary" onClick={() => handleView(cert)}>View</Button>
+        </div>
+      ))}
+
+      {/* Document Viewer */}
+      {selectedDoc && (
+        <div style={{ marginTop: 20 }}>
+          <div className="no-print" style={{ marginBottom: 20 }}>
+            <Button variant="secondary" onClick={() => setSelectedDoc(null)}>Back to list</Button>
+            <Button variant="primary" onClick={() => window.print()} style={{ marginLeft: 10 }}>Print Document</Button>
+          </div>
+
+          {selectedDoc.certificate_type === 'BIRTH' && <BirthCertificateView data={selectedDoc} />}
+          {selectedDoc.certificate_type === 'DEATH' && <DeathCertificateView data={selectedDoc} />}
+          {selectedDoc.certificate_type === 'ID_CARD' && <NationalIdCardView data={profile} photoUrl={photoUrl} />}
+        </div>
+      )}
     </PageWrapper>
   );
 }

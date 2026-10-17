@@ -58,6 +58,12 @@ function HAStaffDashboard() {
       <div className="quick-actions">
         <Button
           variant="primary"
+          onClick={() => navigate('/home-affairs/applications')}
+        >
+          Process Applications
+        </Button>
+        <Button
+          variant="secondary"
           onClick={() => navigate('/home-affairs/registrations')}
         >
           Review new registrations

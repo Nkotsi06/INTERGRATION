@@ -43,6 +43,8 @@ import HAReports from '../pages/homeAffairs/Reports';
 import HACertificates from '../pages/homeAffairs/Certificates';
 import HAIssueCertificate from '../pages/homeAffairs/IssueCertificate';
 import HAEditCertificate from '../pages/homeAffairs/EditCertificate';
+import HAApplicationQueue from '../pages/homeAffairs/ApplicationQueue';
+import HAApplicationDetail from '../pages/homeAffairs/ApplicationDetail';
 
 import TrafficDashboard from '../pages/traffic/TrafficDashboard';
 import ViewLicence from '../pages/traffic/ViewLicence';
@@ -192,6 +194,9 @@ function AppRoutes() {
       <Route path="/home-affairs/citizen/:id/certificates" element={<RoleRoute roles={['HOME_AFFAIRS']}><HACertificates /></RoleRoute>} />
       <Route path="/home-affairs/citizen/:id/certificates/new" element={<RoleRoute roles={['HOME_AFFAIRS']}><HAIssueCertificate /></RoleRoute>} />
       <Route path="/home-affairs/certificates/:type/:id/edit" element={<RoleRoute roles={['HOME_AFFAIRS']}><HAEditCertificate /></RoleRoute>} />
+      // ... inside the Home Affairs routes ...
+      <Route path="/home-affairs/applications" element={<RoleRoute roles={['HOME_AFFAIRS']}><HAApplicationQueue /></RoleRoute>} />
+      <Route path="/home-affairs/applications/:id" element={<RoleRoute roles={['HOME_AFFAIRS']}><HAApplicationDetail /></RoleRoute>} />
 
       {/* ... (Keep Traffic, Police, Finance, Pensions, Passport, Admin, Help routes exactly as they are) ... */}
       {/* Traffic — citizen */}

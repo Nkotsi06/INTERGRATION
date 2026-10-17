@@ -3480,3 +3480,162 @@ textarea:focus-visible,
     align-items: stretch;
   }
 }
+
+/* =========================================
+   PRINT STYLES FOR OFFICIAL DOCUMENTS
+   ========================================= */
+
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  
+  .print-container, .print-container * {
+    visibility: visible;
+  }
+  
+  .print-container {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+}
+
+/* A4 Portrait for Certificates */
+.a4-page {
+  width: 210mm;
+  min-height: 297mm;
+  padding: 20mm;
+  margin: 0 auto;
+  background: white;
+  box-shadow: 0 0 10px rgba(0,0,0,0.1);
+  box-sizing: border-box;
+  font-family: 'Times New Roman', Times, serif;
+  color: #000;
+}
+
+@media print {
+  .a4-page {
+    width: 100%;
+    min-height: auto;
+    padding: 0;
+    margin: 0;
+    box-shadow: none;
+  }
+}
+
+/* ID Card Landscape (85.6mm x 54mm) */
+.id-card-page {
+  width: 85.6mm;
+  height: 54mm;
+  padding: 4mm;
+  margin: 20px auto;
+  background: white;
+  border-radius: 3mm;
+  box-shadow: 0 0 10px rgba(0,0,0,0.2);
+  box-sizing: border-box;
+  font-family: Arial, sans-serif;
+  position: relative;
+  overflow: hidden;
+  border: 1px solid #ccc;
+}
+
+@media print {
+  .id-card-page {
+    width: 85.6mm;
+    height: 54mm;
+    margin: 0;
+    box-shadow: none;
+    border: none;
+  }
+}
+
+/* Watermark */
+.watermark {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) rotate(-45deg);
+  font-size: 100px;
+  color: rgba(200, 0, 0, 0.15);
+  font-weight: bold;
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 10;
+  font-family: 'Times New Roman', Times, serif;
+}
+
+/* Certificate specifics */
+.cert-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 20px;
+  font-size: 12px;
+}
+
+.cert-title {
+  text-align: center;
+  margin: 20px 0;
+}
+
+.cert-title h1 {
+  font-size: 28px;
+  letter-spacing: 8px;
+  margin: 0;
+  text-transform: uppercase;
+}
+
+.cert-title hr {
+  border: 0;
+  border-top: 1px solid #000;
+  margin: 10px 20%;
+}
+
+.cert-fields {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 30px;
+}
+
+.cert-fields td {
+  padding: 6px 10px;
+  font-size: 13px;
+  vertical-align: top;
+}
+
+.cert-fields td:first-child {
+  width: 45%;
+  text-transform: uppercase;
+  color: #333;
+}
+
+.cert-fields td:last-child {
+  font-weight: bold;
+  text-transform: uppercase;
+}
+
+.cert-footer {
+  margin-top: 50px;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.cert-signatures {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 60px;
+  font-size: 12px;
+}
+
+.signature-box {
+  text-align: center;
+  width: 40%;
+  border-top: 1px solid #000;
+  padding-top: 5px;
+}
