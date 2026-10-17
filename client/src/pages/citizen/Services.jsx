@@ -5,6 +5,7 @@ import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
 import Alert from '../../components/common/Alert';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
+import EmptyState from '../../components/common/EmptyState';
 import { getPublicServices } from '../../api/serviceApi';
 
 const MINISTRY_LABELS = {
@@ -19,7 +20,7 @@ const MINISTRY_LABELS = {
 function Services() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  // Ensure it is uppercase to match the database exactly
+  // Uppercase to match the values stored in the services table.
   const ministry = (searchParams.get('ministry') || 'HOME_AFFAIRS').toUpperCase();
 
   const [services, setServices] = useState([]);
@@ -37,7 +38,6 @@ function Services() {
           setServices(Array.isArray(data) ? data : []);
         }
       } catch (err) {
-        console.error("Failed to fetch services:", err);
         if (!cancelled) {
           setError(
             err.message ||
@@ -64,11 +64,8 @@ function Services() {
     >
       <h1>{ministryLabel} services</h1>
       <p className="text-muted">
-        Choose a service to apply for. Your application will be reviewed by
-        {' '}
-        {ministryLabel}
-        {' '}
-        staff.
+        Choose a service to apply for. Your application will be reviewed by{' '}
+        {ministryLabel} staff.
       </p>
 
       {loading && <LoadingSpinner message="Loading services…" />}
@@ -76,9 +73,11 @@ function Services() {
       {!loading && error && <Alert type="error" message={error} />}
 
       {!loading && !error && services.length === 0 && (
-        <Alert
-          type="info"
-          message={`No services are currently available from ${ministryLabel}.`}
+        <EmptyState
+          title={`No services available from ${ministryLabel}`}
+          message="This ministry has no services enabled at the moment. Please check back later, or choose a different ministry from your dashboard."
+          actionLabel="Back to dashboard"
+          onAction={() => navigate('/citizen/dashboard')}
         />
       )}
 

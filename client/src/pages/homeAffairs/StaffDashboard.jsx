@@ -54,6 +54,17 @@ function HAStaffDashboard() {
           </Card>
         </div>
       )}
+       
+
+
+            <div className="quick-actions" style={{ flexWrap: 'wrap', gap: 10 }}>
+        <Button variant="primary" onClick={() => navigate('/home-affairs/applications')}>Process Applications</Button>
+        <Button variant="secondary" onClick={() => navigate('/home-affairs/enquiries')}>Enquiries</Button>
+        <Button variant="secondary" onClick={() => navigate('/home-affairs/verify-document')}>Verify Document</Button>
+        <Button variant="secondary" onClick={() => navigate('/home-affairs/information')}>Info Services</Button>
+        <Button variant="secondary" onClick={() => navigate('/home-affairs/registrations')}>New Registrations</Button>
+        <Button variant="secondary" onClick={() => navigate('/home-affairs/certificates')}>Certificates</Button>
+      </div>
 
       <div className="quick-actions">
         <Button

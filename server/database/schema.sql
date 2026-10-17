@@ -1393,3 +1393,51 @@ WHERE fee > 0 AND fee_code IS NULL;
 --     should be updated to set both. (Server change.)
 --   - ministries.icon_name is unused after Phase 1. Harmless.
 -- ================================================================
+
+
+-- 1. Information Topics
+CREATE TABLE IF NOT EXISTS information_topics (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  code VARCHAR(50) UNIQUE NOT NULL, -- e.g., 'IMMIGRATION_INFO'
+  title VARCHAR(200) NOT NULL,
+  content TEXT NOT NULL,
+  contact_details TEXT,
+  is_published BOOLEAN DEFAULT TRUE,
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+
+-- 2. Document Enquiries (Citizen asking for help)
+CREATE TABLE IF NOT EXISTS document_enquiries (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  citizen_id UUID NOT NULL REFERENCES citizens(id) ON DELETE CASCADE,
+  reference_number VARCHAR(50) UNIQUE NOT NULL,
+  subject VARCHAR(200) NOT NULL,
+  message TEXT NOT NULL,
+  status VARCHAR(20) DEFAULT 'OPEN' CHECK (status IN ('OPEN', 'RESOLVED')),
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- 3. Enquiry Replies (Staff replying)
+CREATE TABLE IF NOT EXISTS enquiry_messages (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  enquiry_id UUID NOT NULL REFERENCES document_enquiries(id) ON DELETE CASCADE,
+  sender_id UUID REFERENCES users(id),
+  message TEXT NOT NULL,
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Seed the initial information topics
+INSERT INTO information_topics (code, title, content) VALUES
+('IMMIGRATION_INFO', 'Immigration & Visas', 'Information regarding temporary and permanent residence permits, visas, and border control.'),
+('CITIZENSHIP_INFO', 'Citizenship', 'Information regarding citizenship by birth, descent, naturalisation, and restoration.'),
+('REFUGEE_INFO', 'Refugee & Asylum', 'Procedures, documentation, and support for refugees and asylum seekers in Lesotho.'),
+('LIVESTOCK_INFO', 'Livestock Registration', 'Registration, identification, and ownership records for livestock.')
+ON CONFLICT (code) DO NOTHING;
+
+ALTER TABLE applications
+ADD COLUMN collected_at TIMESTAMP,
+ADD COLUMN collected_by_name VARCHAR(200),
+ADD COLUMN collected_by_staff_id UUID REFERENCES users(id),
+ADD COLUMN id_checked BOOLEAN DEFAULT FALSE;
+

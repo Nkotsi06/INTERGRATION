@@ -8,15 +8,6 @@ import Card from '../../components/common/Card';
 import { StatsSkeleton } from '../../components/common/SkeletonLoader';
 import { getProfile } from '../../api/citizenApi';
 
-const MINISTRY_PREFIX = {
-  HOME_AFFAIRS: 'home-affairs',
-  TRAFFIC: 'traffic',
-  POLICE: 'police',
-  FINANCE: 'finance',
-  PENSIONS: 'pensions',
-  PASSPORT: 'passport',
-};
-
 function CitizenDashboard() {
   const { user } = useAuth();
   const { session } = useSession();
@@ -44,13 +35,15 @@ function CitizenDashboard() {
 
   const isVerified = !!profile?.isVerified;
 
+  // Every ministry card takes the citizen to the services catalogue for that
+  // ministry. /home-affairs/dashboard is staff-only, so routing there from the
+  // citizen dashboard is what caused the bounce back to /citizen/dashboard.
   const handleMinistryClick = (ministry) => {
     if (!isVerified || !session?.identityVerified) {
       navigate('/citizen/verify', { state: { targetMinistry: ministry.code } });
       return;
     }
-    const prefix = MINISTRY_PREFIX[ministry.code];
-    if (prefix) navigate(`/${prefix}/dashboard`);
+    navigate(`/citizen/services?ministry=${encodeURIComponent(ministry.code)}`);
   };
 
   const ministries = settings.ministries || [];
@@ -108,8 +101,6 @@ function CitizenDashboard() {
           ))}
         </div>
       </section>
-
-      {/* REMOVED: My applications and Help sections to be kept in sidebar only */}
     </PageWrapper>
   );
 }
