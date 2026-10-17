@@ -2,6 +2,7 @@ const citizenService = require('../services/citizenService');
 const applicationRepository = require('../repositories/applicationRepository');
 const documentService = require('../services/documentService');
 const notificationService = require('../services/notificationService');
+const { query } = require('../config/database'); // ← Added to support custom joins
 const path = require('path');
 const fs = require('fs');
 
@@ -40,7 +41,30 @@ async function getApplications(req, res, next) {
   try {
     const citizenId = citizenIdFrom(req);
     if (!citizenId) return res.json([]);
-    const apps = await applicationRepository.findByCitizen(citizenId);
+    
+    // Join with branches to get the branch name for the tracking UI
+    const result = await query(
+      `SELECT a.*, b.name as branch_name, b.address as branch_address
+       FROM applications a
+       LEFT JOIN branches b ON b.id::text = (a.data->'formData'->>'branchId')
+       WHERE a.citizen_id = $1 
+       ORDER BY a.submitted_at DESC`,
+      [citizenId]
+    );
+    
+    // Format the branch name into the JSON data for the frontend
+    const apps = result.rows.map(r => ({
+      ...r,
+      data: {
+        ...r.data,
+        formData: {
+          ...r.data.formData,
+          branchName: r.branch_name,
+          branchAddress: r.branch_address
+        }
+      }
+    }));
+    
     res.json(apps);
   } catch (err) {
     next(err);
@@ -51,7 +75,6 @@ async function getApplicationByRef(req, res, next) {
   try {
     const citizenId = citizenIdFrom(req);
     const app = await applicationRepository.findByReference(req.params.ref);
-    // Deny unless the app exists, the citizen is known, and it belongs to them.
     if (!app || !citizenId || app.citizen_id !== citizenId) {
       return res.status(404).json({ message: 'Application not found' });
     }
@@ -73,9 +96,6 @@ async function getDocuments(req, res, next) {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────
-// Photo — serves the citizen's own passport photo (or facial image).
-// ─────────────────────────────────────────────────────────────────────
 async function getPhoto(req, res, next) {
   try {
     const citizenId = citizenIdFrom(req);
@@ -85,7 +105,6 @@ async function getPhoto(req, res, next) {
     if (!photo) return res.status(404).json({ message: 'No photo' });
 
     if (photo.kind === 'dataurl') {
-      // Biometric facial image is a data URL. Decode and stream.
       const match = photo.dataUrl.match(/^data:(.+?);base64,(.*)$/);
       if (!match) return res.status(404).json({ message: 'No photo' });
       const [, mime, b64] = match;
@@ -94,7 +113,6 @@ async function getPhoto(req, res, next) {
       return res.send(Buffer.from(b64, 'base64'));
     }
 
-    // Document on disk.
     const filePath = String(photo.filePath).split('#')[0];
     if (!fs.existsSync(filePath)) {
       return res.status(404).json({ message: 'Photo file missing' });

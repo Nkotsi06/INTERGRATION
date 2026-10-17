@@ -23,14 +23,15 @@ import ApplicationStatus from '../pages/citizen/ApplicationStatus';
 import MyDocuments from '../pages/citizen/MyDocuments';
 import MyBiometrics from '../pages/citizen/MyBiometrics';
 import MyCertificates from '../pages/citizen/MyCertificates';
+import ApplyNationalId from '../pages/citizen/ApplyNationalId'; // ← NEW
 
-// FIX: Point Notifications to the shared common folder so staff and admins can see them too
+// Notifications
 import Notifications from '../pages/common/Notifications';
 
 import ServiceApply from '../pages/citizen/ServiceApply';
 import Services from '../pages/citizen/Services';
 
-// Home Affairs
+// ... (Keep all your Home Affairs, Traffic, Police, Finance, Pensions, Passport, Admin, and Help imports exactly as they are) ...
 import HAStaffDashboard from '../pages/homeAffairs/StaffDashboard';
 import HANewRegistrations from '../pages/homeAffairs/NewRegistrations';
 import HACompleteCitizenRecord from '../pages/homeAffairs/CompleteCitizenRecord';
@@ -43,7 +44,6 @@ import HACertificates from '../pages/homeAffairs/Certificates';
 import HAIssueCertificate from '../pages/homeAffairs/IssueCertificate';
 import HAEditCertificate from '../pages/homeAffairs/EditCertificate';
 
-// Traffic
 import TrafficDashboard from '../pages/traffic/TrafficDashboard';
 import ViewLicence from '../pages/traffic/ViewLicence';
 import RenewLicence from '../pages/traffic/RenewLicence';
@@ -65,7 +65,6 @@ import ApplyVehicleLicence from '../pages/traffic/ApplyVehicleLicence';
 import MyTransportPermits from '../pages/traffic/MyTransportPermits';
 import ApplyTransportPermit from '../pages/traffic/ApplyTransportPermit';
 
-// Police
 import PoliceDashboard from '../pages/police/PoliceDashboard';
 import ReportCase from '../pages/police/ReportCase';
 import MyCases from '../pages/police/MyCases';
@@ -77,7 +76,6 @@ import CaseUpdate from '../pages/police/CaseUpdate';
 import RequestCriminalRecord from '../pages/police/RequestCriminalRecord';
 import MyCriminalRecords from '../pages/police/MyCriminalRecords';
 
-// Finance — citizen
 import FinanceDashboard from '../pages/finance/FinanceDashboard';
 import TaxRegistration from '../pages/finance/TaxRegistration';
 import TaxProfile from '../pages/finance/TaxProfile';
@@ -93,7 +91,6 @@ import RequestPaymentPlan from '../pages/finance/RequestPaymentPlan';
 import RegisterBusiness from '../pages/finance/RegisterBusiness';
 import MyBusinesses from '../pages/finance/MyBusinesses';
 
-// Finance — staff
 import FinanceStaffDashboard from '../pages/finance/StaffDashboard';
 import TreasuryView from '../pages/finance/TreasuryView';
 import BudgetView from '../pages/finance/BudgetView';
@@ -109,7 +106,6 @@ import ProcessTaxRegistration from '../pages/finance/ProcessTaxRegistration';
 import PaymentsReceived from '../pages/finance/PaymentsReceived';
 import FeeSchedule from '../pages/finance/FeeSchedule';
 
-// Pensions
 import PensionsDashboard from '../pages/pensions/PensionsDashboard';
 import ViewPensionInfo from '../pages/pensions/ViewPensionInfo';
 import ExistenceVerification from '../pages/pensions/ExistenceVerification';
@@ -118,7 +114,6 @@ import VerificationHistory from '../pages/pensions/VerificationHistory';
 import PensionsStaffDashboard from '../pages/pensions/StaffDashboard';
 import ProcessVerification from '../pages/pensions/ProcessVerification';
 
-// Passport
 import PassportDashboard from '../pages/passport/PassportDashboard';
 import ApplyForPassport from '../pages/passport/ApplyForPassport';
 import PassportApplicationConfirmation from '../pages/passport/ApplicationConfirmation';
@@ -127,7 +122,6 @@ import PassportStaffDashboard from '../pages/passport/StaffDashboard';
 import ProcessPassportApplication from '../pages/passport/ProcessApplication';
 import PassportApplicationHistory from '../pages/passport/ApplicationHistory';
 
-// Admin
 import AdminDashboard from '../pages/admin/AdminDashboard';
 import UserManagement from '../pages/admin/UserManagement';
 import AddUser from '../pages/admin/AddUser';
@@ -143,7 +137,6 @@ import BiometricConfig from '../pages/admin/BiometricConfig';
 import BranchManagement from '../pages/admin/BranchManagement';
 import ServiceCatalogue from '../pages/admin/ServiceCatalogue';
 
-// Help
 import HelpHome from '../pages/help/HelpHome';
 import HelpGettingStarted from '../pages/help/GettingStarted';
 import HelpVerification from '../pages/help/Verification';
@@ -181,6 +174,9 @@ function AppRoutes() {
       <Route path="/citizen/biometrics" element={<ProtectedRoute><MyBiometrics /></ProtectedRoute>} />
       <Route path="/citizen/notifications" element={<Navigate to="/notifications" replace />} />
       <Route path="/citizen/services" element={<ProtectedRoute><Services /></ProtectedRoute>} />
+      
+      {/* National ID Application */}
+      <Route path="/citizen/services/national-id/apply" element={<ProtectedRoute><ApplyNationalId /></ProtectedRoute>} />
       <Route path="/citizen/services/:id/apply" element={<ProtectedRoute><ServiceApply /></ProtectedRoute>} />
 
       {/* Home Affairs staff */}
@@ -197,6 +193,7 @@ function AppRoutes() {
       <Route path="/home-affairs/citizen/:id/certificates/new" element={<RoleRoute roles={['HOME_AFFAIRS']}><HAIssueCertificate /></RoleRoute>} />
       <Route path="/home-affairs/certificates/:type/:id/edit" element={<RoleRoute roles={['HOME_AFFAIRS']}><HAEditCertificate /></RoleRoute>} />
 
+      {/* ... (Keep Traffic, Police, Finance, Pensions, Passport, Admin, Help routes exactly as they are) ... */}
       {/* Traffic — citizen */}
       <Route path="/traffic/dashboard" element={<ProtectedRoute><TrafficDashboard /></ProtectedRoute>} />
       <Route path="/traffic/licence" element={<ProtectedRoute><ViewLicence /></ProtectedRoute>} />

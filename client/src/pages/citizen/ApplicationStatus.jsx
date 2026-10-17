@@ -6,6 +6,7 @@ import EmptyState from '../../components/common/EmptyState';
 import { TableSkeleton } from '../../components/common/SkeletonLoader';
 import useFetch from '../../hooks/useFetch';
 import { getApplications } from '../../api/citizenApi';
+import { formatDate } from '../../utils/formatters';
 
 const STATUS_VARIANT = {
   SUBMITTED: 'info',
@@ -14,6 +15,9 @@ const STATUS_VARIANT = {
   REJECTED: 'error',
   COMPLETED: 'success',
   DRAFT: 'default',
+  READY_FOR_COLLECTION: 'success',
+  COLLECTED: 'default',
+  IN_PRODUCTION: 'warning',
 };
 
 function ApplicationStatus() {
@@ -30,23 +34,38 @@ function ApplicationStatus() {
   }, [applications, filterValues]);
 
   const columns = [
-    { key: 'referenceNumber', label: 'Reference Number' },
-    { key: 'service', label: 'Service' },
-    { key: 'dateSubmitted', label: 'Date Submitted' },
+    { key: 'referenceNumber', label: 'Reference' },
+    { key: 'service', label: 'Ministry' },
+    { 
+      key: 'serviceName', 
+      label: 'Service',
+      render: (r) => r.data?.serviceName || '—'
+    },
+    { 
+      key: 'dateSubmitted', 
+      label: 'Submitted',
+      render: (r) => formatDate(r.submittedAt)
+    },
     {
       key: 'status',
       label: 'Status',
       render: (row) => (
         <Badge variant={STATUS_VARIANT[row.status] || 'default'}>
-          {row.statusLabel || row.status}
+          {row.status.replace(/_/g, ' ')}
         </Badge>
       ),
     },
+    {
+      key: 'collection',
+      label: 'Collection Branch',
+      render: (r) => r.data?.formData?.branchName || '—'
+    }
   ];
 
   return (
     <PageWrapper title="My Applications" showBack backPath="/citizen/dashboard">
       <h1>My Applications</h1>
+      <p className="text-muted">Track all your government service applications.</p>
 
       <div className="filter-bar">
         <div className="filter-controls">
@@ -55,55 +74,36 @@ function ApplicationStatus() {
             <select
               className="filter-select"
               value={filterValues.status}
-              onChange={(e) =>
-                setFilterValues((prev) => ({ ...prev, status: e.target.value }))
-              }
+              onChange={(e) => setFilterValues((prev) => ({ ...prev, status: e.target.value }))}
             >
               <option value="">All</option>
               <option value="SUBMITTED">Submitted</option>
               <option value="UNDER_REVIEW">Under Review</option>
-              <option value="APPROVED">Approved</option>
-              <option value="REJECTED">Rejected</option>
-              <option value="COMPLETED">Completed</option>
+              <option value="READY_FOR_COLLECTION">Ready for Collection</option>
+              <option value="COLLECTED">Collected</option>
             </select>
           </div>
           <div className="filter-dropdown">
-            <label className="filter-label">Service</label>
+            <label className="filter-label">Ministry</label>
             <select
               className="filter-select"
               value={filterValues.service}
-              onChange={(e) =>
-                setFilterValues((prev) => ({ ...prev, service: e.target.value }))
-              }
+              onChange={(e) => setFilterValues((prev) => ({ ...prev, service: e.target.value }))}
             >
               <option value="">All</option>
+              <option value="HOME_AFFAIRS">Home Affairs</option>
               <option value="PASSPORT">Passport</option>
               <option value="TRAFFIC">Traffic</option>
               <option value="FINANCE">Finance</option>
-              <option value="PENSIONS">Pensions</option>
             </select>
           </div>
         </div>
-        {(filterValues.status || filterValues.service) && (
-          <button
-            type="button"
-            className="clear-filters"
-            onClick={() => setFilterValues({ status: '', service: '' })}
-          >
-            Clear filters
-          </button>
-        )}
       </div>
 
-      {loading && <TableSkeleton rows={5} columns={4} />}
-
+      {loading && <TableSkeleton rows={5} columns={5} />}
       {!loading && filtered.length === 0 && (
-        <EmptyState
-          title="No applications found"
-          message="Try adjusting your filters, or apply for a service to see it here."
-        />
+        <EmptyState title="No applications found" message="You have not applied for any services yet." />
       )}
-
       {!loading && filtered.length > 0 && (
         <Table columns={columns} data={filtered} />
       )}

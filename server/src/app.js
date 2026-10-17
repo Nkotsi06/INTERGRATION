@@ -31,6 +31,7 @@ const paymentRoutes = require('./routes/paymentRoutes');
 const serviceRoutes = require('./routes/serviceRoutes');
 const feeScheduleRoutes = require('./routes/feeScheduleRoutes');
 const certificateRoutes = require('./routes/certificateRoutes');
+const nationalIdRoutes = require('./routes/nationalIdRoutes'); // ← NEW
 
 const app = express();
 
@@ -96,6 +97,7 @@ app.use('/api/payments', paymentRoutes);
 app.use('/api/services', serviceRoutes);
 app.use('/api/fee-schedule', feeScheduleRoutes);
 app.use('/api/certificates', certificateRoutes);
+app.use('/api/national-id', nationalIdRoutes); // ← NEW
 
 app.use((req, res) => {
   res.status(404).json({ message: 'Route not found' });
