@@ -19,7 +19,8 @@ const MINISTRY_LABELS = {
 function Services() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const ministry = searchParams.get('ministry') || 'HOME_AFFAIRS';
+  // Ensure it is uppercase to match the database exactly
+  const ministry = (searchParams.get('ministry') || 'HOME_AFFAIRS').toUpperCase();
 
   const [services, setServices] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -32,8 +33,11 @@ function Services() {
       setError(null);
       try {
         const data = await getPublicServices(ministry);
-        if (!cancelled) setServices(Array.isArray(data) ? data : []);
+        if (!cancelled) {
+          setServices(Array.isArray(data) ? data : []);
+        }
       } catch (err) {
+        console.error("Failed to fetch services:", err);
         if (!cancelled) {
           setError(
             err.message ||

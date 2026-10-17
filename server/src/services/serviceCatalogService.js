@@ -11,8 +11,25 @@ const auditService = require('./auditService');
 function notFound(msg) { const e = new Error(msg); e.statusCode = 404; return e; }
 function badRequest(msg) { const e = new Error(msg); e.statusCode = 400; return e; }
 
+// Normalise the ministry code coming from the frontend.
+// Accepts: 'home-affairs', 'home_affairs', 'Home Affairs', 'HOME_AFFAIRS'
+// Always returns 'HOME_AFFAIRS'.
+function normaliseMinistryCode(value) {
+  if (!value) return undefined;
+  return String(value)
+    .trim()
+    .toUpperCase()
+    .replace(/[\s-]+/g, '_');
+}
+
 async function listPublic(ministry) {
-  const services = await serviceRepository.findAll({ ministry, is_enabled: true });
+  const ministryCode = normaliseMinistryCode(ministry);
+
+  const services = await serviceRepository.findAll({
+    ministry: ministryCode,
+    is_enabled: true,
+  });
+
   const enriched = await Promise.all(
     services.map(async (s) => {
       const fee = await feeScheduleService.getFeeForService(s.ministry, s.code);
@@ -28,7 +45,11 @@ async function listPublic(ministry) {
 }
 
 async function listAll(filters) {
-  return serviceRepository.findAll(filters);
+  const normalised = {
+    ...filters,
+    ministry: filters?.ministry ? normaliseMinistryCode(filters.ministry) : undefined,
+  };
+  return serviceRepository.findAll(normalised);
 }
 
 async function getById(id) {
@@ -104,7 +125,6 @@ async function submitApplication({ serviceId, citizenId, formData, user }) {
       citizenId,
     });
   } catch (err) {
-    // Certificate hook is best-effort. The application still exists.
     // eslint-disable-next-line no-console
     console.error('Certificate hook failed:', err.message);
   }

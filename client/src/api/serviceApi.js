@@ -1,7 +1,11 @@
 import apiClient from './apiClient';
 
-export const getPublicServices = (ministry) =>
-  apiClient.get('/services/public', { params: { ministry } });
+export const getPublicServices = (ministry) => {
+  const q = ministry
+    ? `?ministry=${encodeURIComponent(ministry)}`
+    : '';
+  return apiClient.get(`/services/public${q}`);
+};
 
 export const listAllServices = (params) =>
   apiClient.get('/services', { params });
