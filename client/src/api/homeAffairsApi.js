@@ -26,7 +26,13 @@ export const issueBirthCertificate = (id, data) => apiClient.post(`/home-affairs
 export const issueDeathCertificate = (id, data) => apiClient.post(`/home-affairs/citizen/${id}/certificates/death`, data);
 export const issueMarriageCertificate = (id, data) => apiClient.post(`/home-affairs/citizen/${id}/certificates/marriage`, data);
 
-// NEW: Applications Processing
+// Employment history (Group C)
+export const recordEmployment = (citizenId, data) =>
+  apiClient.post(`/home-affairs/citizen/${citizenId}/employment`, data);
+export const updateEmployment = (citizenId, employmentId, data) =>
+  apiClient.put(`/home-affairs/citizen/${citizenId}/employment/${employmentId}`, data);
+
+// Applications processing
 export const listApplications = (params) => apiClient.get('/home-affairs/applications', { params });
 export const getApplication = (id) => apiClient.get(`/home-affairs/applications/${id}`);
 export const updateApplicationStatus = (id, status) => apiClient.put(`/home-affairs/applications/${id}/status`, { status });

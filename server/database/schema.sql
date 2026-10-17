@@ -1441,3 +1441,202 @@ ADD COLUMN collected_by_name VARCHAR(200),
 ADD COLUMN collected_by_staff_id UUID REFERENCES users(id),
 ADD COLUMN id_checked BOOLEAN DEFAULT FALSE;
 
+-- ================================================================
+-- 001_enable_police_services.sql
+-- ================================================================
+-- Purpose:
+--   The schema seed sets every Police service to is_enabled = FALSE
+--   because the master prompt's design-time note said police
+--   procedures must be confirmed with the Police Service before
+--   they are shown to citizens. That note is now cleared, so this
+--   migration turns the three Police services on.
+--
+-- What it does:
+--   Sets is_enabled = TRUE for the three Police services seeded
+--   in schema.sql:
+--     - POLICE_CLEARANCE        (Police clearance certificate)
+--     - POLICE_REPORT           (Report a crime)
+--     - POLICE_CRIMINAL_RECORD  (Criminal record check)
+--
+-- Safe to run more than once. It only touches rows whose ministry
+-- is POLICE, and only flips is_enabled to TRUE. It does not touch
+-- any other column, and it does not insert or delete rows.
+--
+-- Where to run it:
+--   In the Neon / Supabase SQL editor, connected to the project
+--   database, as the same role that applied schema.sql. Run the
+--   whole file in one execution.
+--
+-- How to verify it worked:
+--   SELECT code, name, is_enabled
+--   FROM services
+--   WHERE ministry = 'POLICE'
+--   ORDER BY display_order;
+--
+--   Expected result after running this file:
+--     code                    | name                            | is_enabled
+--     ------------------------+---------------------------------+-----------
+--     POLICE_CLEARANCE        | Police clearance certificate    | t
+--     POLICE_REPORT           | Report a crime                  | t
+--     POLICE_CRIMINAL_RECORD  | Criminal record check           | t
+-- ================================================================
+
+BEGIN;
+
+UPDATE services
+SET is_enabled = TRUE,
+    updated_at = NOW()
+WHERE ministry = 'POLICE'
+  AND is_enabled = FALSE;
+
+-- The query above matches three rows in the standard seed. If your
+-- database already had one of them enabled (for example because an
+-- admin turned it on in the Service Catalogue UI), the WHERE clause
+-- skips it, so running this migration twice is safe.
+
+COMMIT;
+
+-- ================================================================
+-- Rollback (do not run this unless you need to disable them again):
+--
+-- BEGIN;
+-- UPDATE services
+-- SET is_enabled = FALSE,
+--     updated_at = NOW()
+-- WHERE ministry = 'POLICE';
+-- COMMIT;
+-- ================================================================
+
+-- ================================================================
+-- 002_pensions_eligibility.sql
+-- ================================================================
+-- Purpose:
+--   Adds two tables that let the system decide whether a citizen
+--   qualifies for a pension, and enforces the master prompt rule
+--   that "nothing is hard-coded" — the rules live in the database.
+--
+-- New tables:
+--   1. pension_rules
+--        One row per pension type. Minimum age, whether the citizen
+--        must have worked for the government, minimum years of
+--        service, and the monthly benefit amount. Amount is stored
+--        so the app can show it, but the current Pensions service
+--        does not pay out — it only verifies and displays.
+--   2. citizen_employment_history
+--        One row per job a citizen has held. Home Affairs staff
+--        capture this on the Complete / Edit Citizen Record screen.
+--        Pensions staff read it to confirm government service.
+--
+-- Safe to run more than once:
+--   The two CREATE TABLE statements use IF NOT EXISTS.
+--   The seed INSERT uses ON CONFLICT DO NOTHING on the primary key
+--   (pension_type), so re-running will not create duplicates.
+--
+-- Where to run it:
+--   Neon / Supabase SQL editor, connected to the project database,
+--   as the role that applied schema.sql. Run the whole file in one
+--   execution.
+--
+-- Verify after running:
+--   SELECT * FROM pension_rules;
+--   SELECT column_name, data_type
+--     FROM information_schema.columns
+--     WHERE table_name = 'citizen_employment_history';
+-- ================================================================
+
+BEGIN;
+
+-- ── 1. Pension rules ─────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS pension_rules (
+  pension_type                 VARCHAR(30) PRIMARY KEY,
+  minimum_age                  INTEGER NOT NULL CHECK (minimum_age > 0),
+  requires_government_service  BOOLEAN NOT NULL DEFAULT FALSE,
+  minimum_service_years        INTEGER NOT NULL DEFAULT 0
+                               CHECK (minimum_service_years >= 0),
+  monthly_amount               NUMERIC(12, 2) NOT NULL DEFAULT 0
+                               CHECK (monthly_amount >= 0),
+  currency                     VARCHAR(10) NOT NULL DEFAULT 'LSL',
+  is_active                    BOOLEAN NOT NULL DEFAULT TRUE,
+  notes                        TEXT,
+  updated_at                   TIMESTAMP NOT NULL DEFAULT NOW(),
+  created_at                   TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+-- ── 2. Employment history ────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS citizen_employment_history (
+  id                UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  citizen_id        UUID NOT NULL REFERENCES citizens(id) ON DELETE CASCADE,
+  employer_name     VARCHAR(200) NOT NULL,
+  employer_type     VARCHAR(30)  NOT NULL
+                    CHECK (employer_type IN (
+                      'GOVERNMENT',
+                      'PRIVATE',
+                      'SELF_EMPLOYED',
+                      'NGO',
+                      'OTHER'
+                    )),
+  position_title    VARCHAR(150),
+  start_date        DATE NOT NULL,
+  end_date          DATE,
+  is_current        BOOLEAN NOT NULL DEFAULT FALSE,
+  recorded_by       UUID REFERENCES users(id) ON DELETE SET NULL,
+  notes             TEXT,
+  created_at        TIMESTAMP NOT NULL DEFAULT NOW(),
+  updated_at        TIMESTAMP NOT NULL DEFAULT NOW(),
+  CHECK (
+    (is_current = TRUE  AND end_date IS NULL) OR
+    (is_current = FALSE)
+  )
+);
+
+CREATE INDEX IF NOT EXISTS idx_emp_history_citizen
+  ON citizen_employment_history(citizen_id);
+
+CREATE INDEX IF NOT EXISTS idx_emp_history_gov
+  ON citizen_employment_history(citizen_id)
+  WHERE employer_type = 'GOVERNMENT';
+
+-- ── 3. Seed the two rules described in the HCI assignment ────────
+-- Old Age Pension: paid to citizens aged 70 and above.
+INSERT INTO pension_rules (
+  pension_type,
+  minimum_age,
+  requires_government_service,
+  minimum_service_years,
+  monthly_amount,
+  currency,
+  is_active,
+  notes
+) VALUES
+  (
+    'OLD_AGE',
+    70,
+    FALSE,
+    0,
+    0,
+    'LSL',
+    TRUE,
+    'Old Age Pension. Paid to citizens aged 70 and above, no government service required.'
+  ),
+  (
+    'CIVIL_SERVICE',
+    60,
+    TRUE,
+    10,
+    0,
+    'LSL',
+    TRUE,
+    'Civil Service Pension. Paid to former government employees aged 60 and above with at least 10 years of service.'
+  )
+ON CONFLICT (pension_type) DO NOTHING;
+
+COMMIT;
+
+-- ================================================================
+-- Rollback (do not run unless you need to undo this migration):
+--
+-- BEGIN;
+-- DROP TABLE IF EXISTS citizen_employment_history;
+-- DROP TABLE IF EXISTS pension_rules;
+-- COMMIT;
+-- ================================================================

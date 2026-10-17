@@ -3,6 +3,7 @@ const userRepository = require('../repositories/userRepository');
 const auditService = require('./auditService');
 const biometricService = require('./biometricService');
 const documentService = require('./documentService');
+const employmentHistoryRepository = require('../repositories/employmentHistoryRepository');
 const birthCertificateRepository = require('../repositories/birthCertificateRepository');
 const deathCertificateRepository = require('../repositories/deathCertificateRepository');
 const marriageCertificateRepository = require('../repositories/marriageCertificateRepository');
@@ -35,11 +36,19 @@ async function searchByQuery({ query }) {
   return citizen || null;
 }
 
+// Returns the citizen record plus the linked registration id (the user id)
+// and the employment history. The staff profile page uses registrationId
+// for its "Edit record" button and employmentHistory for the read-only panel.
 async function getById(id) {
   const citizen = await citizenRepository.findById(id);
   if (!citizen) return null;
   const owner = await userRepository.findByCitizenId(citizen.id);
-  return { ...citizen, registrationId: owner ? owner.id : null };
+  const employment = await employmentHistoryRepository.findByCitizen(citizen.id);
+  return {
+    ...citizen,
+    registrationId: owner ? owner.id : null,
+    employmentHistory: employment,
+  };
 }
 
 async function getRegistrations(filters = {}) {
@@ -54,8 +63,12 @@ async function completeRecord(registrationId, data, staffUser) {
   const registration = await citizenRepository.findRegistrationById(registrationId);
   if (!registration) throw notFoundError('Registration not found');
 
+  // Safe-to-call-twice guard: if the registration already has a citizen
+  // record, do not generate a second National ID.
   if (registration.citizen_id) {
-    const err = new Error('This registration already has a citizen record.');
+    const err = new Error(
+      'This registration already has a citizen record. Use Edit record to make changes.'
+    );
     err.statusCode = 409;
     throw err;
   }
@@ -207,6 +220,61 @@ async function updateCitizen(citizenId, data, staffUser) {
   return updated;
 }
 
+// ── Employment history (Group C) ────────────────────────────────
+async function recordEmploymentHistory(citizenId, data, staffUser) {
+  if (!data.employerName) throw badRequestError('Employer name is required.');
+  if (!data.employerType) throw badRequestError('Employer type is required.');
+  if (!data.startDate) throw badRequestError('Start date is required.');
+
+  const created = await employmentHistoryRepository.create({
+    citizenId,
+    employerName: data.employerName,
+    employerType: data.employerType,
+    positionTitle: data.positionTitle,
+    startDate: data.startDate,
+    endDate: data.isCurrent ? null : data.endDate,
+    isCurrent: data.isCurrent === true,
+    recordedBy: staffUser.userId,
+    notes: data.notes,
+  });
+
+  await auditService.log({
+    userId: staffUser.userId,
+    username: staffUser.username,
+    action: 'EMPLOYMENT_HISTORY_RECORDED',
+    recordType: 'CITIZEN_EMPLOYMENT',
+    recordId: created.id,
+    result: 'SUCCESS',
+  });
+
+  return created;
+}
+
+async function updateEmploymentHistory(citizenId, employmentId, data, staffUser) {
+  const existing = await employmentHistoryRepository.findById(employmentId);
+  if (!existing || existing.citizen_id !== citizenId) {
+    throw notFoundError('Employment record not found for this citizen.');
+  }
+  const updated = await employmentHistoryRepository.update(employmentId, {
+    employer_name: data.employerName ?? existing.employer_name,
+    employer_type: data.employerType ?? existing.employer_type,
+    position_title: data.positionTitle ?? existing.position_title,
+    start_date: data.startDate ?? existing.start_date,
+    end_date: data.isCurrent ? null : (data.endDate ?? existing.end_date),
+    is_current: data.isCurrent ?? existing.is_current,
+    notes: data.notes ?? existing.notes,
+  });
+  await auditService.log({
+    userId: staffUser.userId,
+    username: staffUser.username,
+    action: 'EMPLOYMENT_HISTORY_UPDATED',
+    recordType: 'CITIZEN_EMPLOYMENT',
+    recordId: employmentId,
+    result: 'SUCCESS',
+  });
+  return updated;
+}
+
 async function getCertificatesForCitizen(citizenId) {
   const [birth, death, marriage] = await Promise.all([
     birthCertificateRepository.findByCitizen(citizenId),
@@ -346,6 +414,8 @@ module.exports = {
   completeRecord,
   verifyCitizen,
   updateCitizen,
+  recordEmploymentHistory,
+  updateEmploymentHistory,
   getCertificatesForCitizen,
   issueBirthCertificate,
   issueDeathCertificate,

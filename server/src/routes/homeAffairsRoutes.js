@@ -22,6 +22,10 @@ router.post('/citizen/:id/verify', controller.verify);
 router.get('/citizen/:id/documents', controller.getDocuments);
 router.get('/citizen/:id/biometrics', controller.getBiometrics);
 
+// Employment history  ← NEW
+router.post('/citizen/:id/employment', controller.recordEmployment);
+router.put('/citizen/:id/employment/:employmentId', controller.updateEmployment);
+
 // Certificates
 router.get('/citizen/:id/certificates', controller.getCertificates);
 router.post('/citizen/:id/certificates/birth', controller.issueBirthCertificate);
@@ -32,7 +36,7 @@ router.post('/citizen/:id/certificates/marriage', controller.issueMarriageCertif
 router.get('/stats', controller.getStats);
 router.get('/reports', controller.getReports);
 
-// NEW: Applications Processing & Collection
+// Applications processing and collection
 router.get('/applications', appController.listApplications);
 router.get('/applications/:id', appController.getApplication);
 router.put('/applications/:id/status', appController.updateStatus);

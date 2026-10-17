@@ -12,6 +12,18 @@ import {
 } from '../../api/homeAffairsApi';
 import { formatDate } from '../../utils/formatters';
 
+/* GROUP C — helper */
+function labelForEmployerType(code) {
+  const map = {
+    GOVERNMENT: 'Government',
+    PRIVATE: 'Private sector',
+    SELF_EMPLOYED: 'Self-employed',
+    NGO: 'NGO',
+    OTHER: 'Other',
+  };
+  return map[code] || code;
+}
+
 function HACitizenProfile() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -102,6 +114,27 @@ function HACitizenProfile() {
           <ReadOnly label="Address" value={citizen.address} full />
         </div>
       </div>
+
+      {/* GROUP C — Employment history */}
+      {citizen.employmentHistory && citizen.employmentHistory.length > 0 && (
+        <div className="card card-flat" style={{ marginTop: 16 }}>
+          <h3 style={{ marginTop: 0 }}>Employment history</h3>
+          <ul className="employment-history-list">
+            {citizen.employmentHistory.map((row) => (
+              <li key={row.id}>
+                <strong>{row.employer_name}</strong>
+                <span className="text-muted"> · {labelForEmployerType(row.employer_type)}</span>
+                {row.position_title && (
+                  <span className="text-muted"> · {row.position_title}</span>
+                )}
+                <div className="text-muted">
+                  {row.start_date} → {row.is_current ? 'Present' : row.end_date || '—'}
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       <div className="form-actions">
         <div className="form-actions-primary-group">

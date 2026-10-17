@@ -3639,3 +3639,23 @@ textarea:focus-visible,
   border-top: 1px solid #000;
   padding-top: 5px;
 }
+/* ============================================
+   EMPLOYMENT HISTORY (Group C)
+   ============================================ */
+.employment-history-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.employment-history-list li {
+  font-size: 1rem;
+  line-height: 1.4;
+}
+
+.eligibility-banner {
+  margin-bottom: var(--spacing-md);
+}

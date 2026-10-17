@@ -2220,4 +2220,55 @@ INSERT INTO translations (language_code, translation_key, translation_value) VAL
 ('ST', 'confirm.default_confirm', 'Tiisa'),
 ('ST', 'confirm.default_cancel', 'Hlakola');
 
+
+-- ============================================================
+-- PENSIONS ELIGIBILITY (Group C)
+-- ============================================================
+
+INSERT INTO translations (language_code, translation_key, translation_value) VALUES
+('EN', 'pensions.eligibility.eligible', 'You qualify for this pension category.'),
+('EN', 'pensions.eligibility.too_young', 'You are below the minimum age.'),
+('EN', 'pensions.eligibility.no_government_service', 'Prior government service is required.'),
+('EN', 'pensions.eligibility.insufficient_service', 'Not enough years of government service.'),
+('EN', 'pensions.eligibility.no_record', 'Citizen record not found.'),
+('EN', 'pensions.eligibility.death_certificate', 'A death certificate is on record.'),
+('EN', 'pensions.eligibility.no_rules', 'Pension rules are not configured.'),
+('EN', 'pensions.eligibility.checking', 'Checking your eligibility…'),
+('EN', 'pensions.eligibility.current_age', 'Current age'),
+('EN', 'pensions.eligibility.minimum_age', 'Minimum age'),
+('EN', 'pensions.eligibility.government_years', 'Government service years'),
+('EN', 'pensions.employment.title', 'Employment history'),
+('EN', 'pensions.employment.add', 'Add employment'),
+('EN', 'pensions.employment.employer', 'Employer name'),
+('EN', 'pensions.employment.employer_type', 'Employer type'),
+('EN', 'pensions.employment.position', 'Position'),
+('EN', 'pensions.employment.start_date', 'Start date'),
+('EN', 'pensions.employment.end_date', 'End date'),
+('EN', 'pensions.employment.current', 'Current job'),
+('EN', 'pensions.employment.notes', 'Notes'),
+('EN', 'pensions.employment.empty', 'No employment history recorded.'),
+
+('ST', 'pensions.eligibility.eligible', 'O tšoaneleha bakeng sa mofuta ona oa penshene.'),
+('ST', 'pensions.eligibility.too_young', 'O ka tlase ho lilemo tse hlokahalang.'),
+('ST', 'pensions.eligibility.no_government_service', 'Ho hlokahala tšebeletso ea mmuso pele.'),
+('ST', 'pensions.eligibility.insufficient_service', 'Lilemo tsa tšebeletso ea mmuso ha lia lekana.'),
+('ST', 'pensions.eligibility.no_record', 'Rekoto ea moahi ha ea fumanoa.'),
+('ST', 'pensions.eligibility.death_certificate', 'Setifikeiti sa lefu se teng rekotong.'),
+('ST', 'pensions.eligibility.no_rules', 'Melao ea penshene ha ea hlophisoa.'),
+('ST', 'pensions.eligibility.checking', 'Ho hlahloba ho tšoaneleha ha hao…'),
+('ST', 'pensions.eligibility.current_age', 'Lilemo tsa hona joale'),
+('ST', 'pensions.eligibility.minimum_age', 'Lilemo tse hlokahalang'),
+('ST', 'pensions.eligibility.government_years', 'Lilemo tsa tšebeletso ea mmuso'),
+('ST', 'pensions.employment.title', 'Nalane ea mosebetsi'),
+('ST', 'pensions.employment.add', 'Kenya mosebetsi'),
+('ST', 'pensions.employment.employer', 'Lebitso la mohiri'),
+('ST', 'pensions.employment.employer_type', 'Mofuta oa mohiri'),
+('ST', 'pensions.employment.position', 'Boemo'),
+('ST', 'pensions.employment.start_date', 'Letsatsi la ho qala'),
+('ST', 'pensions.employment.end_date', 'Letsatsi la ho qeta'),
+('ST', 'pensions.employment.current', 'Mosebetsi oa hona joale'),
+('ST', 'pensions.employment.notes', 'Lintlha'),
+('ST', 'pensions.employment.empty', 'Ha ho nalane ea mosebetsi e tlalehiloeng.');
+
 COMMIT;
+

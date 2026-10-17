@@ -4,6 +4,7 @@ const notificationService = require('./notificationService');
 const paymentService = require('./paymentService');
 const feeScheduleService = require('./feeScheduleService');
 const certificateService = require('./certificateService');
+const pensionsService = require('./pensionsService');
 const userRepository = require('../repositories/userRepository');
 const { generateReference } = require('../utils/referenceGenerator');
 const auditService = require('./auditService');
@@ -11,25 +12,17 @@ const auditService = require('./auditService');
 function notFound(msg) { const e = new Error(msg); e.statusCode = 404; return e; }
 function badRequest(msg) { const e = new Error(msg); e.statusCode = 400; return e; }
 
-// Normalise the ministry code coming from the frontend.
-// Accepts: 'home-affairs', 'home_affairs', 'Home Affairs', 'HOME_AFFAIRS'
-// Always returns 'HOME_AFFAIRS'.
 function normaliseMinistryCode(value) {
   if (!value) return undefined;
-  return String(value)
-    .trim()
-    .toUpperCase()
-    .replace(/[\s-]+/g, '_');
+  return String(value).trim().toUpperCase().replace(/[\s-]+/g, '_');
 }
 
 async function listPublic(ministry) {
   const ministryCode = normaliseMinistryCode(ministry);
-
   const services = await serviceRepository.findAll({
     ministry: ministryCode,
     is_enabled: true,
   });
-
   const enriched = await Promise.all(
     services.map(async (s) => {
       const fee = await feeScheduleService.getFeeForService(s.ministry, s.code);
@@ -77,10 +70,25 @@ async function updateService(id, data, adminUser) {
   return updated;
 }
 
+const PENSION_SERVICES = new Set([
+  'PENSION_APPLICATION',
+  'PENSION_LIFE_VERIFY',
+]);
+
 async function submitApplication({ serviceId, citizenId, formData, user }) {
   const service = await serviceRepository.findById(serviceId);
   if (!service) throw notFound('Service not found');
   if (!service.is_enabled) throw badRequest('This service is currently unavailable.');
+
+  // ── Pensions eligibility gate ─────────────────────────────────
+  // Runs before anything is created so an ineligible citizen cannot
+  // reach the form-submitted state at all.
+  if (service.ministry === 'PENSIONS' && PENSION_SERVICES.has(service.code)) {
+    const eligibility = await pensionsService.assessEligibility(citizenId);
+    if (!eligibility.eligible) {
+      throw badRequest(eligibility.message);
+    }
+  }
 
   const fields = Array.isArray(service.form_fields) ? service.form_fields : [];
   const missing = fields
@@ -117,7 +125,6 @@ async function submitApplication({ serviceId, citizenId, formData, user }) {
     },
   });
 
-  // Certificate services: create the backing certificate row.
   try {
     await certificateService.recordCertificateApplication({
       application,
@@ -125,7 +132,6 @@ async function submitApplication({ serviceId, citizenId, formData, user }) {
       citizenId,
     });
   } catch (err) {
-    // eslint-disable-next-line no-console
     console.error('Certificate hook failed:', err.message);
   }
 

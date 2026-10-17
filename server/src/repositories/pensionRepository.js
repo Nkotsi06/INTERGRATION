@@ -30,4 +30,28 @@ async function getStats() {
   return result.rows[0];
 }
 
-module.exports = { findByCitizen, create, getStats };
+// NEW — one rule by pension type.
+async function findRules(pensionType) {
+  const result = await query(
+    'SELECT * FROM pension_rules WHERE pension_type = $1',
+    [pensionType]
+  );
+  return result.rows[0];
+}
+
+// NEW — every active rule. Used by the staff dashboard and by the
+// eligibility assessor when it needs to try each category.
+async function findRulesForCategory() {
+  const result = await query(
+    'SELECT * FROM pension_rules WHERE is_active = TRUE ORDER BY minimum_age ASC'
+  );
+  return result.rows;
+}
+
+module.exports = {
+  findByCitizen,
+  create,
+  getStats,
+  findRules,
+  findRulesForCategory,
+};

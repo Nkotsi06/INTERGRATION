@@ -111,6 +111,36 @@ async function update(req, res, next) {
 }
 
 // ─────────────────────────────────────────────────────────────────────
+// Employment history (Group C)
+// ─────────────────────────────────────────────────────────────────────
+async function recordEmployment(req, res, next) {
+  try {
+    const created = await homeAffairsService.recordEmploymentHistory(
+      req.params.id,
+      req.body,
+      req.user
+    );
+    res.status(201).json(created);
+  } catch (err) {
+    next(err);
+  }
+}
+
+async function updateEmployment(req, res, next) {
+  try {
+    const updated = await homeAffairsService.updateEmploymentHistory(
+      req.params.id,
+      req.params.employmentId,
+      req.body,
+      req.user
+    );
+    res.json(updated);
+  } catch (err) {
+    next(err);
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────
 // Documents and biometrics
 // ─────────────────────────────────────────────────────────────────────
 async function getDocuments(req, res, next) {
@@ -244,6 +274,8 @@ module.exports = {
   completeRecord,
   verify,
   update,
+  recordEmployment,
+  updateEmployment,
   getDocuments,
   getBiometrics,
   getCitizenPhoto,

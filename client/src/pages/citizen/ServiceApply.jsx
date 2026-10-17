@@ -9,6 +9,7 @@ import DocumentUpload from '../../components/documents/DocumentUpload';
 import { TableSkeleton } from '../../components/common/SkeletonLoader';
 import { getServiceById, applyForService } from '../../api/serviceApi';
 import { uploadDocument } from '../../api/documentApi';
+import { getEligibility } from '../../api/pensionsApi';
 import { useNotification } from '../../context/NotificationContext';
 import { formatCurrency } from '../../utils/formatters';
 
@@ -23,6 +24,12 @@ function ServiceApply() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
   const [reference, setReference] = useState(null);
+
+  // Group C — pension eligibility gate
+  const [pensionEligibility, setPensionEligibility] = useState(null);
+  const isPensionService =
+    service?.ministry === 'PENSIONS' &&
+    (service?.code === 'PENSION_APPLICATION' || service?.code === 'PENSION_LIFE_VERIFY');
 
   useEffect(() => {
     let cancelled = false;
@@ -40,6 +47,21 @@ function ServiceApply() {
     load();
     return () => { cancelled = true; };
   }, [id]);
+
+  useEffect(() => {
+    if (!isPensionService) return undefined;
+    let cancelled = false;
+    async function load() {
+      try {
+        const data = await getEligibility();
+        if (!cancelled) setPensionEligibility(data);
+      } catch {
+        if (!cancelled) setPensionEligibility(null);
+      }
+    }
+    load();
+    return () => { cancelled = true; };
+  }, [isPensionService]);
 
   const update = (key, value) => setFormData((prev) => ({ ...prev, [key]: value }));
 
@@ -97,6 +119,30 @@ function ServiceApply() {
           type="info"
           message={service.unavailable_message || 'This service is currently unavailable.'}
         />
+      </PageWrapper>
+    );
+  }
+
+  // Group C — block pension applications when the citizen is not eligible.
+  if (isPensionService && pensionEligibility && !pensionEligibility.eligible) {
+    return (
+      <PageWrapper title={service.name} showBack backPath="/citizen/dashboard">
+        <Alert
+          type="warning"
+          title="You are not eligible for a pension yet"
+          message={pensionEligibility.message}
+        />
+        <div className="form-actions">
+          <div className="form-actions-primary-group">
+            <button
+              type="button"
+              className="btn btn-secondary"
+              onClick={() => navigate('/citizen/dashboard')}
+            >
+              Back to dashboard
+            </button>
+          </div>
+        </div>
       </PageWrapper>
     );
   }

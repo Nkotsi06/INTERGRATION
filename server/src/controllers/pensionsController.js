@@ -1,21 +1,48 @@
 const pensionsService = require('../services/pensionsService');
 
+function citizenIdFrom(req) {
+  return req.user?.verifiedCitizenId || req.user?.citizenId || null;
+}
+
+async function getEligibility(req, res, next) {
+  try {
+    const citizenId = citizenIdFrom(req);
+    if (!citizenId) return res.status(403).json({ message: 'Citizen profile required.' });
+    res.json(await pensionsService.assessEligibility(citizenId));
+  } catch (err) { next(err); }
+}
+
+async function getRules(req, res, next) {
+  try { res.json(await pensionsService.getRules()); }
+  catch (err) { next(err); }
+}
+
 async function getPensionInfo(req, res, next) {
   try {
-    res.json(await pensionsService.getPensionInfo(req.session.verifiedCitizenId));
+    const citizenId = citizenIdFrom(req);
+    if (!citizenId) return res.status(403).json({ message: 'Citizen profile required.' });
+    const info = await pensionsService.getPensionInfo(citizenId);
+    const eligibility = await pensionsService.assessEligibility(citizenId);
+    res.json({ record: info || null, eligibility });
   } catch (err) { next(err); }
 }
 
 async function verifyExistence(req, res, next) {
   try {
-    const v = await pensionsService.verifyExistence(req.session.verifiedCitizenId, req.user);
-    res.status(201).json(v);
+    const citizenId = citizenIdFrom(req);
+    if (!citizenId) return res.status(403).json({ message: 'Citizen profile required.' });
+    const result = await pensionsService.verifyExistence(
+      citizenId, req.body.answer, req.user
+    );
+    res.status(201).json(result);
   } catch (err) { next(err); }
 }
 
 async function getVerificationHistory(req, res, next) {
   try {
-    res.json(await pensionsService.getVerificationHistory(req.session.verifiedCitizenId));
+    const citizenId = citizenIdFrom(req);
+    if (!citizenId) return res.status(403).json({ message: 'Citizen profile required.' });
+    res.json(await pensionsService.getVerificationHistory(citizenId));
   } catch (err) { next(err); }
 }
 
@@ -26,9 +53,8 @@ async function checkDeathCertificate(req, res, next) {
 }
 
 async function getStaffVerifications(req, res, next) {
-  try {
-    res.json(await pensionsService.getStaffVerifications(req.query));
-  } catch (err) { next(err); }
+  try { res.json(await pensionsService.getStaffVerifications(req.query)); }
+  catch (err) { next(err); }
 }
 
 async function processVerification(req, res, next) {
@@ -38,4 +64,13 @@ async function processVerification(req, res, next) {
   } catch (err) { next(err); }
 }
 
-module.exports = { getPensionInfo, verifyExistence, getVerificationHistory, checkDeathCertificate, getStaffVerifications, processVerification };
+module.exports = {
+  getEligibility,
+  getRules,
+  getPensionInfo,
+  verifyExistence,
+  getVerificationHistory,
+  checkDeathCertificate,
+  getStaffVerifications,
+  processVerification,
+};

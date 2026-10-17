@@ -1,8 +1,10 @@
 import apiClient from './apiClient';
 
 // Citizen
-export const getPensionInfo = () => apiClient.get('/pensions/info');
-export const verifyExistence = (data) => apiClient.post('/pensions/verify', data);
+export const getEligibility   = ()       => apiClient.get('/pensions/eligibility');
+export const getRules         = ()       => apiClient.get('/pensions/rules');
+export const getPensionInfo   = ()       => apiClient.get('/pensions/info');
+export const verifyExistence  = (data)   => apiClient.post('/pensions/verify', data);
 export const getVerificationHistory = (params) =>
   apiClient.get('/pensions/verifications', { params });
 

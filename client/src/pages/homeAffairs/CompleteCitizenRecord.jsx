@@ -6,6 +6,7 @@ import Select from '../../components/common/Select';
 import DatePicker from '../../components/common/DatePicker';
 import FormActions from '../../components/common/FormActions';
 import Alert from '../../components/common/Alert';
+import Button from '../../components/common/Button';
 import DocumentUpload from '../../components/documents/DocumentUpload';
 import BiometricEnrollment from '../../components/biometrics/BiometricEnrollment';
 import {
@@ -13,6 +14,8 @@ import {
   getCitizenById,
   completeRecord,
   updateCitizen,
+  recordEmployment,
+  updateEmployment,
 } from '../../api/homeAffairsApi';
 import { uploadDocument } from '../../api/documentApi';
 import { useNotification } from '../../context/NotificationContext';
@@ -42,6 +45,18 @@ function facialMetaSatisfied(meta) {
   );
 }
 
+/* GROUP C — helper */
+function labelForEmployerType(code) {
+  const map = {
+    GOVERNMENT: 'Government',
+    PRIVATE: 'Private sector',
+    SELF_EMPLOYED: 'Self-employed',
+    NGO: 'NGO',
+    OTHER: 'Other',
+  };
+  return map[code] || code;
+}
+
 function CompleteCitizenRecord() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -56,6 +71,12 @@ function CompleteCitizenRecord() {
   const [serverError, setServerError] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+
+  /* GROUP C — employment state */
+  const [employment, setEmployment] = useState([]);
+  const [employmentEditing, setEmploymentEditing] = useState(null);
+  const [employmentError, setEmploymentError] = useState(null);
+  const [employmentSaving, setEmploymentSaving] = useState(false);
 
   const isEditMode = !!existingCitizenId;
 
@@ -87,6 +108,8 @@ function CompleteCitizenRecord() {
             district: '',
             postalAddress: c.address || '',
           });
+          /* GROUP C — populate employment history */
+          setEmployment(c.employmentHistory || []);
           return;
         }
 
@@ -105,9 +128,7 @@ function CompleteCitizenRecord() {
     }
 
     load();
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, [id]);
 
   const update = (field, value) => {
@@ -181,6 +202,77 @@ function CompleteCitizenRecord() {
 
   const handleCancel = () => {
     navigate('/home-affairs/registrations');
+  };
+
+  /* GROUP C — employment handlers */
+  const startAddEmployment = () => {
+    if (!existingCitizenId) return;
+    setEmploymentError(null);
+    setEmploymentEditing({
+      id: null,
+      employerName: '',
+      employerType: 'GOVERNMENT',
+      positionTitle: '',
+      startDate: '',
+      endDate: '',
+      isCurrent: false,
+      notes: '',
+    });
+  };
+
+  const startEditEmployment = (row) => {
+    setEmploymentError(null);
+    setEmploymentEditing({
+      id: row.id,
+      employerName: row.employer_name,
+      employerType: row.employer_type,
+      positionTitle: row.position_title || '',
+      startDate: row.start_date || '',
+      endDate: row.end_date || '',
+      isCurrent: row.is_current,
+      notes: row.notes || '',
+    });
+  };
+
+  const cancelEmployment = () => {
+    setEmploymentEditing(null);
+    setEmploymentError(null);
+  };
+
+  const saveEmployment = async () => {
+    if (!employmentEditing) return;
+    if (!employmentEditing.employerName.trim()) {
+      setEmploymentError('Employer name is required.');
+      return;
+    }
+    if (!employmentEditing.startDate) {
+      setEmploymentError('Start date is required.');
+      return;
+    }
+    setEmploymentSaving(true);
+    try {
+      const payload = {
+        employerName: employmentEditing.employerName.trim(),
+        employerType: employmentEditing.employerType,
+        positionTitle: employmentEditing.positionTitle.trim() || null,
+        startDate: employmentEditing.startDate,
+        endDate: employmentEditing.isCurrent ? null : (employmentEditing.endDate || null),
+        isCurrent: employmentEditing.isCurrent,
+        notes: employmentEditing.notes.trim() || null,
+      };
+      if (employmentEditing.id) {
+        await updateEmployment(existingCitizenId, employmentEditing.id, payload);
+      } else {
+        await recordEmployment(existingCitizenId, payload);
+      }
+      const fresh = await getCitizenById(existingCitizenId);
+      setEmployment(fresh?.employmentHistory || []);
+      setEmploymentEditing(null);
+    } catch (err) {
+      setEmploymentError(err.message || 'Could not save employment history.');
+    } finally {
+      setEmploymentSaving(false);
+    }
   };
 
   if (loading) {
@@ -323,6 +415,156 @@ function CompleteCitizenRecord() {
         </div>
       </div>
 
+      {/* GROUP C — Employment history (edit mode only; new registrations
+          have no citizen record yet, so nothing to attach history to). */}
+      {isEditMode && (
+        <div className="form-section">
+          <div className="form-section-header">
+            <h3 className="form-section-title">Employment history</h3>
+            {!employmentEditing && (
+              <button
+                type="button"
+                className="btn btn-secondary btn-small"
+                onClick={startAddEmployment}
+              >
+                Add employment
+              </button>
+            )}
+          </div>
+
+          <p className="text-muted">
+            Record the citizen's jobs. Pensions staff use government service
+            years to assess Civil Service Pension eligibility.
+          </p>
+
+          {employmentError && <Alert type="error" message={employmentError} />}
+
+          {employment.length === 0 && !employmentEditing && (
+            <p className="text-muted">No employment history recorded.</p>
+          )}
+
+          {employment.length > 0 && (
+            <ul className="employment-history-list">
+              {employment.map((row) => (
+                <li key={row.id} className="card card-flat" style={{ padding: 12 }}>
+                  <div>
+                    <strong>{row.employer_name}</strong>
+                    <span className="text-muted"> · {labelForEmployerType(row.employer_type)}</span>
+                    {row.position_title && (
+                      <span className="text-muted"> · {row.position_title}</span>
+                    )}
+                  </div>
+                  <div className="text-muted">
+                    {row.start_date} → {row.is_current ? 'Present' : row.end_date || '—'}
+                  </div>
+                  {!employmentEditing && (
+                    <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+                      <button
+                        type="button"
+                        className="btn btn-secondary btn-small"
+                        onClick={() => startEditEmployment(row)}
+                      >
+                        Edit
+                      </button>
+                    </div>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
+
+          {employmentEditing && (
+            <div className="card card-flat" style={{ padding: 12, marginTop: 8 }}>
+              <h4 style={{ marginTop: 0 }}>
+                {employmentEditing.id ? 'Edit employment' : 'Add employment'}
+              </h4>
+              <div className="form-grid">
+                <Input
+                  label="Employer name"
+                  value={employmentEditing.employerName}
+                  onChange={(e) =>
+                    setEmploymentEditing({ ...employmentEditing, employerName: e.target.value })
+                  }
+                  required
+                />
+                <Select
+                  label="Employer type"
+                  value={employmentEditing.employerType}
+                  onChange={(e) =>
+                    setEmploymentEditing({ ...employmentEditing, employerType: e.target.value })
+                  }
+                  options={[
+                    { value: 'GOVERNMENT', label: 'Government' },
+                    { value: 'PRIVATE', label: 'Private sector' },
+                    { value: 'SELF_EMPLOYED', label: 'Self-employed' },
+                    { value: 'NGO', label: 'NGO' },
+                    { value: 'OTHER', label: 'Other' },
+                  ]}
+                  required
+                />
+                <Input
+                  label="Position"
+                  value={employmentEditing.positionTitle}
+                  onChange={(e) =>
+                    setEmploymentEditing({ ...employmentEditing, positionTitle: e.target.value })
+                  }
+                />
+                <DatePicker
+                  label="Start date"
+                  value={employmentEditing.startDate}
+                  onChange={(e) =>
+                    setEmploymentEditing({ ...employmentEditing, startDate: e.target.value })
+                  }
+                  required
+                />
+                <DatePicker
+                  label="End date"
+                  value={employmentEditing.endDate}
+                  onChange={(e) =>
+                    setEmploymentEditing({ ...employmentEditing, endDate: e.target.value })
+                  }
+                  disabled={employmentEditing.isCurrent}
+                />
+                <div className="form-field">
+                  <label className="form-checkbox">
+                    <input
+                      type="checkbox"
+                      checked={employmentEditing.isCurrent}
+                      onChange={(e) =>
+                        setEmploymentEditing({
+                          ...employmentEditing,
+                          isCurrent: e.target.checked,
+                          endDate: e.target.checked ? '' : employmentEditing.endDate,
+                        })
+                      }
+                    />
+                    <span>Current job</span>
+                  </label>
+                </div>
+                <Input
+                  label="Notes"
+                  value={employmentEditing.notes}
+                  onChange={(e) =>
+                    setEmploymentEditing({ ...employmentEditing, notes: e.target.value })
+                  }
+                  full
+                />
+              </div>
+              <div className="form-actions">
+                <div className="form-actions-primary-group">
+                  <Button variant="secondary" onClick={cancelEmployment} disabled={employmentSaving}>
+                    Cancel
+                  </Button>
+                  <Button variant="primary" onClick={saveEmployment} loading={employmentSaving}>
+                    Save employment
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
       {!isEditMode && (
         <>
           <div className="form-section">
@@ -387,7 +629,7 @@ function CompleteCitizenRecord() {
         </>
       )}
 
-      {biometrics && (
+      {biometrics && !isEditMode && (
         <div className="card card-flat" style={{ marginBottom: 16 }}>
           <h3 style={{ marginTop: 0 }}>Biometric summary</h3>
           <p className="text-muted" style={{ margin: 0 }}>
