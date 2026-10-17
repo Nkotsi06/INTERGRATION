@@ -5,11 +5,44 @@ const paymentService = require('./paymentService');
 const userRepository = require('../repositories/userRepository');
 const { generateReference } = require('../utils/referenceGenerator');
 const auditService = require('./auditService');
+const { query } = require('../config/database');
 
 async function notifyCitizen(citizenId, title, message) {
   if (!citizenId) return;
   const user = await userRepository.findByCitizenId(citizenId);
   if (user) await notificationService.notify(user.id, title, message);
+}
+
+// ─── Dashboard stats ──────────────────────────────────────────────
+async function getStaffStats() {
+  const [pending, approvedToday, rejectedToday] = await Promise.all([
+    query(
+      `SELECT COUNT(*)::int AS c
+       FROM applications
+       WHERE service = 'PASSPORT'
+         AND status IN ('SUBMITTED', 'UNDER_REVIEW')`
+    ),
+    query(
+      `SELECT COUNT(*)::int AS c
+       FROM applications
+       WHERE service = 'PASSPORT'
+         AND status IN ('APPROVED', 'COMPLETED')
+         AND updated_at::date = CURRENT_DATE`
+    ),
+    query(
+      `SELECT COUNT(*)::int AS c
+       FROM applications
+       WHERE service = 'PASSPORT'
+         AND status = 'REJECTED'
+         AND updated_at::date = CURRENT_DATE`
+    ),
+  ]);
+
+  return {
+    pending: pending.rows[0].c,
+    approvedToday: approvedToday.rows[0].c,
+    rejectedToday: rejectedToday.rows[0].c,
+  };
 }
 
 async function applyForPassport(citizenId, data, user) {
@@ -29,7 +62,6 @@ async function applyForPassport(citizenId, data, user) {
     reason: data.reason,
   });
 
-  // Amount depends on passport type. Ordinary = 500, Official = 700.
   const amount = data.amount
     || (data.passportType === 'OFFICIAL' ? 700 : 500);
 
@@ -104,6 +136,7 @@ async function processApplication(id, action, staffUser) {
 }
 
 module.exports = {
+  getStaffStats,
   applyForPassport,
   getMyApplications,
   getApplicationByRef,

@@ -8,7 +8,7 @@ import { getFinanceDashboard } from '../../api/paymentApi';
 import { formatCurrency } from '../../utils/formatters';
 
 function FinanceStaffDashboard() {
-  const { data, loading, error } = useFetch(getFinanceDashboard, []);
+  const { data, loading, error, refetch } = useFetch(getFinanceDashboard, []);
   const navigate = useNavigate();
 
   const totals = data?.totals || { today: 0, this_month: 0, all_time: 0 };
@@ -21,10 +21,19 @@ function FinanceStaffDashboard() {
       {loading && <StatsSkeleton count={3} />}
 
       {!loading && error && (
-        <div className="alert alert-error">
+        <div className="alert alert-error" role="alert">
           <div className="alert-content">
             <strong className="alert-title">Could not load payments</strong>
             <p className="alert-message">{error}</p>
+            <div style={{ marginTop: 8 }}>
+              <button
+                type="button"
+                className="btn btn-secondary btn-small"
+                onClick={() => refetch()}
+              >
+                Retry
+              </button>
+            </div>
           </div>
         </div>
       )}

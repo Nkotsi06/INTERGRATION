@@ -8,7 +8,6 @@ import ConfirmDialog from '../../components/common/ConfirmDialog';
 import useFetch from '../../hooks/useFetch';
 import { getVehicles, deleteVehicle } from '../../api/trafficApi';
 import { useNotification } from '../../context/NotificationContext';
-import { formatDate } from '../../utils/formatters';
 
 function MyVehicles() {
   const { data: vehicles, loading, refetch } = useFetch(getVehicles, []);
@@ -25,7 +24,9 @@ function MyVehicles() {
       setPendingDelete(null);
       refetch();
     } catch (err) {
-      showError('Could not delete the vehicle.');
+      // Show the exact reason the server gave us (409, 404, or network).
+      // The delete prompt requires the blocked reason to be readable.
+      showError(err.message || 'Could not delete the vehicle.');
     } finally {
       setDeleting(false);
     }

@@ -44,9 +44,10 @@ async function create(data) {
   return result.rows[0];
 }
 
+// Returns every row. No silent LIMIT.
 async function findAll() {
   const result = await query(
-    'SELECT * FROM death_certificates_new ORDER BY created_at DESC LIMIT 200'
+    'SELECT * FROM death_certificates_new ORDER BY created_at DESC'
   );
   return result.rows;
 }

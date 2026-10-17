@@ -9,7 +9,11 @@ function Header({ title, showBack = false, backPath = -1, accentColour }) {
   const { settings, getMinistryColour } = useSettings();
   const navigate = useNavigate();
 
-  const colour = accentColour || getMinistryColour(user?.ministry) || '#1A5276';
+  // A ministry colour comes from the database. Admin has no ministry.
+  // Citizens with no ministry use the neutral accent. Only when a
+  // ministry has no colour is the fallback used.
+  const ministryColour = getMinistryColour(user?.ministry);
+  const colour = accentColour || ministryColour || 'var(--colour-accent)';
 
   const handleLogout = async () => {
     if (window.confirm('Are you sure you want to log out?')) {

@@ -2,33 +2,40 @@
 -- INTEGRATED GOVERNMENT SERVICES SYSTEM (LESOTHO)
 -- Complete Database Schema — consolidated and deduplicated
 -- ================================================================
--- Run ONCE against a fresh PostgreSQL database.
+-- Run ONCE against a FRESH PostgreSQL database.
+--
+-- AFTER RUNNING THIS FILE, run the numbered migrations in
+-- /server/src/database/migrations/ in order:
+--
+--   001_enable_police_services.sql
+--   002_pensions_eligibility.sql
+--   003_protect_records.sql
+--   004_vehicle_delete_function.sql
+--   005_translations_group_i.sql
+--   006_collection_columns_guard.sql
+--
+-- The four collection columns (collected_at, collected_by_name,
+-- collected_by_staff_id, id_checked) are already added by this
+-- file behind a guard, so 006 will be a no-op after a fresh run.
+-- The guard is in place so this file is safe to re-run without
+-- the "column already exists" failure.
 --
 -- DECISIONS APPLIED (2026-10-15):
 --   Q1: Certificate tables use the Phase 9 design
 --       (child_full_name, application_id, status lifecycle
 --        PENDING / ISSUED / REJECTED / CANCELLED).
---       Section 1's older birth/marriage certificate tables
---       have been REMOVED. death_certificates has been replaced
---       by death_certificates_new. divorce_certificates added.
 --   Q2: Service codes use the Phase 4 codes
 --       (BIRTH_CERTIFICATE_APPLY, PASSPORT_RENEWAL, etc.).
---       Duplicate service names have been collapsed to one code.
 --
 -- BUGFIX (2026-10-15):
---   The passport_applications index line had a typo:
---     ON passport_apps_application(application_id)
---   corrected to:
---     ON passport_applications(application_id)
---   Without this, the file fails with:
---     ERROR 42P01: relation "passport_apps_application" does not exist
+--   The passport_applications index name was corrected from
+--   passport_apps_application to passport_applications.
 --
 -- BEFORE RUNNING:
 --   1. Generate the admin bcrypt hash:
 --        cd server
 --        node scripts/generate-admin-hash.js
---   2. Paste the hash into the admin INSERT
---      (look for: REPLACE_WITH_GENERATED_HASH)
+--   2. Paste the hash into the admin INSERT below.
 -- ================================================================
 
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
@@ -98,6 +105,14 @@ DROP TABLE IF EXISTS services CASCADE;
 DROP TABLE IF EXISTS fee_schedule CASCADE;
 DROP TABLE IF EXISTS payments CASCADE;
 
+-- Migration-only tables. Drop them if they exist, so a fresh schema
+-- run also cleans up any tables the migrations created.
+DROP TABLE IF EXISTS citizen_employment_history CASCADE;
+DROP TABLE IF EXISTS pension_rules CASCADE;
+DROP TABLE IF EXISTS information_topics CASCADE;
+DROP TABLE IF EXISTS enquiry_messages CASCADE;
+DROP TABLE IF EXISTS document_enquiries CASCADE;
+
 
 -- ================================================================
 -- SECTION 1: CORE TABLES
@@ -162,8 +177,6 @@ CREATE TABLE citizen_edit_history (
 );
 CREATE INDEX idx_citizen_edit_history_citizen ON citizen_edit_history(citizen_id);
 
--- Ministries is created EARLY because budget_allocations, procurement_records,
--- audit_findings, and branches all reference ministries(code).
 CREATE TABLE ministries (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name VARCHAR(100) NOT NULL,
@@ -281,13 +294,6 @@ CREATE INDEX idx_ha_records_citizen ON home_affairs_records(citizen_id);
 -- ================================================================
 -- CERTIFICATE TABLES — PHASE 9 DESIGN (Option B)
 -- ================================================================
--- These are the four tables the certificate flow reads and writes.
--- All four share the same status lifecycle:
---   PENDING → ISSUED   (staff issues)
---   PENDING → REJECTED (staff rejects, with reason)
---   PENDING → CANCELLED (administrative)
--- Column names match certificateRepository.FIELD_MAP.
--- ================================================================
 
 CREATE TABLE birth_certificates (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -387,10 +393,6 @@ CREATE TABLE divorce_certificates (
 CREATE INDEX idx_divorce_certs_citizen ON divorce_certificates(citizen_id);
 CREATE INDEX idx_divorce_certs_application ON divorce_certificates(application_id);
 CREATE INDEX idx_divorce_certs_status ON divorce_certificates(status);
-
--- ================================================================
--- END CERTIFICATE TABLES
--- ================================================================
 
 CREATE TABLE driver_licences (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -965,7 +967,6 @@ INSERT INTO system_settings (key, value, category, description, is_public) VALUE
 ('biometric_match_threshold', '85', 'biometrics', 'Match threshold percent', false),
 ('biometric_max_attempts', '3', 'biometrics', 'Maximum biometric attempts', false);
 
--- Reference formats — one row per format, no duplicates.
 INSERT INTO reference_formats (name, prefix, year_format, sequence_length, example) VALUES
 ('APPLICATION',           'REF', 'YYYY', 5, 'REF-2026-00001'),
 ('PASSPORT_APPLICATION',  'PPT', 'YYYY', 5, 'PPT-2026-00001'),
@@ -990,7 +991,6 @@ INSERT INTO reference_formats (name, prefix, year_format, sequence_length, examp
 ('PAYMENT_PLAN',          'PP',  'YYYY', 5, 'PP-2026-00001'),
 ('BUSINESS_REGISTRATION', 'BUS', 'YYYY', 5, 'BUS-2026-00001');
 
--- Status types — includes the certificate lifecycle states.
 INSERT INTO status_types (code, name, colour_hex, applies_to, display_order) VALUES
 ('DRAFT',               'Draft',               '#7F8C8D', 'application',  1),
 ('SUBMITTED',           'Submitted',           '#2E86C1', 'application',  2),
@@ -1050,7 +1050,9 @@ SELECT
 
 
 -- ================================================================
--- MIGRATION 001 — Payments and fee schedule
+-- SECTION 4: PAYMENTS AND FEE SCHEDULE
+-- (Previously labelled "MIGRATION 001" in the file. This is core
+--  schema, created here so migration 001 can live in its own file.)
 -- ================================================================
 
 CREATE TABLE payments (
@@ -1107,7 +1109,7 @@ GROUP BY ministry;
 
 
 -- ================================================================
--- MIGRATION 002 — Service catalogue
+-- SECTION 5: SERVICE CATALOGUE
 -- One code per service. No duplicates.
 -- ================================================================
 
@@ -1374,31 +1376,12 @@ WHERE fee > 0 AND fee_code IS NULL;
 
 
 -- ================================================================
--- DONE
--- ================================================================
--- Database now has:
---   - All core tables, in dependency order, that run without error.
---   - One certificate design: Phase 9 (Option B).
---     birth_certificates, death_certificates_new,
---     marriage_certificates, divorce_certificates.
---   - One service code per service (Option B codes).
---   - Certificate lifecycle statuses (PENDING, ISSUED, CANCELLED)
---     present in status_types.
---   - Reference formats deduplicated; DIVORCE_CERTIFICATE present.
---   - Payments, fee_schedule, services, views.
---
--- Known remaining items (informational, not blockers):
---   - The users table still has both status and is_active. The
---     delete trigger checks is_active. userRepository.setStatus
---     should be updated to set both. (Server change.)
---   - ministries.icon_name is unused after Phase 1. Harmless.
+-- SECTION 6: INFORMATION TOPICS AND ENQUIRIES
 -- ================================================================
 
-
--- 1. Information Topics
-CREATE TABLE IF NOT EXISTS information_topics (
+CREATE TABLE information_topics (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  code VARCHAR(50) UNIQUE NOT NULL, -- e.g., 'IMMIGRATION_INFO'
+  code VARCHAR(50) UNIQUE NOT NULL,
   title VARCHAR(200) NOT NULL,
   content TEXT NOT NULL,
   contact_details TEXT,
@@ -1407,8 +1390,7 @@ CREATE TABLE IF NOT EXISTS information_topics (
   updated_at TIMESTAMP DEFAULT NOW()
 );
 
--- 2. Document Enquiries (Citizen asking for help)
-CREATE TABLE IF NOT EXISTS document_enquiries (
+CREATE TABLE document_enquiries (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   citizen_id UUID NOT NULL REFERENCES citizens(id) ON DELETE CASCADE,
   reference_number VARCHAR(50) UNIQUE NOT NULL,
@@ -1418,8 +1400,7 @@ CREATE TABLE IF NOT EXISTS document_enquiries (
   created_at TIMESTAMP DEFAULT NOW()
 );
 
--- 3. Enquiry Replies (Staff replying)
-CREATE TABLE IF NOT EXISTS enquiry_messages (
+CREATE TABLE enquiry_messages (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   enquiry_id UUID NOT NULL REFERENCES document_enquiries(id) ON DELETE CASCADE,
   sender_id UUID REFERENCES users(id),
@@ -1427,7 +1408,6 @@ CREATE TABLE IF NOT EXISTS enquiry_messages (
   created_at TIMESTAMP DEFAULT NOW()
 );
 
--- Seed the initial information topics
 INSERT INTO information_topics (code, title, content) VALUES
 ('IMMIGRATION_INFO', 'Immigration & Visas', 'Information regarding temporary and permanent residence permits, visas, and border control.'),
 ('CITIZENSHIP_INFO', 'Citizenship', 'Information regarding citizenship by birth, descent, naturalisation, and restoration.'),
@@ -1435,208 +1415,60 @@ INSERT INTO information_topics (code, title, content) VALUES
 ('LIVESTOCK_INFO', 'Livestock Registration', 'Registration, identification, and ownership records for livestock.')
 ON CONFLICT (code) DO NOTHING;
 
-ALTER TABLE applications
-ADD COLUMN collected_at TIMESTAMP,
-ADD COLUMN collected_by_name VARCHAR(200),
-ADD COLUMN collected_by_staff_id UUID REFERENCES users(id),
-ADD COLUMN id_checked BOOLEAN DEFAULT FALSE;
 
 -- ================================================================
--- 001_enable_police_services.sql
+-- SECTION 7: COLLECTION TRACKING COLUMNS ON applications
 -- ================================================================
--- Purpose:
---   The schema seed sets every Police service to is_enabled = FALSE
---   because the master prompt's design-time note said police
---   procedures must be confirmed with the Police Service before
---   they are shown to citizens. That note is now cleared, so this
---   migration turns the three Police services on.
+-- Added at the end so this file is safe to re-run on an existing
+-- database without the "column already exists" error. Each column
+-- is added individually behind an IF NOT EXISTS guard.
 --
--- What it does:
---   Sets is_enabled = TRUE for the three Police services seeded
---   in schema.sql:
---     - POLICE_CLEARANCE        (Police clearance certificate)
---     - POLICE_REPORT           (Report a crime)
---     - POLICE_CRIMINAL_RECORD  (Criminal record check)
---
--- Safe to run more than once. It only touches rows whose ministry
--- is POLICE, and only flips is_enabled to TRUE. It does not touch
--- any other column, and it does not insert or delete rows.
---
--- Where to run it:
---   In the Neon / Supabase SQL editor, connected to the project
---   database, as the same role that applied schema.sql. Run the
---   whole file in one execution.
---
--- How to verify it worked:
---   SELECT code, name, is_enabled
---   FROM services
---   WHERE ministry = 'POLICE'
---   ORDER BY display_order;
---
---   Expected result after running this file:
---     code                    | name                            | is_enabled
---     ------------------------+---------------------------------+-----------
---     POLICE_CLEARANCE        | Police clearance certificate    | t
---     POLICE_REPORT           | Report a crime                  | t
---     POLICE_CRIMINAL_RECORD  | Criminal record check           | t
--- ================================================================
+-- Migrations 001-006 handle everything else. This block matches
+-- what 006_collection_columns_guard.sql does, so running 006 after
+-- this file is a no-op.
 
-BEGIN;
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'applications' AND column_name = 'collected_at'
+  ) THEN
+    ALTER TABLE applications ADD COLUMN collected_at TIMESTAMP;
+  END IF;
 
-UPDATE services
-SET is_enabled = TRUE,
-    updated_at = NOW()
-WHERE ministry = 'POLICE'
-  AND is_enabled = FALSE;
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'applications' AND column_name = 'collected_by_name'
+  ) THEN
+    ALTER TABLE applications ADD COLUMN collected_by_name VARCHAR(200);
+  END IF;
 
--- The query above matches three rows in the standard seed. If your
--- database already had one of them enabled (for example because an
--- admin turned it on in the Service Catalogue UI), the WHERE clause
--- skips it, so running this migration twice is safe.
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'applications' AND column_name = 'collected_by_staff_id'
+  ) THEN
+    ALTER TABLE applications ADD COLUMN collected_by_staff_id UUID REFERENCES users(id);
+  END IF;
 
-COMMIT;
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'applications' AND column_name = 'id_checked'
+  ) THEN
+    ALTER TABLE applications ADD COLUMN id_checked BOOLEAN DEFAULT FALSE;
+  END IF;
+END
+$$;
+
 
 -- ================================================================
--- Rollback (do not run this unless you need to disable them again):
---
--- BEGIN;
--- UPDATE services
--- SET is_enabled = FALSE,
---     updated_at = NOW()
--- WHERE ministry = 'POLICE';
--- COMMIT;
+-- DONE
 -- ================================================================
-
--- ================================================================
--- 002_pensions_eligibility.sql
--- ================================================================
--- Purpose:
---   Adds two tables that let the system decide whether a citizen
---   qualifies for a pension, and enforces the master prompt rule
---   that "nothing is hard-coded" — the rules live in the database.
---
--- New tables:
---   1. pension_rules
---        One row per pension type. Minimum age, whether the citizen
---        must have worked for the government, minimum years of
---        service, and the monthly benefit amount. Amount is stored
---        so the app can show it, but the current Pensions service
---        does not pay out — it only verifies and displays.
---   2. citizen_employment_history
---        One row per job a citizen has held. Home Affairs staff
---        capture this on the Complete / Edit Citizen Record screen.
---        Pensions staff read it to confirm government service.
---
--- Safe to run more than once:
---   The two CREATE TABLE statements use IF NOT EXISTS.
---   The seed INSERT uses ON CONFLICT DO NOTHING on the primary key
---   (pension_type), so re-running will not create duplicates.
---
--- Where to run it:
---   Neon / Supabase SQL editor, connected to the project database,
---   as the role that applied schema.sql. Run the whole file in one
---   execution.
---
--- Verify after running:
---   SELECT * FROM pension_rules;
---   SELECT column_name, data_type
---     FROM information_schema.columns
---     WHERE table_name = 'citizen_employment_history';
--- ================================================================
-
-BEGIN;
-
--- ── 1. Pension rules ─────────────────────────────────────────────
-CREATE TABLE IF NOT EXISTS pension_rules (
-  pension_type                 VARCHAR(30) PRIMARY KEY,
-  minimum_age                  INTEGER NOT NULL CHECK (minimum_age > 0),
-  requires_government_service  BOOLEAN NOT NULL DEFAULT FALSE,
-  minimum_service_years        INTEGER NOT NULL DEFAULT 0
-                               CHECK (minimum_service_years >= 0),
-  monthly_amount               NUMERIC(12, 2) NOT NULL DEFAULT 0
-                               CHECK (monthly_amount >= 0),
-  currency                     VARCHAR(10) NOT NULL DEFAULT 'LSL',
-  is_active                    BOOLEAN NOT NULL DEFAULT TRUE,
-  notes                        TEXT,
-  updated_at                   TIMESTAMP NOT NULL DEFAULT NOW(),
-  created_at                   TIMESTAMP NOT NULL DEFAULT NOW()
-);
-
--- ── 2. Employment history ────────────────────────────────────────
-CREATE TABLE IF NOT EXISTS citizen_employment_history (
-  id                UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  citizen_id        UUID NOT NULL REFERENCES citizens(id) ON DELETE CASCADE,
-  employer_name     VARCHAR(200) NOT NULL,
-  employer_type     VARCHAR(30)  NOT NULL
-                    CHECK (employer_type IN (
-                      'GOVERNMENT',
-                      'PRIVATE',
-                      'SELF_EMPLOYED',
-                      'NGO',
-                      'OTHER'
-                    )),
-  position_title    VARCHAR(150),
-  start_date        DATE NOT NULL,
-  end_date          DATE,
-  is_current        BOOLEAN NOT NULL DEFAULT FALSE,
-  recorded_by       UUID REFERENCES users(id) ON DELETE SET NULL,
-  notes             TEXT,
-  created_at        TIMESTAMP NOT NULL DEFAULT NOW(),
-  updated_at        TIMESTAMP NOT NULL DEFAULT NOW(),
-  CHECK (
-    (is_current = TRUE  AND end_date IS NULL) OR
-    (is_current = FALSE)
-  )
-);
-
-CREATE INDEX IF NOT EXISTS idx_emp_history_citizen
-  ON citizen_employment_history(citizen_id);
-
-CREATE INDEX IF NOT EXISTS idx_emp_history_gov
-  ON citizen_employment_history(citizen_id)
-  WHERE employer_type = 'GOVERNMENT';
-
--- ── 3. Seed the two rules described in the HCI assignment ────────
--- Old Age Pension: paid to citizens aged 70 and above.
-INSERT INTO pension_rules (
-  pension_type,
-  minimum_age,
-  requires_government_service,
-  minimum_service_years,
-  monthly_amount,
-  currency,
-  is_active,
-  notes
-) VALUES
-  (
-    'OLD_AGE',
-    70,
-    FALSE,
-    0,
-    0,
-    'LSL',
-    TRUE,
-    'Old Age Pension. Paid to citizens aged 70 and above, no government service required.'
-  ),
-  (
-    'CIVIL_SERVICE',
-    60,
-    TRUE,
-    10,
-    0,
-    'LSL',
-    TRUE,
-    'Civil Service Pension. Paid to former government employees aged 60 and above with at least 10 years of service.'
-  )
-ON CONFLICT (pension_type) DO NOTHING;
-
-COMMIT;
-
--- ================================================================
--- Rollback (do not run unless you need to undo this migration):
---
--- BEGIN;
--- DROP TABLE IF EXISTS citizen_employment_history;
--- DROP TABLE IF EXISTS pension_rules;
--- COMMIT;
+-- After running this file, run the six migrations in
+-- /server/src/database/migrations/ in order. They are:
+--   001_enable_police_services.sql
+--   002_pensions_eligibility.sql
+--   003_protect_records.sql
+--   004_vehicle_delete_function.sql
+--   005_translations_group_i.sql
+--   006_collection_columns_guard.sql
 -- ================================================================

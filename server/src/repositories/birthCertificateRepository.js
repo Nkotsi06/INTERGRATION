@@ -36,9 +36,12 @@ async function findByCitizen(citizenId) {
   return result.rows;
 }
 
+// Returns every row. The pagination responsibility sits with the
+// caller: HACertificates.jsx slices in the browser, MyCertificates
+// renders the whole list. No silent LIMIT.
 async function findAll() {
   const result = await query(
-    'SELECT * FROM birth_certificates ORDER BY created_at DESC LIMIT 200'
+    'SELECT * FROM birth_certificates ORDER BY created_at DESC'
   );
   return result.rows;
 }

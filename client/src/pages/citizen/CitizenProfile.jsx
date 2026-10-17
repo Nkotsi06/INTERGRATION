@@ -89,6 +89,8 @@ function CitizenProfile() {
     );
   }
 
+  const isVerified = profile.isVerified === true;
+
   return (
     <PageWrapper title="My Profile" showBack backPath="/citizen/dashboard">
       <h1>My Profile</h1>
@@ -97,7 +99,7 @@ function CitizenProfile() {
         <Avatar src={photoUrl} name={profile.fullName} size={112} />
         <div className="profile-header-body">
           <h2 className="profile-header-name">{profile.fullName}</h2>
-          {profile.isVerified ? (
+          {isVerified ? (
             <StatusBadge variant="verified" />
           ) : (
             <StatusBadge variant="awaiting" />
@@ -108,7 +110,7 @@ function CitizenProfile() {
         </div>
       </div>
 
-      {profile.isVerified ? (
+      {isVerified ? (
         <div className="verification-status verified">
           <span className="verification-status-title">Verified</span>
           <span className="verification-status-subtitle">
@@ -129,16 +131,10 @@ function CitizenProfile() {
         <div className="form-grid">
           <ReadOnlyField label="Full name" value={profile.fullName} />
           <ReadOnlyField label="National ID" value={profile.nationalId} />
-          <ReadOnlyField
-            label="Date of birth"
-            value={formatDate(profile.dateOfBirth)}
-          />
+          <ReadOnlyField label="Date of birth" value={formatDate(profile.dateOfBirth)} />
           <ReadOnlyField label="Gender" value={profile.gender} />
           <ReadOnlyField label="Place of birth" value={profile.placeOfBirth} />
-          <ReadOnlyField
-            label="Nationality"
-            value={profile.nationality || 'Mosotho'}
-          />
+          <ReadOnlyField label="Nationality" value={profile.nationality || '—'} />
         </div>
       </div>
 
@@ -186,8 +182,8 @@ function CitizenProfile() {
               <Button variant="secondary" onClick={handleCancel} disabled={saving}>
                 Cancel
               </Button>
-              <Button variant="primary" onClick={handleSave} disabled={saving}>
-                {saving ? 'Saving…' : 'Save changes'}
+              <Button variant="primary" onClick={handleSave} loading={saving}>
+                Save changes
               </Button>
             </div>
           </div>

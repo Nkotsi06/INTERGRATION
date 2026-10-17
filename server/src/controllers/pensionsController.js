@@ -4,6 +4,11 @@ function citizenIdFrom(req) {
   return req.user?.verifiedCitizenId || req.user?.citizenId || null;
 }
 
+async function getStaffStats(req, res, next) {
+  try { res.json(await pensionsService.getStaffStats()); }
+  catch (err) { next(err); }
+}
+
 async function getEligibility(req, res, next) {
   try {
     const citizenId = citizenIdFrom(req);
@@ -65,6 +70,7 @@ async function processVerification(req, res, next) {
 }
 
 module.exports = {
+  getStaffStats,
   getEligibility,
   getRules,
   getPensionInfo,

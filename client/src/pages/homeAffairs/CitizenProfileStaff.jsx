@@ -12,7 +12,6 @@ import {
 } from '../../api/homeAffairsApi';
 import { formatDate } from '../../utils/formatters';
 
-/* GROUP C — helper */
 function labelForEmployerType(code) {
   const map = {
     GOVERNMENT: 'Government',
@@ -80,61 +79,62 @@ function HACitizenProfile() {
       backPath="/home-affairs/search"
       accentColour="#1A5276"
     >
-      <div className="profile-header">
-        <Avatar src={photoUrl} name={fullName} size={112} />
-        <div className="profile-header-body">
-          <h1 className="profile-header-name">{fullName}</h1>
-          <StatusBadge variant={statusVariant} />
-          <p className="profile-header-meta">
-            {nationalId ? `National ID: ${nationalId}` : ''}
-          </p>
-          {isVerified && citizen.verified_at && (
+      <div className="printable-profile">
+        <div className="profile-header">
+          <Avatar src={photoUrl} name={fullName} size={112} />
+          <div className="profile-header-body">
+            <h1 className="profile-header-name">{fullName}</h1>
+            <StatusBadge variant={statusVariant} />
             <p className="profile-header-meta">
-              Verified on {formatDate(citizen.verified_at)}
+              {nationalId ? `National ID: ${nationalId}` : ''}
             </p>
-          )}
+            {isVerified && citizen.verified_at && (
+              <p className="profile-header-meta">
+                Verified on {formatDate(citizen.verified_at)}
+              </p>
+            )}
+          </div>
         </div>
-      </div>
 
-      <div className="card card-flat" style={{ marginTop: 16 }}>
-        <div className="form-grid">
-          <ReadOnly label="National ID" value={nationalId || '—'} />
-          <ReadOnly
-            label="Date of birth"
-            value={formatDate(citizen.date_of_birth)}
-          />
-          <ReadOnly label="Gender" value={citizen.gender} />
-          <ReadOnly label="Place of birth" value={citizen.place_of_birth} />
-          <ReadOnly
-            label="Nationality"
-            value={citizen.nationality || 'Mosotho'}
-          />
-          <ReadOnly label="Phone" value={citizen.phone} />
-          <ReadOnly label="Email" value={citizen.email} />
-          <ReadOnly label="Address" value={citizen.address} full />
-        </div>
-      </div>
-
-      {/* GROUP C — Employment history */}
-      {citizen.employmentHistory && citizen.employmentHistory.length > 0 && (
         <div className="card card-flat" style={{ marginTop: 16 }}>
-          <h3 style={{ marginTop: 0 }}>Employment history</h3>
-          <ul className="employment-history-list">
-            {citizen.employmentHistory.map((row) => (
-              <li key={row.id}>
-                <strong>{row.employer_name}</strong>
-                <span className="text-muted"> · {labelForEmployerType(row.employer_type)}</span>
-                {row.position_title && (
-                  <span className="text-muted"> · {row.position_title}</span>
-                )}
-                <div className="text-muted">
-                  {row.start_date} → {row.is_current ? 'Present' : row.end_date || '—'}
-                </div>
-              </li>
-            ))}
-          </ul>
+          <div className="form-grid">
+            <ReadOnly label="National ID" value={nationalId || '—'} />
+            <ReadOnly
+              label="Date of birth"
+              value={formatDate(citizen.date_of_birth)}
+            />
+            <ReadOnly label="Gender" value={citizen.gender} />
+            <ReadOnly label="Place of birth" value={citizen.place_of_birth} />
+            <ReadOnly
+              label="Nationality"
+              value={citizen.nationality || '—'}
+            />
+            <ReadOnly label="Phone" value={citizen.phone} />
+            <ReadOnly label="Email" value={citizen.email} />
+            <ReadOnly label="Address" value={citizen.address} full />
+          </div>
         </div>
-      )}
+
+        {citizen.employmentHistory && citizen.employmentHistory.length > 0 && (
+          <div className="card card-flat" style={{ marginTop: 16 }}>
+            <h3 style={{ marginTop: 0 }}>Employment history</h3>
+            <ul className="employment-history-list">
+              {citizen.employmentHistory.map((row) => (
+                <li key={row.id}>
+                  <strong>{row.employer_name}</strong>
+                  <span className="text-muted"> · {labelForEmployerType(row.employer_type)}</span>
+                  {row.position_title && (
+                    <span className="text-muted"> · {row.position_title}</span>
+                  )}
+                  <div className="text-muted">
+                    {row.start_date} → {row.is_current ? 'Present' : row.end_date || '—'}
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </div>
 
       <div className="form-actions">
         <div className="form-actions-primary-group">
@@ -156,7 +156,7 @@ function HACitizenProfile() {
             title={
               citizen.registrationId
                 ? 'Edit this citizen record'
-                : 'Registration link unavailable'
+                : 'Registration link unavailable — use Citizen Search to find the registration'
             }
           >
             Edit record

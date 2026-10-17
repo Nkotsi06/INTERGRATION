@@ -63,6 +63,40 @@ async function update(id, data) {
   return result.rows[0];
 }
 
+// Group D — guarded delete.
+// Calls the stored function delete_vehicle(), which locks the row,
+// checks for pending licences and inspections, writes an audit
+// entry, and deletes in one transaction. On any error, throws
+// an Error whose .statusCode is set so the controller can map to
+// a 409 (business rule) or 404 (not found).
+async function removeWithGuard(id, actorId) {
+  try {
+    const result = await query(
+      'SELECT delete_vehicle($1::uuid, $2::uuid) AS deleted_id',
+      [id, actorId]
+    );
+    return result.rows[0].deleted_id;
+  } catch (err) {
+    // Map Postgres SQLSTATE codes to HTTP-level signals the
+    // service and controller understand.
+    if (err.code === 'P0002') {
+      const e = new Error('Vehicle not found.');
+      e.statusCode = 404;
+      throw e;
+    }
+    if (err.code === '23514') {
+      // check_violation — our guarded function raises this for
+      // business rules (pending licences/inspections).
+      const e = new Error(err.message);
+      e.statusCode = 409;
+      throw e;
+    }
+    throw err;
+  }
+}
+
+// Kept for backward compatibility. Nothing in the app should call
+// this directly any more; use removeWithGuard instead.
 async function remove(id) {
   await query('DELETE FROM vehicles WHERE id = $1', [id]);
 }
@@ -73,5 +107,6 @@ module.exports = {
   findByRegistrationNumber,
   create,
   update,
+  removeWithGuard,
   remove,
 };

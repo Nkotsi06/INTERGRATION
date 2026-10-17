@@ -16,6 +16,9 @@ router.post('/clearance', authMiddleware, verificationMiddleware, policeControll
 router.post('/criminal-records', authMiddleware, verificationMiddleware, policeController.requestCriminalRecord);
 router.get('/criminal-records', authMiddleware, policeController.getMyCriminalRecords);
 
+// Staff — dashboard stats  ← NEW
+router.get('/staff/stats', authMiddleware, roleMiddleware(['POLICE']), policeController.getStaffStats);
+
 // Staff
 router.get('/staff/cases', authMiddleware, roleMiddleware(['POLICE']), policeController.getStaffCases);
 router.put('/staff/cases/:id', authMiddleware, roleMiddleware(['POLICE']), policeController.updateCase);

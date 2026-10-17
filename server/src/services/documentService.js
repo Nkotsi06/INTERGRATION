@@ -2,6 +2,7 @@ const documentRepository = require('../repositories/documentRepository');
 const documentTypeRepository = require('../repositories/documentTypeRepository');
 const auditService = require('./auditService');
 const { deleteFile, getPublicUrl } = require('../utils/fileStorage');
+const logger = require('../utils/logger');
 const { query } = require('../config/database');
 
 async function upload(citizenId, file, documentTypeCode, user, registrationId = null) {
@@ -64,6 +65,14 @@ async function verify(id, action, reason, staffUser) {
   return updated;
 }
 
+// Group D — order is deliberate:
+//   1. Check ownership and permissions.
+//   2. Delete the DB row and commit.
+//   3. Delete the file from disk AFTER the commit.
+//   4. If the file delete fails, log it as an orphan for cleanup
+//      and still report success to the caller.
+// A successful DB delete must not be reported as a failure just
+// because the file is gone or the disk is read-only.
 async function remove(id, user) {
   const doc = await documentRepository.findById(id);
   if (!doc) return;
@@ -80,8 +89,11 @@ async function remove(id, user) {
     }
   }
 
+  // Step 1: DB delete first.
   await documentRepository.remove(id);
-  deleteFile(doc.file_path);
+
+  // Step 2: audit BEFORE we try the file, so the record exists even
+  // if the file delete fails.
   await auditService.log({
     userId: user.userId,
     username: user.username,
@@ -90,6 +102,15 @@ async function remove(id, user) {
     recordId: id,
     result: 'SUCCESS',
   });
+
+  // Step 3: file delete after commit. Wrap it.
+  try {
+    deleteFile(doc.file_path);
+  } catch (err) {
+    logger.warn(
+      `[documentService.remove] DB row ${id} deleted but the file could not be removed from disk: ${err.message}. File path: ${doc.file_path}. Mark as orphan for cleanup.`
+    );
+  }
 }
 
 async function relinkRegistrationDocuments(registrationId, citizenId) {

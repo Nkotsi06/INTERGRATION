@@ -5,7 +5,7 @@ const auditService = require('./auditService');
 const { hashPassword, verifyPassword } = require('../utils/passwordHash');
 
 // ─────────────────────────────────────────────────────────────────────
-// getProfile — now returns isVerified, nationality, updatedAt, photoUrl.
+// getProfile — returns isVerified, nationality, updatedAt, photoUrl.
 // ─────────────────────────────────────────────────────────────────────
 async function getProfile(userId) {
   const user = await userRepository.findById(userId);
@@ -17,7 +17,6 @@ async function getProfile(userId) {
   const citizen = await citizenRepository.findById(user.citizen_id);
   if (!citizen) throw new Error('Citizen not found');
 
-  // A passport photo, if the citizen has uploaded one.
   const passportPhoto = await documentRepository.findLatestByType(
     citizen.id,
     'PASSPORT_PHOTO'
@@ -26,13 +25,16 @@ async function getProfile(userId) {
   const base = formatCitizen(citizen);
   return {
     ...base,
-    photoUrl: passportPhoto ? `/api/citizen/photo?v=${passportPhoto.uploaded_at}` : null,
+    photoUrl: passportPhoto
+      ? `/api/citizen/photo?v=${passportPhoto.uploaded_at}`
+      : null,
   };
 }
 
 // ─────────────────────────────────────────────────────────────────────
-// updateContact — locked to phone and email only. Any other field in the
-// request body is silently dropped.
+// updateContact — accepts only phone and email. Every other field in
+// the request body is dropped. Server-side validation matches the
+// client-side rules.
 // ─────────────────────────────────────────────────────────────────────
 async function updateContact(userId, body) {
   const user = await userRepository.findById(userId);
@@ -101,8 +103,8 @@ async function changePassword(userId, { currentPassword, newPassword }) {
 }
 
 // ─────────────────────────────────────────────────────────────────────
-// Locate a photo for a citizen (used by the photo endpoints).
-// Prefers PASSPORT_PHOTO document, falls back to the biometrics facial image.
+// Locate a photo for a citizen. Prefers PASSPORT_PHOTO document, falls
+// back to the biometrics facial image.
 // ─────────────────────────────────────────────────────────────────────
 async function findPhotoForCitizen(citizenId) {
   const passportPhoto = await documentRepository.findLatestByType(
@@ -121,14 +123,16 @@ async function findPhotoForCitizen(citizenId) {
   const biometricRepository = require('../repositories/biometricRepository');
   const bio = await biometricRepository.findByCitizen(citizenId);
   if (bio?.facial_image) {
-    return {
-      kind: 'dataurl',
-      dataUrl: bio.facial_image,
-    };
+    return { kind: 'dataurl', dataUrl: bio.facial_image };
   }
   return null;
 }
 
+// ─────────────────────────────────────────────────────────────────────
+// formatCitizen — the single shape the client sees.
+// nationality is null when the citizen record has none. The client
+// shows a placeholder, not a hard-coded 'Mosotho'.
+// ─────────────────────────────────────────────────────────────────────
 function formatCitizen(citizen) {
   return {
     id: citizen.id,
@@ -139,11 +143,11 @@ function formatCitizen(citizen) {
     dateOfBirth: citizen.date_of_birth,
     gender: citizen.gender,
     placeOfBirth: citizen.place_of_birth,
-    nationality: citizen.nationality || 'Mosotho',
+    nationality: citizen.nationality || null,
     address: citizen.address,
     phone: citizen.phone,
     email: citizen.email,
-    isVerified: citizen.is_verified,
+    isVerified: !!citizen.is_verified,
     verifiedAt: citizen.verified_at,
     createdAt: citizen.created_at,
     updatedAt: citizen.updated_at,

@@ -1,6 +1,10 @@
 const passportService = require('../services/passportService');
 const signatureService = require('../services/signatureService');
 
+async function getStaffStats(req, res, next) {
+  try { res.json(await passportService.getStaffStats()); } catch (err) { next(err); }
+}
+
 async function apply(req, res, next) {
   try {
     const result = await passportService.applyForPassport(
@@ -42,7 +46,6 @@ async function processApplication(req, res, next) {
   } catch (err) { next(err); }
 }
 
-// ─── FIX: persist the signature ─────────────────────────────────────────
 async function issuePassport(req, res, next) {
   try {
     const { id } = req.params;
@@ -64,9 +67,9 @@ async function issuePassport(req, res, next) {
     res.json({ message: 'Passport issued successfully' });
   } catch (err) { next(err); }
 }
-// ────────────────────────────────────────────────────────────────────────
 
 module.exports = {
+  getStaffStats,
   apply,
   getMyApplications,
   getApplicationByRef,

@@ -4,6 +4,10 @@ function citizenIdFrom(req) {
   return req.session?.verifiedCitizenId || req.user?.citizenId || null;
 }
 
+async function getStaffStats(req, res, next) {
+  try { res.json(await policeService.getStaffStats()); } catch (err) { next(err); }
+}
+
 async function reportCase(req, res, next) {
   try {
     const c = await policeService.reportCase(citizenIdFrom(req), req.body, req.user);
@@ -43,7 +47,6 @@ async function addCaseUpdate(req, res, next) {
   } catch (err) { next(err); }
 }
 
-// ─── Clearance ────────────────────────────────────────────────────────
 async function requestClearance(req, res, next) {
   try {
     const created = await policeService.requestClearance(
@@ -53,7 +56,6 @@ async function requestClearance(req, res, next) {
   } catch (err) { next(err); }
 }
 
-// ─── Criminal record ──────────────────────────────────────────────────
 async function requestCriminalRecord(req, res, next) {
   try {
     const created = await policeService.requestCriminalRecord(
@@ -83,6 +85,7 @@ async function processCriminalRecord(req, res, next) {
 }
 
 module.exports = {
+  getStaffStats,
   reportCase, getMyCases, getCaseByNumber, getStaffCases, updateCase, addCaseUpdate,
   requestClearance,
   requestCriminalRecord, getMyCriminalRecords, getStaffCriminalRecords, processCriminalRecord,

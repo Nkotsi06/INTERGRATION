@@ -14,6 +14,13 @@
 --   - Footer "Lesotho Government System" is NOT translated.
 --   - Where no established Sesotho term exists, the English
 --     word is used (e.g. Audit Logs, Dashboard, API, URL).
+--
+-- Important:
+--   This file starts with DELETE FROM translations, so only run
+--   it ONCE on a fresh database. Additional translations
+--   introduced after a live deployment must go into a numbered
+--   migration (see /server/src/database/migrations/), not this
+--   file.
 -- ============================================================
 
 BEGIN;
@@ -2056,7 +2063,7 @@ INSERT INTO translations (language_code, translation_key, translation_value) VAL
 ('ST', 'aria.clear_signature', 'Hlakola ho saena'),
 ('ST', 'aria.capture_fingerprint', 'Nka kgati ea monwana'),
 ('ST', 'aria.capture_face', 'Nka setshwantsho sa sefahleho'),
-('ST', 'aria.status_badge', 'Boemo: {Boemo}');
+('ST', 'aria.status_badge', 'Boemo: {status}');
 
 -- ============================================================
 -- DOCUMENTS / BIOMETRICS / SIGNATURE / FILTERS SHARED LABELS
@@ -2222,7 +2229,8 @@ INSERT INTO translations (language_code, translation_key, translation_value) VAL
 
 
 -- ============================================================
--- PENSIONS ELIGIBILITY (Group C)
+-- PENSIONS ELIGIBILITY (Group C — core keys, kept in seed so a
+-- fresh database has them on first run)
 -- ============================================================
 
 INSERT INTO translations (language_code, translation_key, translation_value) VALUES
@@ -2272,3 +2280,281 @@ INSERT INTO translations (language_code, translation_key, translation_value) VAL
 
 COMMIT;
 
+-- ================================================================
+-- 005_translations_group_i.sql
+-- ================================================================
+-- Purpose:
+--   Adds the translation keys for every new visible label introduced
+--   in Groups A, C, D, E, F, and H. The seed file
+--   (translations_seed.sql) begins with DELETE FROM translations and
+--   should only be run on a fresh database. This migration is
+--   append-only and safe to re-run: it uses
+--   ON CONFLICT (language_code, translation_key) DO NOTHING, so it
+--   never overwrites a translation an admin has already customised.
+--
+-- Fixed in this version (2026-10-17):
+--   - pensions.dashboard.qualify_civil_service — Sesotho value was
+--     truncated ("Penshene ea Tšebeletso ea "). Now reads
+--     "Penshene ea Tšebeletso ea 'Muso".
+--   - employment.history.description — Sesotho value was truncated
+--     ("... ea Tšebeletso ea "). Now reads
+--     "... ea Tšebeletso ea 'Muso".
+--
+-- Safe to run more than once.
+--
+-- Where to run it:
+--   Neon / Supabase SQL editor, connected to the project database,
+--   as the role that applied schema.sql. Run the whole file in one
+--   execution.
+--
+-- Verify after running:
+--   SELECT COUNT(*) FROM translations WHERE language_code = 'EN';
+--   SELECT COUNT(*) FROM translations WHERE language_code = 'ST';
+--   Both counts should include the new keys below.
+--
+-- Spot-check:
+--   SELECT translation_value FROM translations
+--   WHERE language_code = 'ST'
+--     AND translation_key = 'pensions.dashboard.qualify_civil_service';
+--   Expected: O tšoaneleha — Penshene ea Tšebeletso ea 'Muso
+-- ================================================================
+
+BEGIN;
+
+INSERT INTO translations (language_code, translation_key, translation_value) VALUES
+
+-- ────────────────────────────────────────────────────────────────
+-- GROUP A — Services catalogue
+-- ────────────────────────────────────────────────────────────────
+('EN', 'services.list.title', 'Services'),
+('EN', 'services.list.intro', 'Choose a service to apply for. Your application will be reviewed by the ministry staff.'),
+('EN', 'services.list.information_only', 'Information only — no application required.'),
+('EN', 'services.list.apply', 'Apply'),
+('EN', 'services.list.no_services_title', 'No services available'),
+('EN', 'services.list.no_services_message', 'This ministry has no services enabled at the moment. Please check back later, or choose a different ministry from your dashboard.'),
+('EN', 'services.list.back_to_dashboard', 'Back to dashboard'),
+
+('ST', 'services.list.title', 'Litšebeletso'),
+('ST', 'services.list.intro', 'Kgetha tšebeletso eo o batlang ho e etsa kopo. Kopo ea hao e tla hlahlobjoa ke basebetsi ba lefapha.'),
+('ST', 'services.list.information_only', 'Ke tlhahisoleseling feela — ha ho hlokahale kopo.'),
+('ST', 'services.list.apply', 'Etsa kopo'),
+('ST', 'services.list.no_services_title', 'Ha ho litšebeletso tse fumanehang'),
+('ST', 'services.list.no_services_message', 'Lefapha lena ha le na litšebeletso tse ntseng li sebetsa hona joale. Ka kopo hlahloba hamorao, kapa kgetha lefapha le leng ho tsoa letlapeng la hao.'),
+('ST', 'services.list.back_to_dashboard', 'Khutlela letlapeng la litšebeletso'),
+
+-- ────────────────────────────────────────────────────────────────
+-- GROUP C — Pension eligibility banner (labels only; the
+-- eligibility messages themselves already live in the seed under
+-- pensions.eligibility.*)
+-- ────────────────────────────────────────────────────────────────
+('EN', 'pensions.dashboard.qualify_old_age', 'You qualify — Old Age Pension'),
+('EN', 'pensions.dashboard.qualify_civil_service', 'You qualify — Civil Service Pension'),
+('EN', 'pensions.dashboard.not_eligible', 'Not eligible at this time'),
+('EN', 'pensions.dashboard.current_age_template', 'Your current age is {currentAge}. Minimum age for this category is {minimumAge}.'),
+('EN', 'pensions.dashboard.government_years_template', 'Government service on record: {years} year(s).'),
+('EN', 'pensions.dashboard.pension_information', 'Pension information'),
+('EN', 'pensions.dashboard.view', 'View'),
+('EN', 'pensions.dashboard.verify_now', 'Verify now'),
+('EN', 'pensions.dashboard.verification_history', 'Verification history'),
+('EN', 'pensions.dashboard.verification_history_subtitle', 'Previous life verifications on your record.'),
+('EN', 'pensions.dashboard.pension_application', 'Pension application'),
+('EN', 'pensions.dashboard.pension_application_subtitle', 'Apply for a pension.'),
+('EN', 'pensions.dashboard.pension_application_locked', 'Not available until you qualify.'),
+('EN', 'pensions.dashboard.apply', 'Apply'),
+('EN', 'pensions.verify.unavailable_title', 'Verification unavailable'),
+
+('ST', 'pensions.dashboard.qualify_old_age', 'O tšoaneleha — Penshene ea Botsofali'),
+('ST', 'pensions.dashboard.qualify_civil_service', 'O tšoaneleha — Penshene ea Tšebeletso ea ''Muso'),
+('ST', 'pensions.dashboard.not_eligible', 'Ha o tšoanelehe hona joale'),
+('ST', 'pensions.dashboard.current_age_template', 'Lilemo tsa hao tsa hona joale ke {currentAge}. Lilemo tse hlokahalang bakeng sa mofuta ona ke {minimumAge}.'),
+('ST', 'pensions.dashboard.government_years_template', 'Tšebeletso ea mmuso e tlalehiloeng: lilemo tse {years}.'),
+('ST', 'pensions.dashboard.pension_information', 'Lintlha tsa penshene'),
+('ST', 'pensions.dashboard.view', 'Sheba'),
+('ST', 'pensions.dashboard.verify_now', 'Netefatsa hona joale'),
+('ST', 'pensions.dashboard.verification_history', 'Histori ea netefatso'),
+('ST', 'pensions.dashboard.verification_history_subtitle', 'Netefatso tsa bophelo tse fetileng rekotong ea hao.'),
+('ST', 'pensions.dashboard.pension_application', 'Kopo ea penshene'),
+('ST', 'pensions.dashboard.pension_application_subtitle', 'Etsa kopo ea penshene.'),
+('ST', 'pensions.dashboard.pension_application_locked', 'Ha e fumanehe ho fihlela o tšoaneleha.'),
+('ST', 'pensions.dashboard.apply', 'Etsa kopo'),
+('ST', 'pensions.verify.unavailable_title', 'Netefatso ha e fumanehe'),
+
+-- ────────────────────────────────────────────────────────────────
+-- GROUP C — Employment history (Complete Citizen Record)
+-- ────────────────────────────────────────────────────────────────
+('EN', 'employment.history.title', 'Employment history'),
+('EN', 'employment.history.add', 'Add employment'),
+('EN', 'employment.history.edit', 'Edit employment'),
+('EN', 'employment.history.save', 'Save employment'),
+('EN', 'employment.history.description', 'Record the citizen''s jobs. Pensions staff use government service years to assess Civil Service Pension eligibility.'),
+('EN', 'employment.history.empty', 'No employment history recorded.'),
+('EN', 'employment.history.employer_name', 'Employer name'),
+('EN', 'employment.history.employer_type', 'Employer type'),
+('EN', 'employment.history.position', 'Position'),
+('EN', 'employment.history.start_date', 'Start date'),
+('EN', 'employment.history.end_date', 'End date'),
+('EN', 'employment.history.current', 'Current job'),
+('EN', 'employment.history.notes', 'Notes'),
+('EN', 'employment.history.error_employer_required', 'Employer name is required.'),
+('EN', 'employment.history.error_start_required', 'Start date is required.'),
+('EN', 'employment.history.error_save_failed', 'Could not save employment history.'),
+('EN', 'employment.history.employer_type.government', 'Government'),
+('EN', 'employment.history.employer_type.private', 'Private sector'),
+('EN', 'employment.history.employer_type.self_employed', 'Self-employed'),
+('EN', 'employment.history.employer_type.ngo', 'NGO'),
+('EN', 'employment.history.employer_type.other', 'Other'),
+
+('ST', 'employment.history.title', 'Nalane ea mosebetsi'),
+('ST', 'employment.history.add', 'Kenya mosebetsi'),
+('ST', 'employment.history.edit', 'Fetola mosebetsi'),
+('ST', 'employment.history.save', 'Boloka mosebetsi'),
+('ST', 'employment.history.description', 'Rekota mesebetsi ea moahi. Basebetsi ba Penshene ba sebelisa lilemo tsa tšebeletso ea mmuso ho hlahloba ho tšoaneleha ha Penshene ea Tšebeletso ea ''Muso.'),
+('ST', 'employment.history.empty', 'Ha ho nalane ea mosebetsi e tlalehiloeng.'),
+('ST', 'employment.history.employer_name', 'Lebitso la mohiri'),
+('ST', 'employment.history.employer_type', 'Mofuta oa mohiri'),
+('ST', 'employment.history.position', 'Boemo'),
+('ST', 'employment.history.start_date', 'Letsatsi la ho qala'),
+('ST', 'employment.history.end_date', 'Letsatsi la ho qeta'),
+('ST', 'employment.history.current', 'Mosebetsi oa hona joale'),
+('ST', 'employment.history.notes', 'Lintlha'),
+('ST', 'employment.history.error_employer_required', 'Lebitso la mohiri lea hlokahala.'),
+('ST', 'employment.history.error_start_required', 'Letsatsi la ho qala lea hlokahala.'),
+('ST', 'employment.history.error_save_failed', 'Ha hoa ka ha boloka nalane ea mosebetsi.'),
+('ST', 'employment.history.employer_type.government', 'Mmuso'),
+('ST', 'employment.history.employer_type.private', 'Lekala la poraefete'),
+('ST', 'employment.history.employer_type.self_employed', 'Boipheliso'),
+('ST', 'employment.history.employer_type.ngo', 'NGO'),
+('ST', 'employment.history.employer_type.other', 'Tse ling'),
+
+-- ────────────────────────────────────────────────────────────────
+-- GROUP D — Vehicle delete confirmation
+-- ────────────────────────────────────────────────────────────────
+('EN', 'traffic.vehicles.delete.title', 'Delete this vehicle?'),
+('EN', 'traffic.vehicles.delete.message_template', '{registration} will be permanently removed.'),
+('EN', 'traffic.vehicles.delete.confirm', 'Delete'),
+('EN', 'traffic.vehicles.delete.error_fallback', 'Could not delete the vehicle.'),
+
+('ST', 'traffic.vehicles.delete.title', 'Hlakola koloi ena?'),
+('ST', 'traffic.vehicles.delete.message_template', '{registration} e tla tlosoa ka ho sa feleng.'),
+('ST', 'traffic.vehicles.delete.confirm', 'Hlakola'),
+('ST', 'traffic.vehicles.delete.error_fallback', 'Ha hoa ka ha hlakola koloi.'),
+
+-- ────────────────────────────────────────────────────────────────
+-- GROUP E — Citizen contact editing
+-- ────────────────────────────────────────────────────────────────
+('EN', 'citizen.contact.edit', 'Edit contact details'),
+('EN', 'citizen.contact.save', 'Save changes'),
+('EN', 'citizen.contact.cancel', 'Cancel'),
+('EN', 'citizen.contact.error_phone', 'Please enter a valid phone number.'),
+('EN', 'citizen.contact.error_email', 'Please enter a valid email address.'),
+('EN', 'citizen.contact.success', 'Contact details updated.'),
+('EN', 'citizen.contact.error_fallback', 'Could not save contact details.'),
+('EN', 'citizen.profile.registration_unavailable', 'Registration link unavailable — use Citizen Search to find the registration'),
+
+('ST', 'citizen.contact.edit', 'Fetola lintlha tsa ho ikopanya'),
+('ST', 'citizen.contact.save', 'Boloka liphetoho'),
+('ST', 'citizen.contact.cancel', 'Hlakola'),
+('ST', 'citizen.contact.error_phone', 'Ka kopo kenya nomoro ea mohala e nepahetseng.'),
+('ST', 'citizen.contact.error_email', 'Ka kopo kenya aterese ea imeile e nepahetseng.'),
+('ST', 'citizen.contact.success', 'Lintlha tsa ho ikopanya li ntlafalitsoe.'),
+('ST', 'citizen.contact.error_fallback', 'Ha hoa ka ha boloka lintlha tsa ho ikopanya.'),
+('ST', 'citizen.profile.registration_unavailable', 'Khokahano ea ngoliso ha e fumanehe — sebelisa Batla Moahi ho fumana ngoliso'),
+
+-- ────────────────────────────────────────────────────────────────
+-- GROUP F — Home Affairs dashboard actions
+-- ────────────────────────────────────────────────────────────────
+('EN', 'home_affairs.dashboard.enquiries', 'Enquiries'),
+('EN', 'home_affairs.dashboard.verify_document', 'Verify Document'),
+('EN', 'home_affairs.dashboard.info_services', 'Info Services'),
+('EN', 'home_affairs.dashboard.certificates', 'Certificates'),
+('EN', 'home_affairs.dashboard.search_citizens', 'Search Citizens'),
+
+('ST', 'home_affairs.dashboard.enquiries', 'Lipotso'),
+('ST', 'home_affairs.dashboard.verify_document', 'Netefatsa tokomane'),
+('ST', 'home_affairs.dashboard.info_services', 'Litšebeletso tsa tlhahisoleseling'),
+('ST', 'home_affairs.dashboard.certificates', 'Litifi keiti'),
+('ST', 'home_affairs.dashboard.search_citizens', 'Batla baahi'),
+
+-- ────────────────────────────────────────────────────────────────
+-- GROUP H — Finance dashboard error state
+-- ────────────────────────────────────────────────────────────────
+('EN', 'finance.staff_dashboard.error_title', 'Could not load payments'),
+('EN', 'finance.staff_dashboard.retry', 'Retry'),
+
+('ST', 'finance.staff_dashboard.error_title', 'Ha hoa ka ha kenya litefo'),
+('ST', 'finance.staff_dashboard.retry', 'Leka hape')
+
+ON CONFLICT (language_code, translation_key) DO NOTHING;
+
+COMMIT;
+
+-- ================================================================
+-- Rollback (only if you need to undo this migration):
+--
+-- BEGIN;
+-- DELETE FROM translations WHERE translation_key IN (
+--   'services.list.title',
+--   'services.list.intro',
+--   'services.list.information_only',
+--   'services.list.apply',
+--   'services.list.no_services_title',
+--   'services.list.no_services_message',
+--   'services.list.back_to_dashboard',
+--   'pensions.dashboard.qualify_old_age',
+--   'pensions.dashboard.qualify_civil_service',
+--   'pensions.dashboard.not_eligible',
+--   'pensions.dashboard.current_age_template',
+--   'pensions.dashboard.government_years_template',
+--   'pensions.dashboard.pension_information',
+--   'pensions.dashboard.view',
+--   'pensions.dashboard.verify_now',
+--   'pensions.dashboard.verification_history',
+--   'pensions.dashboard.verification_history_subtitle',
+--   'pensions.dashboard.pension_application',
+--   'pensions.dashboard.pension_application_subtitle',
+--   'pensions.dashboard.pension_application_locked',
+--   'pensions.dashboard.apply',
+--   'pensions.verify.unavailable_title',
+--   'employment.history.title',
+--   'employment.history.add',
+--   'employment.history.edit',
+--   'employment.history.save',
+--   'employment.history.description',
+--   'employment.history.empty',
+--   'employment.history.employer_name',
+--   'employment.history.employer_type',
+--   'employment.history.position',
+--   'employment.history.start_date',
+--   'employment.history.end_date',
+--   'employment.history.current',
+--   'employment.history.notes',
+--   'employment.history.error_employer_required',
+--   'employment.history.error_start_required',
+--   'employment.history.error_save_failed',
+--   'employment.history.employer_type.government',
+--   'employment.history.employer_type.private',
+--   'employment.history.employer_type.self_employed',
+--   'employment.history.employer_type.ngo',
+--   'employment.history.employer_type.other',
+--   'traffic.vehicles.delete.title',
+--   'traffic.vehicles.delete.message_template',
+--   'traffic.vehicles.delete.confirm',
+--   'traffic.vehicles.delete.error_fallback',
+--   'citizen.contact.edit',
+--   'citizen.contact.save',
+--   'citizen.contact.cancel',
+--   'citizen.contact.error_phone',
+--   'citizen.contact.error_email',
+--   'citizen.contact.success',
+--   'citizen.contact.error_fallback',
+--   'citizen.profile.registration_unavailable',
+--   'home_affairs.dashboard.enquiries',
+--   'home_affairs.dashboard.verify_document',
+--   'home_affairs.dashboard.info_services',
+--   'home_affairs.dashboard.certificates',
+--   'home_affairs.dashboard.search_citizens',
+--   'finance.staff_dashboard.error_title',
+--   'finance.staff_dashboard.retry'
+-- );
+-- COMMIT;
+-- ================================================================

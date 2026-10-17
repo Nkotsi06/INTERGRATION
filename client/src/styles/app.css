@@ -111,28 +111,28 @@ a:hover {
    3. TYPOGRAPHY — all sizes in rem
    ============================================ */
 h1 {
-  font-size: 2rem;           /* 24pt */
+  font-size: 2rem;
   font-weight: 700;
   color: var(--colour-text-primary);
   margin-bottom: var(--spacing-md);
 }
 
 h2 {
-  font-size: 1.5rem;         /* 18pt */
+  font-size: 1.5rem;
   font-weight: 700;
   color: var(--colour-text-primary);
   margin-bottom: var(--spacing-sm);
 }
 
 h3 {
-  font-size: 1.25rem;        /* 16pt */
+  font-size: 1.25rem;
   font-weight: 700;
   color: var(--colour-text-primary);
   margin-bottom: var(--spacing-sm);
 }
 
 h4 {
-  font-size: 1rem;           /* 12pt */
+  font-size: 1rem;
   font-weight: 700;
   color: var(--colour-text-primary);
   margin-bottom: var(--spacing-xs);
@@ -146,7 +146,7 @@ p {
 
 small,
 .text-small {
-  font-size: 0.875rem;       /* 11pt */
+  font-size: 0.875rem;
   color: var(--colour-text-secondary);
 }
 
@@ -157,14 +157,6 @@ small,
 /* ============================================
    4. LAYOUT
    ============================================ */
-.page-wrapper {
-  min-height: 100vh;
-  min-height: 100dvh;
-  display: flex;
-  flex-direction: column;
-  background-color: transparent;
-}
-
 .page-content {
   flex: 1;
   padding: var(--spacing-lg) var(--spacing-xl);
@@ -226,27 +218,6 @@ small,
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-}
-
-.header-back-btn,
-.header-icon-btn,
-.header-logout-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 40px;
-  height: 40px;
-  border-radius: var(--radius-md);
-  color: var(--colour-text-primary);
-  font-size: 1.125rem;
-  transition: background-color 0.15s;
-  flex-shrink: 0;
-}
-
-.header-back-btn:hover,
-.header-icon-btn:hover,
-.header-logout-btn:hover {
-  background-color: var(--colour-background);
 }
 
 .header-user {
@@ -425,23 +396,6 @@ small,
   animation: spin 0.7s linear infinite;
 }
 
-.btn-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 36px;
-  height: 36px;
-  border-radius: var(--radius-md);
-  color: var(--colour-text-secondary);
-  font-size: 1rem;
-  transition: background-color 0.15s, color 0.15s;
-}
-
-.btn-icon:hover {
-  background-color: var(--colour-border-light);
-  color: var(--colour-error);
-}
-
 /* ============================================
    8. FORMS
    ============================================ */
@@ -537,26 +491,6 @@ small,
 
 .password-field .form-input {
   padding-right: 48px;
-}
-
-.password-toggle {
-  position: absolute;
-  right: 8px;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 36px;
-  height: 36px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--colour-text-secondary);
-  border-radius: var(--radius-sm);
-  font-size: 1rem;
-}
-
-.password-toggle:hover {
-  color: var(--colour-accent);
-  background-color: var(--colour-border-light);
 }
 
 .form-actions {
@@ -720,11 +654,6 @@ small,
   font-weight: 700;
 }
 
-.badge-icon {
-  display: inline-flex;
-  align-items: center;
-}
-
 .badge-success {
   background-color: rgba(39, 174, 96, 0.12);
   color: var(--colour-success);
@@ -766,12 +695,6 @@ small,
 .status-badge-awaiting { color: var(--colour-text-secondary); }
 .status-badge-captured { color: var(--colour-warning-text); }
 .status-badge-verified { color: var(--colour-success); }
-
-.status-badge-icon {
-  display: inline-flex;
-  align-items: center;
-  font-size: 0.875rem;
-}
 
 /* ============================================
    12. ALERTS
@@ -829,12 +752,6 @@ small,
   margin: 0;
 }
 
-.alert-close {
-  color: var(--colour-text-secondary);
-  font-size: 1rem;
-  padding: 4px;
-}
-
 /* ============================================
    13. MODAL
    ============================================ */
@@ -873,21 +790,6 @@ small,
 }
 
 .modal-header h3 { margin: 0; }
-
-.modal-close {
-  width: 36px;
-  height: 36px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: var(--radius-md);
-  color: var(--colour-text-secondary);
-  font-size: 1.125rem;
-}
-
-.modal-close:hover {
-  background-color: var(--colour-background);
-}
 
 .modal-body { padding: var(--spacing-lg); }
 
@@ -977,29 +879,6 @@ small,
   font-size: 0.875rem;
   text-decoration: underline;
   padding: 8px;
-}
-
-.filter-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 4px 8px;
-  border-radius: 999px;
-  background-color: var(--colour-border-light);
-  font-size: 0.875rem;
-  margin-right: var(--spacing-xs);
-  margin-bottom: var(--spacing-xs);
-}
-
-.filter-pill-label {
-  color: var(--colour-text-secondary);
-  font-weight: 600;
-}
-
-.filter-pill-remove {
-  color: var(--colour-text-secondary);
-  font-size: 0.875rem;
-  padding: 2px;
 }
 
 /* ============================================
@@ -1244,12 +1123,6 @@ small,
   padding: var(--spacing-2xl);
   text-align: center;
   gap: var(--spacing-sm);
-}
-
-.empty-state-icon {
-  font-size: 3rem;
-  color: var(--colour-border);
-  margin-bottom: var(--spacing-sm);
 }
 
 .empty-state-title {
@@ -1594,11 +1467,6 @@ small,
   background-color: var(--colour-background);
 }
 
-.upload-icon {
-  font-size: 2rem;
-  color: var(--colour-accent);
-}
-
 .upload-text {
   font-size: 1rem;
   color: var(--colour-text-primary);
@@ -1618,11 +1486,6 @@ small,
   border: 1px solid var(--colour-border);
   border-radius: var(--radius-md);
   background-color: var(--colour-surface);
-}
-
-.upload-file-icon {
-  font-size: 1.5rem;
-  color: var(--colour-accent);
 }
 
 .upload-file-info {
@@ -1701,24 +1564,8 @@ small,
   flex-shrink: 0;
 }
 
-.document-preview-actions button {
-  width: 36px;
-  height: 36px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: var(--radius-md);
-  color: var(--colour-text-secondary);
-  font-size: 1rem;
-}
-
-.document-preview-actions button:hover {
-  background-color: var(--colour-background);
-  color: var(--colour-accent);
-}
-
 /* ============================================
-   25. SIGNATURE PAD (merged from duplicates)
+   25. SIGNATURE PAD
    ============================================ */
 .signature-pad {
   display: flex;
@@ -1914,279 +1761,6 @@ small,
 }
 
 /* ============================================
-   27. LOGO UPLOAD
-   ============================================ */
-.logo-upload-page {
-  max-width: 560px;
-  margin: 0 auto;
-  padding: var(--spacing-xl) 0;
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-md);
-  align-items: flex-start;
-}
-
-.logo-preview {
-  width: 200px;
-  height: 200px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid var(--colour-border);
-  border-radius: var(--radius-md);
-  background-color: var(--colour-surface);
-  overflow: hidden;
-}
-
-.logo-preview img {
-  max-width: 100%;
-  max-height: 100%;
-  object-fit: contain;
-}
-
-.logo-placeholder {
-  color: var(--colour-text-secondary);
-  font-size: 0.875rem;
-}
-
-/* ============================================
-   28. TABS
-   ============================================ */
-.tabs {
-  display: flex;
-  gap: var(--spacing-xs);
-  border-bottom: 2px solid var(--colour-border-light);
-  margin-bottom: var(--spacing-lg);
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-}
-
-.tab {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  padding: 10px 16px;
-  border: none;
-  background: none;
-  color: var(--colour-text-secondary);
-  font-weight: 600;
-  font-size: 1rem;
-  border-bottom: 3px solid transparent;
-  margin-bottom: -2px;
-  min-height: 44px;
-  transition: all 0.15s;
-  white-space: nowrap;
-  flex-shrink: 0;
-}
-
-.tab.active {
-  color: var(--colour-accent);
-  border-bottom-color: var(--colour-accent);
-}
-
-.tab:hover {
-  color: var(--colour-accent);
-}
-
-/* ============================================
-   29. PROGRESS INDICATOR
-   ============================================ */
-.progress-indicator {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-sm);
-  margin-bottom: var(--spacing-lg);
-}
-
-.progress-steps {
-  display: flex;
-  justify-content: space-between;
-  gap: var(--spacing-sm);
-}
-
-.progress-step {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-  flex: 1;
-  text-align: center;
-}
-
-.progress-step-number {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  background-color: var(--colour-border-light);
-  color: var(--colour-text-secondary);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 700;
-  font-size: 1rem;
-}
-
-.progress-step.active .progress-step-number {
-  background-color: var(--colour-accent);
-  color: #FFFFFF;
-}
-
-.progress-step.completed .progress-step-number {
-  background-color: var(--colour-success);
-  color: #FFFFFF;
-}
-
-.progress-step-label {
-  font-size: 0.875rem;
-  color: var(--colour-text-secondary);
-}
-
-.progress-step.active .progress-step-label {
-  color: var(--colour-accent);
-  font-weight: 600;
-}
-
-.progress-bar {
-  height: 4px;
-  background-color: var(--colour-border-light);
-  border-radius: 2px;
-  overflow: hidden;
-}
-
-.progress-bar-fill {
-  height: 100%;
-  background-color: var(--colour-accent);
-  transition: width 0.3s;
-}
-
-/* ============================================
-   30. BREADCRUMBS
-   ============================================ */
-.breadcrumbs {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 0.875rem;
-  color: var(--colour-text-secondary);
-  margin-bottom: var(--spacing-md);
-  flex-wrap: wrap;
-}
-
-.breadcrumb-item {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.breadcrumb-current {
-  color: var(--colour-text-primary);
-  font-weight: 600;
-}
-
-.breadcrumb-sep {
-  color: var(--colour-border);
-}
-
-/* ============================================
-   31. TOOLTIP
-   ============================================ */
-.tooltip-wrapper {
-  position: relative;
-  display: inline-flex;
-}
-
-.tooltip {
-  position: absolute;
-  background-color: var(--colour-text-primary);
-  color: #FFFFFF;
-  padding: 6px 10px;
-  border-radius: var(--radius-sm);
-  font-size: 0.875rem;
-  white-space: nowrap;
-  z-index: 100;
-  pointer-events: none;
-}
-
-.tooltip-top { bottom: 100%; left: 50%; transform: translateX(-50%) translateY(-6px); }
-.tooltip-bottom { top: 100%; left: 50%; transform: translateX(-50%) translateY(6px); }
-
-/* ============================================
-   32. ACCORDION
-   ============================================ */
-.accordion {
-  border: 1px solid var(--colour-border);
-  border-radius: var(--radius-md);
-  overflow: hidden;
-  background-color: var(--colour-surface);
-}
-
-.accordion-item {
-  border-bottom: 1px solid var(--colour-border-light);
-}
-
-.accordion-item:last-child { border-bottom: none; }
-
-.accordion-header {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: var(--spacing-md);
-  background: none;
-  font-size: 1rem;
-  font-weight: 600;
-  color: var(--colour-text-primary);
-  text-align: left;
-  min-height: 44px;
-}
-
-.accordion-header:hover {
-  background-color: var(--colour-background);
-}
-
-.accordion-body {
-  padding: var(--spacing-md);
-  background-color: var(--colour-background);
-  font-size: 1rem;
-}
-
-/* ============================================
-   33. NOTIFICATION BELL (legacy)
-   ============================================ */
-.notification-bell {
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 40px;
-  height: 40px;
-  border-radius: var(--radius-md);
-  color: var(--colour-text-primary);
-  font-size: 1.125rem;
-}
-
-.notification-bell:hover {
-  background-color: var(--colour-background);
-}
-
-.notification-count {
-  position: absolute;
-  top: 4px;
-  right: 4px;
-  background-color: var(--colour-error);
-  color: #FFFFFF;
-  border-radius: 999px;
-  min-width: 18px;
-  height: 18px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.625rem;
-  font-weight: 700;
-  padding: 0 4px;
-}
-
-/* ============================================
    34. ACCESSIBILITY — FOCUS STATES
    ============================================ */
 button:focus-visible,
@@ -2232,12 +1806,6 @@ textarea:focus-visible,
   gap: 12px;
   padding: 16px;
   min-height: 90px;
-}
-
-.stat-icon {
-  font-size: 1.5rem;
-  color: var(--colour-accent);
-  flex-shrink: 0;
 }
 
 .stat-body {
@@ -2414,10 +1982,6 @@ textarea:focus-visible,
   .signature-confirm-actions .btn,
   .facial-actions .btn {
     width: 100%;
-  }
-
-  .progress-steps {
-    flex-direction: column;
   }
 
   .webcam-view,
@@ -2881,7 +2445,6 @@ textarea:focus-visible,
   .app-shell,
   .app-main,
   .app-content,
-  .page-wrapper,
   .page-content,
   body {
     display: block !important;
@@ -3233,6 +2796,7 @@ textarea:focus-visible,
   background-color: transparent;
   text-decoration: none;
   transition: background-color 0.15s;
+  flex-shrink: 0;
 }
 
 .header-back-btn:hover,
@@ -3241,13 +2805,40 @@ textarea:focus-visible,
   text-decoration: none;
 }
 
+.header-logout-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background-color 0.15s;
+}
+
+.header-logout-btn:hover {
+  background-color: var(--colour-background);
+}
+
 .password-toggle {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
   width: auto;
   min-width: 60px;
+  height: 36px;
   padding: 0 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--colour-text-secondary);
+  border-radius: var(--radius-sm);
   font-size: 0.875rem;
   font-weight: 700;
-  color: var(--colour-text-secondary);
+  background: transparent;
+}
+
+.password-toggle:hover {
+  color: var(--colour-accent);
+  background-color: var(--colour-border-light);
 }
 
 .document-thumb-label {
@@ -3265,6 +2856,17 @@ textarea:focus-visible,
   font-size: 0.875rem;
   font-weight: 700;
   color: var(--colour-text-secondary);
+  height: 36px;
+  border-radius: var(--radius-md);
+  background: transparent;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.alert-close:hover,
+.modal-close:hover {
+  background-color: var(--colour-background);
 }
 
 .document-preview-actions button {
@@ -3489,16 +3091,34 @@ textarea:focus-visible,
   body * {
     visibility: hidden;
   }
-  
-  .print-container, .print-container * {
+
+  .print-container,
+  .print-container * {
     visibility: visible;
   }
-  
+
   .print-container {
     position: absolute;
     left: 0;
     top: 0;
     width: 100%;
+  }
+
+  .printable-profile,
+  .printable-profile * {
+    visibility: visible;
+  }
+
+  .printable-profile {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+  }
+
+  .printable-profile .form-actions,
+  .printable-profile .header-back-btn {
+    display: none !important;
   }
 
   .no-print {
@@ -3513,7 +3133,7 @@ textarea:focus-visible,
   padding: 20mm;
   margin: 0 auto;
   background: white;
-  box-shadow: 0 0 10px rgba(0,0,0,0.1);
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
   box-sizing: border-box;
   font-family: 'Times New Roman', Times, serif;
   color: #000;
@@ -3537,7 +3157,7 @@ textarea:focus-visible,
   margin: 20px auto;
   background: white;
   border-radius: 3mm;
-  box-shadow: 0 0 10px rgba(0,0,0,0.2);
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
   box-sizing: border-box;
   font-family: Arial, sans-serif;
   position: relative;
@@ -3617,7 +3237,6 @@ textarea:focus-visible,
 
 .cert-fields td:last-child {
   font-weight: bold;
-  text-transform: uppercase;
 }
 
 .cert-footer {
@@ -3639,6 +3258,7 @@ textarea:focus-visible,
   border-top: 1px solid #000;
   padding-top: 5px;
 }
+
 /* ============================================
    EMPLOYMENT HISTORY (Group C)
    ============================================ */

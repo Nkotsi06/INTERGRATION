@@ -36,9 +36,10 @@ async function findByCitizen(citizenId) {
   return result.rows;
 }
 
+// Returns every row. No silent LIMIT.
 async function findAll() {
   const result = await query(
-    'SELECT * FROM marriage_certificates ORDER BY created_at DESC LIMIT 200'
+    'SELECT * FROM marriage_certificates ORDER BY created_at DESC'
   );
   return result.rows;
 }

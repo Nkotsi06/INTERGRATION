@@ -16,7 +16,7 @@ async function list(req, res, next) {
 
 async function exportCsv(req, res, next) {
   try {
-    const csv = await auditService.exportCsv({
+    const result = await auditService.exportCsvWithMeta({
       user: req.query.user,
       action: req.query.action,
       from: req.query.from,
@@ -24,7 +24,10 @@ async function exportCsv(req, res, next) {
     });
     res.setHeader('Content-Type', 'text/csv');
     res.setHeader('Content-Disposition', 'attachment; filename="audit-logs.csv"');
-    res.send(csv);
+    if (result.truncated) {
+      res.setHeader('X-Audit-Truncated', 'true');
+    }
+    res.send(result.csv);
   } catch (e) { next(e); }
 }
 

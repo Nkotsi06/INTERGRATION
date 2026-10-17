@@ -34,8 +34,12 @@ async function getRecent(limit) {
   return auditLogRepository.findRecent(limit);
 }
 
-async function exportCsv(filters) {
-  const rows = await auditLogRepository.findForExport(filters);
+// Builds the CSV from the repository's chunked fetch. Returns both
+// the CSV text and whether the export was truncated, so callers that
+// care can tell the user; callers that do not care can call the thin
+// wrapper below.
+async function exportCsvWithMeta(filters) {
+  const { rows, truncated } = await auditLogRepository.findForExport(filters);
 
   const header = ['Timestamp', 'User', 'Action', 'Record Type', 'Record ID', 'Result'];
   const escape = (val) => {
@@ -59,7 +63,25 @@ async function exportCsv(filters) {
     ].join(','));
   });
 
-  return lines.join('\n');
+  if (truncated) {
+    lines.push('');
+    lines.push([
+      escape('NOTE'),
+      escape(''),
+      escape('This export was truncated at 500,000 rows.'),
+      escape(''),
+      escape(''),
+      escape('Narrow the date range to obtain the complete set.'),
+    ].join(','));
+  }
+
+  return { csv: lines.join('\n'), truncated };
 }
 
-module.exports = { log, list, getRecent, exportCsv };
+// Backward-compatible: callers that only want the CSV text.
+async function exportCsv(filters) {
+  const { csv } = await exportCsvWithMeta(filters);
+  return csv;
+}
+
+module.exports = { log, list, getRecent, exportCsv, exportCsvWithMeta };

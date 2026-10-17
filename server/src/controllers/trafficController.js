@@ -4,6 +4,13 @@ function citizenIdFrom(req) {
   return req.session?.verifiedCitizenId || req.user?.citizenId || null;
 }
 
+// Staff dashboard statistics (all values come from the database).
+async function getStaffStats(req, res, next) {
+  try {
+    res.json(await trafficService.getStaffStats());
+  } catch (e) { next(e); }
+}
+
 // Licences
 async function getLicence(req, res, next) {
   try { res.json(await trafficService.getLicence(citizenIdFrom(req))); } catch (e) { next(e); }
@@ -83,6 +90,7 @@ async function getApplicationByReference(req, res, next) {
 }
 
 module.exports = {
+  getStaffStats,
   getLicence, renewLicence, bookDrivingTest, getAppointments, cancelAppointment,
   getStaffApplications, processApplication, issueLicence,
   getVehicles, registerVehicle, updateVehicle, deleteVehicle,

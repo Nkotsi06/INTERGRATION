@@ -1,5 +1,13 @@
 const { query } = require('../config/database');
 
+// Export ceiling: exports larger than this are truncated to protect
+// server memory. When truncation happens the CSV is suffixed with a
+// note in the final row so the person who opens the file knows it is
+// incomplete. This is the only place in the audit repository that
+// caps results, and it is not silent.
+const EXPORT_BATCH_SIZE = 1000;
+const EXPORT_MAX_ROWS = 500000;
+
 async function create(log) {
   const result = await query(
     `INSERT INTO audit_logs
@@ -57,7 +65,7 @@ async function findAll({ user, action, from, to, page = 1, pageSize = 20 } = {})
            result, ip_address, user_agent, created_at
     FROM audit_logs
     ${whereClause}
-    ORDER BY created_at DESC
+    ORDER BY created_at DESC, id ASC
     LIMIT $${params.length + 1}
     OFFSET $${params.length + 2}
   `;
@@ -75,17 +83,38 @@ async function findAll({ user, action, from, to, page = 1, pageSize = 20 } = {})
   };
 }
 
+// Returns every matching row for the CSV export, chunked so memory
+// stays bounded. The final row tells the CSV generator whether the
+// result was truncated, so the exported file is honest about its
+// own completeness.
 async function findForExport({ user, action, from, to } = {}) {
   const { whereClause, params } = buildFilters({ user, action, from, to });
-  const result = await query(
-    `SELECT created_at, username, action, record_type, record_id, result
-     FROM audit_logs
-     ${whereClause}
-     ORDER BY created_at DESC
-     LIMIT 10000`,
-    params
-  );
-  return result.rows;
+
+  const rows = [];
+  let offset = 0;
+  let truncated = false;
+
+  while (true) {
+    const batchSql = `
+      SELECT created_at, username, action, record_type, record_id, result
+      FROM audit_logs
+      ${whereClause}
+      ORDER BY created_at DESC, id ASC
+      LIMIT $${params.length + 1}
+      OFFSET $${params.length + 2}
+    `;
+    const batch = await query(batchSql, [...params, EXPORT_BATCH_SIZE, offset]);
+    rows.push(...batch.rows);
+    if (batch.rows.length < EXPORT_BATCH_SIZE) break;
+    offset += EXPORT_BATCH_SIZE;
+
+    if (rows.length >= EXPORT_MAX_ROWS) {
+      truncated = true;
+      break;
+    }
+  }
+
+  return { rows, truncated };
 }
 
 async function findRecent(limit = 5) {

@@ -45,7 +45,6 @@ function facialMetaSatisfied(meta) {
   );
 }
 
-/* GROUP C — helper */
 function labelForEmployerType(code) {
   const map = {
     GOVERNMENT: 'Government',
@@ -72,7 +71,6 @@ function CompleteCitizenRecord() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
-  /* GROUP C — employment state */
   const [employment, setEmployment] = useState([]);
   const [employmentEditing, setEmploymentEditing] = useState(null);
   const [employmentError, setEmploymentError] = useState(null);
@@ -108,7 +106,6 @@ function CompleteCitizenRecord() {
             district: '',
             postalAddress: c.address || '',
           });
-          /* GROUP C — populate employment history */
           setEmployment(c.employmentHistory || []);
           return;
         }
@@ -147,6 +144,7 @@ function CompleteCitizenRecord() {
     return Object.keys(next).length === 0;
   };
 
+  // Edit mode does not require a new biometric capture.
   const facialPresent = !!biometrics?.facialImage;
   const facialAccepted = facialMetaSatisfied(biometrics?.facialMeta);
   const biometricsReady = isEditMode || (facialPresent && facialAccepted);
@@ -204,7 +202,6 @@ function CompleteCitizenRecord() {
     navigate('/home-affairs/registrations');
   };
 
-  /* GROUP C — employment handlers */
   const startAddEmployment = () => {
     if (!existingCitizenId) return;
     setEmploymentError(null);
@@ -415,8 +412,6 @@ function CompleteCitizenRecord() {
         </div>
       </div>
 
-      {/* GROUP C — Employment history (edit mode only; new registrations
-          have no citizen record yet, so nothing to attach history to). */}
       {isEditMode && (
         <div className="form-section">
           <div className="form-section-header">

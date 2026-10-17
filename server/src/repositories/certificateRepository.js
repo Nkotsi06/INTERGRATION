@@ -79,7 +79,6 @@ async function create(type, { applicationId, citizenId, certificateNumber, formD
   return result.rows[0];
 }
 
-// ─── NEW: partial update using the same field map ─────────────────────────
 async function updateFields(type, id, data) {
   const table = TABLE_BY_TYPE[type];
   if (!table) throw new Error(`Unknown certificate type: ${type}`);
@@ -108,7 +107,6 @@ async function updateFields(type, id, data) {
   );
   return result.rows[0];
 }
-// ─────────────────────────────────────────────────────────────────────────
 
 async function findByApplication(type, applicationId) {
   const table = TABLE_BY_TYPE[type];
@@ -134,6 +132,10 @@ async function findByCitizen(type, citizenId) {
   return result.rows;
 }
 
+// Returns every row that matches the filters. No silent LIMIT.
+// The Home Affairs Certificates page paginates in the browser
+// (25 rows per page in HACertificates.jsx), so the server returns
+// the full filtered set.
 async function findAll(type, filters = {}) {
   const table = TABLE_BY_TYPE[type];
   const conditions = [];
@@ -154,7 +156,7 @@ async function findAll(type, filters = {}) {
 
   const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
   const result = await query(
-    `SELECT * FROM ${table} ${where} ORDER BY created_at DESC LIMIT 500`,
+    `SELECT * FROM ${table} ${where} ORDER BY created_at DESC`,
     params
   );
   return result.rows;

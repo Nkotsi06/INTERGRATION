@@ -12,6 +12,7 @@ const paymentService = require('./paymentService');
 const userRepository = require('../repositories/userRepository');
 const { generateReference } = require('../utils/referenceGenerator');
 const auditService = require('./auditService');
+const { query } = require('../config/database');
 
 async function notifyCitizen(citizenId, title, message) {
   if (!citizenId) return;
@@ -30,6 +31,39 @@ function notFound(message) {
   return err;
 }
 
+// ─── Dashboard stats ──────────────────────────────────────────────
+// All values come from database queries, not from the client.
+// - pending: applications in the traffic service queue awaiting a
+//   staff decision.
+// - todayAppointments: driving test bookings scheduled for today.
+// - licencesIssued: total driver licences recorded.
+async function getStaffStats() {
+  const [pending, todayAppointments, licencesIssued] = await Promise.all([
+    query(
+      `SELECT COUNT(*)::int AS c
+       FROM applications
+       WHERE service = 'TRAFFIC'
+         AND status IN ('SUBMITTED', 'UNDER_REVIEW')`
+    ),
+    query(
+      `SELECT COUNT(*)::int AS c
+       FROM driving_tests
+       WHERE test_date = CURRENT_DATE
+         AND status = 'BOOKED'`
+    ),
+    query(
+      `SELECT COUNT(*)::int AS c
+       FROM driver_licences`
+    ),
+  ]);
+
+  return {
+    pending: pending.rows[0].c,
+    todayAppointments: todayAppointments.rows[0].c,
+    licencesIssued: licencesIssued.rows[0].c,
+  };
+}
+
 // ─── Licence ──────────────────────────────────────────────────────────
 async function getLicence(citizenId) {
   const licence = await driverLicenceRepository.findByCitizen(citizenId);
@@ -43,7 +77,6 @@ async function renewLicence(citizenId, user, data = {}) {
     data: { type: 'LICENCE_RENEWAL' },
   });
 
-  // Record the payment in the new payments table.
   await paymentService.recordPayment({
     citizenId,
     ministry: 'TRAFFIC',
@@ -258,13 +291,10 @@ async function updateVehicle(citizenId, id, data, user) {
 
 async function deleteVehicle(citizenId, id, user) {
   const vehicle = await vehicleRepository.findById(id);
-  if (!vehicle || vehicle.citizen_id !== citizenId) throw notFound('Vehicle not found');
-  await vehicleRepository.remove(id);
-  await auditService.log({
-    userId: user.userId, username: user.username,
-    action: 'VEHICLE_DELETED',
-    recordType: 'VEHICLE', recordId: id, result: 'SUCCESS',
-  });
+  if (!vehicle || vehicle.citizen_id !== citizenId) {
+    throw notFound('Vehicle not found');
+  }
+  await vehicleRepository.removeWithGuard(id, user.userId);
 }
 
 // ─── Inspections ─────────────────────────────────────────────────────
@@ -532,6 +562,7 @@ async function getApplicationByReference(referenceNumber, citizenId) {
 }
 
 module.exports = {
+  getStaffStats,
   getLicence, renewLicence, bookDrivingTest, getAppointments, cancelAppointment,
   getStaffApplications, processApplication,
   getVehicles, registerVehicle, updateVehicle, deleteVehicle,

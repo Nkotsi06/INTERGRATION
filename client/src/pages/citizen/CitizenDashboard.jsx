@@ -35,9 +35,6 @@ function CitizenDashboard() {
 
   const isVerified = !!profile?.isVerified;
 
-  // Every ministry card takes the citizen to the services catalogue for that
-  // ministry. /home-affairs/dashboard is staff-only, so routing there from the
-  // citizen dashboard is what caused the bounce back to /citizen/dashboard.
   const handleMinistryClick = (ministry) => {
     if (!isVerified || !session?.identityVerified) {
       navigate('/citizen/verify', { state: { targetMinistry: ministry.code } });
@@ -79,7 +76,7 @@ function CitizenDashboard() {
 
         {showSkeleton && <StatsSkeleton count={6} />}
 
-        <div className="services-grid">
+        <div className="ministry-grid">
           {ministries.map((ministry) => (
             <Card
               key={ministry.code}

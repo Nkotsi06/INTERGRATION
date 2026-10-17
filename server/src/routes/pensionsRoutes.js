@@ -25,6 +25,11 @@ router.get('/verifications',
   authMiddleware, verificationMiddleware,
   pensionsController.getVerificationHistory);
 
+// Staff — dashboard stats  ← NEW
+router.get('/staff/stats',
+  authMiddleware, roleMiddleware(['PENSIONS']),
+  pensionsController.getStaffStats);
+
 // Staff
 router.get('/death-check',
   authMiddleware, roleMiddleware(['PENSIONS']),

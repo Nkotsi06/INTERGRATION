@@ -2,12 +2,14 @@ const citizenService = require('../services/citizenService');
 const applicationRepository = require('../repositories/applicationRepository');
 const documentService = require('../services/documentService');
 const notificationService = require('../services/notificationService');
-const { query } = require('../config/database'); // ← Added to support custom joins
-const path = require('path');
+const { query } = require('../config/database');
 const fs = require('fs');
 
+// The verification state lives in the JWT (req.user.verifiedCitizenId),
+// not in req.session. express-session is not mounted on the app, so
+// the old `req.session?.verifiedCitizenId` was always undefined.
 function citizenIdFrom(req) {
-  return req.session?.verifiedCitizenId || req.user?.citizenId || null;
+  return req.user?.verifiedCitizenId || req.user?.citizenId || null;
 }
 
 async function getProfile(req, res, next) {
@@ -41,36 +43,37 @@ async function getApplications(req, res, next) {
   try {
     const citizenId = citizenIdFrom(req);
     if (!citizenId) return res.json([]);
-    
-    // Join with branches to get the branch name for the tracking UI
+
     const result = await query(
       `SELECT a.*, b.name as branch_name, b.address as branch_address
        FROM applications a
        LEFT JOIN branches b ON b.id::text = (a.data->'formData'->>'branchId')
-       WHERE a.citizen_id = $1 
+       WHERE a.citizen_id = $1
        ORDER BY a.submitted_at DESC`,
       [citizenId]
     );
-    
-    // Format the branch name into the JSON data for the frontend
-    const apps = result.rows.map(r => ({
+
+    const apps = result.rows.map((r) => ({
       ...r,
       data: {
         ...r.data,
         formData: {
           ...r.data.formData,
           branchName: r.branch_name,
-          branchAddress: r.branch_address
-        }
-      }
+          branchAddress: r.branch_address,
+        },
+      },
     }));
-    
+
     res.json(apps);
   } catch (err) {
     next(err);
   }
 }
 
+// Ownership check is strict. If the citizenId is missing, or the
+// application does not belong to this citizen, return 404.
+// Never return a row that belongs to a different citizen.
 async function getApplicationByRef(req, res, next) {
   try {
     const citizenId = citizenIdFrom(req);

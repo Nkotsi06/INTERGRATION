@@ -36,7 +36,10 @@ router.get('/vehicle-licences', authMiddleware, c.getVehicleLicences);
 router.post('/permits', authMiddleware, c.applyTransportPermit);
 router.get('/permits', authMiddleware, c.getTransportPermits);
 
-// Staff
+// Staff — dashboard stats  ← NEW
+router.get('/staff/stats', authMiddleware, roleMiddleware(['TRAFFIC']), c.getStaffStats);
+
+// Staff — processing
 router.get('/staff/applications', authMiddleware, roleMiddleware(['TRAFFIC']), c.getStaffApplications);
 router.put('/staff/applications/:id', authMiddleware, roleMiddleware(['TRAFFIC']), c.processApplication);
 router.post('/issue-licence/:id', authMiddleware, roleMiddleware(['TRAFFIC']), c.issueLicence);

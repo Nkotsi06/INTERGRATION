@@ -4,11 +4,39 @@ const notificationService = require('./notificationService');
 const userRepository = require('../repositories/userRepository');
 const { generateCaseNumber, generateReference } = require('../utils/referenceGenerator');
 const auditService = require('./auditService');
+const { query } = require('../config/database');
 
 async function notifyCitizen(citizenId, title, message) {
   if (!citizenId) return;
   const user = await userRepository.findByCitizenId(citizenId);
   if (user) await notificationService.notify(user.id, title, message);
+}
+
+// ─── Dashboard stats ──────────────────────────────────────────────
+async function getStaffStats() {
+  const [openCases, closedCases, pendingUpdates] = await Promise.all([
+    query(
+      `SELECT COUNT(*)::int AS c
+       FROM police_cases
+       WHERE status IN ('SUBMITTED', 'UNDER_INVESTIGATION', 'UPDATED')`
+    ),
+    query(
+      `SELECT COUNT(*)::int AS c
+       FROM police_cases
+       WHERE status = 'CLOSED'`
+    ),
+    query(
+      `SELECT COUNT(*)::int AS c
+       FROM criminal_records
+       WHERE status = 'PENDING'`
+    ),
+  ]);
+
+  return {
+    openCases: openCases.rows[0].c,
+    closedCases: closedCases.rows[0].c,
+    pendingUpdates: pendingUpdates.rows[0].c,
+  };
 }
 
 // ─── Cases ────────────────────────────────────────────────────────────
@@ -83,8 +111,6 @@ async function requestClearance(citizenId, data, user) {
     throw err;
   }
 
-  // Clearance requests are stored as police_cases with case_type CLEARANCE.
-  // This keeps everything in one table and one workflow.
   const referenceNumber = await generateReference('POLICE_CASE');
 
   const created = await policeCaseRepository.create({
@@ -180,6 +206,7 @@ async function processCriminalRecord(id, action, data, staffUser) {
 }
 
 module.exports = {
+  getStaffStats,
   reportCase, getMyCases, getCaseByNumber, getStaffCases, updateCase, addCaseUpdate,
   requestClearance,
   requestCriminalRecord, getMyCriminalRecords, getStaffCriminalRecords, processCriminalRecord,

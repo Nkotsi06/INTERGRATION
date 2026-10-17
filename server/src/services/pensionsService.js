@@ -6,6 +6,7 @@ const citizenRepository = require('../repositories/citizenRepository');
 const notificationService = require('./notificationService');
 const userRepository = require('../repositories/userRepository');
 const auditService = require('./auditService');
+const { query } = require('../config/database');
 
 async function notifyCitizen(citizenId, title, message) {
   if (!citizenId) return;
@@ -13,7 +14,39 @@ async function notifyCitizen(citizenId, title, message) {
   if (user) await notificationService.notify(user.id, title, message);
 }
 
-// ── Age helper ────────────────────────────────────────────────────
+// ─── Dashboard stats ──────────────────────────────────────────────
+async function getStaffStats() {
+  const [activePensioners, verificationsDue, paymentsProcessed] = await Promise.all([
+    query(
+      `SELECT COUNT(*)::int AS c
+       FROM pension_records
+       WHERE payment_status = 'ACTIVE'`
+    ),
+    // "Due" = no verification in the last 180 days.
+    query(
+      `SELECT COUNT(*)::int AS c
+       FROM pension_records pr
+       WHERE pr.payment_status = 'ACTIVE'
+         AND NOT EXISTS (
+           SELECT 1 FROM pension_verifications pv
+           WHERE pv.citizen_id = pr.citizen_id
+             AND pv.verified_at > (NOW() - INTERVAL '180 days')
+         )`
+    ),
+    // "Processed" = verification rows on record, a direct count.
+    query(
+      `SELECT COUNT(*)::int AS c
+       FROM pension_verifications`
+    ),
+  ]);
+
+  return {
+    activePensioners: activePensioners.rows[0].c,
+    verificationsDue: verificationsDue.rows[0].c,
+    paymentsProcessed: paymentsProcessed.rows[0].c,
+  };
+}
+
 function yearsBetween(dob, now = new Date()) {
   if (!dob) return null;
   const birth = new Date(dob);
@@ -25,27 +58,6 @@ function yearsBetween(dob, now = new Date()) {
   return age;
 }
 
-// ── Eligibility ───────────────────────────────────────────────────
-// Decides, from the database, whether the citizen qualifies for a
-// pension right now. Reads the rules from `pension_rules` and the
-// citizen's age from `citizens.date_of_birth`; reads government
-// service from `citizen_employment_history`.
-//
-// Result shape:
-//   {
-//     eligible: boolean,
-//     category: 'OLD_AGE' | 'CIVIL_SERVICE' | null,
-//     reason: 'ELIGIBLE' | 'NO_RECORD' | 'TOO_YOUNG' |
-//             'NO_GOVERNMENT_SERVICE' | 'INSUFFICIENT_SERVICE' |
-//             'DEATH_CERTIFICATE',
-//     message: human-readable explanation,
-//     currentAge: integer | null,
-//     minimumAge: integer,
-//     hasGovernmentService: boolean,
-//     governmentServiceYears: integer,
-//     minimumServiceYears: integer,
-//     evaluatedCategories: [ { category, ...detail } ]
-//   }
 async function assessEligibility(citizenId) {
   const citizen = await citizenRepository.findById(citizenId);
   if (!citizen) {
@@ -111,8 +123,6 @@ async function assessEligibility(citizenId) {
     };
   }
 
-  // Pick the single best explanation. Prefer "too young" when every
-  // category is blocked by age; otherwise explain the service gap.
   const oldestMinAge = Math.max(...evaluatedCategories.map((c) => c.minimumAge));
   const anyAgeMet = evaluatedCategories.some((c) => c.ageMet);
 
@@ -187,12 +197,10 @@ function humanCategory(code) {
   return 'pension';
 }
 
-// ── Rules (for staff dashboards) ──────────────────────────────────
 async function getRules() {
   return pensionRepository.findRulesForCategory();
 }
 
-// ── Citizen-facing reads ─────────────────────────────────────────
 async function getPensionInfo(citizenId) {
   return pensionRepository.findByCitizen(citizenId);
 }
@@ -202,13 +210,6 @@ async function checkDeathCertificate(nationalId) {
   return dc ? { found: true, date: dc.date_of_death } : { found: false };
 }
 
-// ── Life verification ────────────────────────────────────────────
-// Two gates:
-//   1. The submitted answer must match the citizen's recorded place
-//      of birth (case-insensitive, trimmed). This is the security
-//      check the master prompt flagged as missing.
-//   2. The citizen must be eligible for at least one pension
-//      category. If not, refuse with the specific eligibility reason.
 async function verifyExistence(citizenId, answer, user) {
   const citizen = await citizenRepository.findById(citizenId);
   if (!citizen) {
@@ -285,6 +286,7 @@ async function processVerification(id, action, staffUser) {
 }
 
 module.exports = {
+  getStaffStats,
   assessEligibility,
   getRules,
   getPensionInfo,
