@@ -1,5 +1,6 @@
 const { query } = require('../config/database');
 const notificationService = require('./notificationService');
+const certificateService = require('./certificateService');
 const userRepository = require('../repositories/userRepository');
 const auditService = require('./auditService');
 
@@ -50,20 +51,33 @@ async function updateStatus(id, newStatus, staffUser) {
     throw new Error('This application has already been collected and cannot be changed.');
   }
 
-  // Update application
   await query(
     `UPDATE applications SET status = $1, updated_at = NOW() WHERE id = $2`,
     [newStatus, id]
   );
 
-  // Log to history
   await query(
     `INSERT INTO application_status_history (application_id, status, changed_by, notes)
      VALUES ($1, $2, $3, $4)`,
     [id, newStatus, staffUser.userId, `Status changed to ${newStatus} by staff.`]
   );
 
-  // Notify Citizen
+  // When a National ID application reaches COLLECTED, persist the card
+  // in national_id_cards so it appears in the citizen's My Documents.
+  if (newStatus === 'COLLECTED') {
+    try {
+      await certificateService.createNationalIdCardFromApplication({
+        application: app,
+        staffUser,
+      });
+    } catch (err) {
+      // Never let the card creation break the collection recording;
+      // the officer's action succeeded. Log and continue.
+      // eslint-disable-next-line no-console
+      console.error('National ID card creation failed:', err.message);
+    }
+  }
+
   const owner = await userRepository.findByCitizenId(app.citizen_id);
   if (owner) {
     let message = `Your application ${app.reference_number} is now ${newStatus.replace(/_/g, ' ')}.`;
@@ -102,6 +116,19 @@ async function recordCollection(id, data, staffUser) {
      VALUES ($1, 'COLLECTED', $2, $3)`,
     [id, staffUser.userId, `Collected by ${data.collectedByName}. ID Checked: ${data.idChecked ? 'Yes' : 'No'}.`]
   );
+
+  // Same card-creation hook for the "record collection" path.
+  if (app.data?.serviceCode) {
+    try {
+      await certificateService.createNationalIdCardFromApplication({
+        application: app,
+        staffUser,
+      });
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error('National ID card creation failed:', err.message);
+    }
+  }
 
   const owner = await userRepository.findByCitizenId(app.citizen_id);
   if (owner) {
