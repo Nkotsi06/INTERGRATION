@@ -7,7 +7,7 @@ import Alert from '../../components/common/Alert';
 import FormActions from '../../components/common/FormActions';
 import DocumentUpload from '../../components/documents/DocumentUpload';
 import { TableSkeleton } from '../../components/common/SkeletonLoader';
-import { getServiceById, applyForService } from '../../api/serviceApi';
+import { getServiceById, applyForService, getPublicBranches } from '../../api/serviceApi';
 import { uploadDocument } from '../../api/documentApi';
 import { getEligibility } from '../../api/pensionsApi';
 import { useNotification } from '../../context/NotificationContext';
@@ -19,7 +19,8 @@ function ServiceApply() {
   const { success } = useNotification();
 
   const [service, setService] = useState(null);
-  const [formData, setFormData] = useState({ method: 'MOBILE_MONEY', mobile: '' });
+  const [formData, setFormData] = useState({ method: 'MOBILE_MONEY', mobile: '', branchId: '' });
+  const [branches, setBranches] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
@@ -49,6 +50,23 @@ function ServiceApply() {
   }, [id]);
 
   useEffect(() => {
+    if (service?.ministry !== 'HOME_AFFAIRS') return undefined;
+    let cancelled = false;
+    getPublicBranches('HOME_AFFAIRS')
+      .then((data) => {
+        if (!cancelled) setBranches(Array.isArray(data) ? data : []);
+      })
+      .catch((err) => {
+        if (!cancelled) {
+          setError(err.message || 'Could not load collection branches.');
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [service]);
+
+  useEffect(() => {
     if (!isPensionService) return undefined;
     let cancelled = false;
     async function load() {
@@ -71,6 +89,10 @@ function ServiceApply() {
   const handleSubmit = async () => {
     setError(null);
 
+    if (service?.ministry === 'HOME_AFFAIRS' && !formData.branchId) {
+      setError('Please choose a collection branch.');
+      return;
+    }
     if (needsPayment && formData.method === 'MOBILE_MONEY' && !formData.mobile) {
       setError('Please enter a mobile number for the payment prompt.');
       return;
@@ -149,6 +171,9 @@ function ServiceApply() {
 
   const fields = Array.isArray(service.form_fields) ? service.form_fields : [];
   const docs = Array.isArray(service.required_documents) ? service.required_documents : [];
+  const visibleDocs = service.ministry === 'HOME_AFFAIRS'
+    ? docs.filter((code) => !['NATIONAL_ID', 'BIRTH_CERTIFICATE'].includes(code))
+    : docs;
 
   if (reference) {
     return (
@@ -223,13 +248,30 @@ function ServiceApply() {
               )}
             </div>
           ))}
+          {service.ministry === 'HOME_AFFAIRS' && (
+            <div className="form-grid-full">
+              {branches.length === 0 && (
+                <p className="text-muted">No Home Affairs collection branches are available.</p>
+              )}
+              <Select
+                label="Collection branch"
+                value={formData.branchId}
+                onChange={(e) => update('branchId', e.target.value)}
+                options={branches.map((branch) => ({
+                  value: branch.id,
+                  label: `${branch.name}${branch.district ? ` — ${branch.district}` : ''}`,
+                }))}
+                required
+              />
+            </div>
+          )}
         </div>
       </div>
 
-      {docs.length > 0 && (
+      {visibleDocs.length > 0 && (
         <div className="form-section">
           <h3 className="form-section-title">Required documents</h3>
-          {docs.map((code) => (
+          {visibleDocs.map((code) => (
             <DocumentUpload
               key={code}
               documentType={code}

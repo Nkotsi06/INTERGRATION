@@ -22,6 +22,12 @@ async function getMyApplications(req, res, next) {
   } catch (err) { next(err); }
 }
 
+async function getCurrentPassport(req, res, next) {
+  try {
+    res.json(await passportService.getCurrentPassport(req.session.verifiedCitizenId));
+  } catch (err) { next(err); }
+}
+
 async function getApplicationByRef(req, res, next) {
   try {
     const app = await passportService.getApplicationByRef(
@@ -72,6 +78,7 @@ module.exports = {
   getStaffStats,
   apply,
   getMyApplications,
+  getCurrentPassport,
   getApplicationByRef,
   getStaffApplications,
   processApplication,

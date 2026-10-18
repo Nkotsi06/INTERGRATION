@@ -12,4 +12,8 @@ async function getTranslations(req, res, next) {
   try { res.json(await settingsService.getTranslations(req.params.langCode)); } catch (err) { next(err); }
 }
 
-module.exports = { getPublic, getLanguages, getTranslations };
+async function getPublicBranches(req, res, next) {
+  try { res.json(await settingsService.getPublicBranches(req.query.ministry)); } catch (err) { next(err); }
+}
+
+module.exports = { getPublic, getLanguages, getTranslations, getPublicBranches };

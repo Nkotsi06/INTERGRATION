@@ -54,6 +54,16 @@ function Services() {
   }, [ministry]);
 
   const ministryLabel = MINISTRY_LABELS[ministry] || ministry;
+  const legacyRoutes = {
+    PASSPORT_APPLY: '/passport/apply',
+    PASSPORT_NEW: '/passport/apply',
+    PASSPORT_RENEWAL: '/passport/apply?type=renewal',
+    DRIVING_LICENCE: '/traffic/licence/driving',
+    LICENCE_RENEWAL: '/traffic/renew',
+    MY_VEHICLES: '/traffic/vehicles',
+    MY_VEHICLE_LICENCES: '/traffic/vehicle-licences',
+    MY_TRANSPORT_PERMITS: '/traffic/permits',
+  };
 
   // Only APPLICATION services appear as cards. Information services
   // (immigration, citizenship, refugee, livestock, document verify)
@@ -104,7 +114,10 @@ function Services() {
                 <Button
                   variant="primary"
                   onClick={() =>
-                    navigate(`/citizen/services/${service.id}/apply`)
+                    navigate(
+                      legacyRoutes[service.code] ||
+                        `/citizen/services/${service.id}/apply`
+                    )
                   }
                 >
                   Apply

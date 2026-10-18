@@ -811,6 +811,12 @@ CREATE TABLE passport_applications (
   citizen_id UUID NOT NULL REFERENCES citizens(id) ON DELETE CASCADE,
   passport_type VARCHAR(20) NOT NULL,
   reason VARCHAR(200),
+  passport_number VARCHAR(30),
+  collection_office VARCHAR(100),
+  is_renewal BOOLEAN NOT NULL DEFAULT FALSE,
+  previous_passport_number VARCHAR(30),
+  issue_date DATE,
+  expiry_date DATE,
   status VARCHAR(30) DEFAULT 'SUBMITTED',
   created_at TIMESTAMP DEFAULT NOW()
 );
@@ -1312,6 +1318,10 @@ INSERT INTO services (ministry, code, name, description, service_type, is_enable
 ('TRAFFIC', 'DRIVERS_LICENCE_VIEW', 'View driving licence',
  'See your current driving licence and its status.', 'INFORMATION', TRUE, '[]'::jsonb, '[]'::jsonb, 0, 10),
 
+('TRAFFIC', 'DRIVING_LICENCE', 'Apply for a new driving licence',
+ 'Apply for a driving licence after passing your practical test.', 'APPLICATION', TRUE,
+ '[]'::jsonb, '[]'::jsonb, 300, 15),
+
 ('TRAFFIC', 'LICENCE_RENEWAL', 'Renew driving licence',
  'Renew an expiring driving licence.', 'APPLICATION', TRUE,
  '[{"key":"mobile","label":"Mobile number for payment","type":"text","required":true}]'::jsonb,
@@ -1566,6 +1576,63 @@ WHERE code = 'BIRTH_CERTIFICATE_APPLY';
 
 COMMIT;
 
+-- Passport numbers and renewal records
+CREATE SEQUENCE IF NOT EXISTS passport_number_seq START WITH 1;
+CREATE SEQUENCE IF NOT EXISTS driver_licence_number_seq START WITH 1;
+SELECT setval(
+  'driver_licence_number_seq',
+  GREATEST(
+    (SELECT last_value FROM driver_licence_number_seq),
+    COALESCE(
+      (SELECT MAX(substring(licence_number FROM '[0-9]+$')::bigint)
+       FROM driver_licences
+       WHERE licence_number LIKE 'DLN-%'),
+      0
+    ) + 1
+  ),
+  FALSE
+);
+ALTER TABLE passport_applications
+  ADD COLUMN IF NOT EXISTS passport_number VARCHAR(30),
+  ADD COLUMN IF NOT EXISTS collection_office VARCHAR(100),
+  ADD COLUMN IF NOT EXISTS is_renewal BOOLEAN NOT NULL DEFAULT FALSE,
+  ADD COLUMN IF NOT EXISTS previous_passport_number VARCHAR(30),
+  ADD COLUMN IF NOT EXISTS issue_date DATE,
+  ADD COLUMN IF NOT EXISTS expiry_date DATE;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_passport_applications_number
+  ON passport_applications(passport_number)
+  WHERE passport_number IS NOT NULL;
+
+-- These supporting records are retrieved from Home Affairs and must
+-- not be requested as citizen-uploaded documents.
+UPDATE services
+SET required_documents = (
+      SELECT COALESCE(jsonb_agg(doc), '[]'::jsonb)
+      FROM jsonb_array_elements_text(required_documents) AS doc
+      WHERE doc NOT IN ('NATIONAL_ID', 'BIRTH_CERTIFICATE')
+    ),
+    updated_at = NOW()
+WHERE ministry = 'HOME_AFFAIRS'
+  AND (
+    required_documents @> '["NATIONAL_ID"]'::jsonb
+    OR required_documents @> '["BIRTH_CERTIFICATE"]'::jsonb
+  );
+
+INSERT INTO services
+  (ministry, code, name, description, service_type, is_enabled,
+   form_fields, required_documents, fee, display_order)
+VALUES
+  ('TRAFFIC', 'DRIVING_LICENCE', 'Apply for a new driving licence',
+   'Apply for a driving licence after passing your practical test.',
+   'APPLICATION', TRUE, '[]'::jsonb, '[]'::jsonb, 300, 15)
+ON CONFLICT (ministry, code) DO UPDATE
+SET name = EXCLUDED.name,
+    description = EXCLUDED.description,
+    service_type = EXCLUDED.service_type,
+    is_enabled = EXCLUDED.is_enabled,
+    fee = EXCLUDED.fee,
+    updated_at = NOW();
+
 -- ================================================================
 -- 008_certificates_and_national_id_cards.sql
 -- ================================================================
@@ -1584,13 +1651,12 @@ COMMIT;
 --      certificateService.recordCertificateApplication.
 --
 --   2. NATIONAL ID CARDS IN MY DOCUMENTS
---      Today the National ID card exists only inside the client
---      (NationalIdCardView.jsx). It is never persisted. A citizen
---      therefore never sees their card under My Documents.
+--      The national_id_cards row makes the processed card available
+--      in My Documents as soon as it is ready for collection.
 --
 --      This migration creates a national_id_cards table. The
 --      table row is inserted by homeAffairsApplicationService when
---      the officer marks the National ID application COLLECTED.
+--      the officer marks the National ID application READY_FOR_COLLECTION.
 --      Once that row exists, certificateService.listForCitizen
 --      includes it and MyDocuments.jsx renders the card.
 --
@@ -1619,6 +1685,12 @@ BEGIN;
 ALTER TABLE birth_certificates
   ADD COLUMN IF NOT EXISTS child_national_id varchar(20);
 
+UPDATE birth_certificates bc
+SET child_national_id = c.national_id
+FROM citizens c
+WHERE bc.citizen_id = c.id
+  AND bc.child_national_id IS NULL;
+
 -- ── 2. National ID cards table ───────────────────────────────────
 CREATE TABLE IF NOT EXISTS national_id_cards (
   id                uuid primary key default gen_random_uuid(),
@@ -1640,6 +1712,18 @@ CREATE INDEX IF NOT EXISTS idx_national_id_cards_citizen
 CREATE INDEX IF NOT EXISTS idx_national_id_cards_application
   ON national_id_cards(application_id)
   WHERE application_id IS NOT NULL;
+
+INSERT INTO national_id_cards
+  (citizen_id, application_id, card_number, issued_at, status)
+SELECT a.citizen_id, a.id, c.national_id, COALESCE(a.updated_at, NOW()), 'ISSUED'
+FROM applications a
+JOIN citizens c ON c.id = a.citizen_id
+WHERE a.service = 'HOME_AFFAIRS'
+  AND a.data->>'serviceCode' IN ('NATIONAL_ID_APPLY', 'NATIONAL_ID_REPLACE')
+  AND a.status IN ('READY_FOR_COLLECTION', 'COLLECTED')
+  AND NOT EXISTS (
+    SELECT 1 FROM national_id_cards card WHERE card.application_id = a.id
+  );
 
 COMMIT;
 

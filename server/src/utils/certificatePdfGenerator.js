@@ -32,6 +32,7 @@ function buildBirthCertificate(row) {
   rows(doc, [
     ['Certificate number', row.certificate_number],
     ['Child full name', row.child_full_name],
+    ['National ID', row.child_national_id],
     ['Date of birth', fmtDate(row.child_date_of_birth)],
     ['Gender', row.child_gender],
     ['Place of birth', row.place_of_birth],

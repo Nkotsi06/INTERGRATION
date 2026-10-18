@@ -47,7 +47,7 @@ function ApplyNationalId() {
       try {
         const [profileData, branchesResponse, certsData, appsData] = await Promise.allSettled([
           apiClient.get('/citizen/profile'),
-          apiClient.get('/settings/branches'),
+          apiClient.get('/settings/branches?ministry=HOME_AFFAIRS'),
           apiClient.get('/citizen/documents'),
           apiClient.get('/citizen/applications'),
         ]);

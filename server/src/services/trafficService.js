@@ -71,10 +71,16 @@ async function getLicence(citizenId) {
 }
 
 async function renewLicence(citizenId, user, data = {}) {
+  const licence = await driverLicenceRepository.findByCitizen(citizenId);
+  if (!licence) throw badRequest('You need an issued driving licence before you can renew it.');
   const referenceNumber = await generateReference('TRAFFIC_RENEWAL');
   const application = await applicationRepository.create({
     referenceNumber, citizenId, service: 'TRAFFIC',
-    data: { type: 'LICENCE_RENEWAL' },
+    data: {
+      type: 'LICENCE_RENEWAL',
+      licenceId: licence.id,
+      licenceNumber: licence.licence_number,
+    },
   });
 
   await paymentService.recordPayment({
@@ -143,8 +149,11 @@ async function getStaffApplications(filters) {
 }
 
 async function generateLicenceNumber() {
-  const seq = await generateReference('DRIVERS_LICENCE_NUMBER');
-  return seq;
+  const result = await query(
+    "SELECT nextval('driver_licence_number_seq') AS number"
+  );
+  const year = new Date().getFullYear();
+  return `DLN-${year}-${String(result.rows[0].number).padStart(6, '0')}`;
 }
 
 async function approveTrafficApplication(applicationId, subType, staffUser, citizenSignatureDataUrl) {
@@ -373,6 +382,10 @@ async function processInspection(id, data, staffUser) {
 // ─── Vehicle licensing ────────────────────────────────────────────────
 async function applyVehicleLicence(citizenId, data, user) {
   if (!data.vehicleId) throw badRequest('Vehicle is required.');
+  const vehicle = await vehicleRepository.findById(data.vehicleId);
+  if (!vehicle || vehicle.citizen_id !== citizenId) {
+    throw notFound('Vehicle not found.');
+  }
   const referenceNumber = await generateReference('VEHICLE_LICENCE');
   const feeAmount = data.feeAmount || 150.00;
   const created = await vehicleLicenceRepository.create({
@@ -403,6 +416,25 @@ async function applyVehicleLicence(citizenId, data, user) {
 
 async function getVehicleLicences(citizenId) {
   return vehicleLicenceRepository.findByCitizen(citizenId);
+}
+
+async function renewVehicleLicence(citizenId, licenceId, data, user) {
+  const licence = await vehicleLicenceRepository.findById(licenceId);
+  if (!licence || licence.citizen_id !== citizenId) {
+    throw notFound('Vehicle licence not found.');
+  }
+  if (licence.status === 'PENDING') {
+    throw badRequest('This vehicle licence already has a pending application.');
+  }
+  const latestForVehicle = await vehicleLicenceRepository.findByVehicle(licence.vehicle_id);
+  if (latestForVehicle?.status === 'PENDING') {
+    throw badRequest('This vehicle already has a pending licence application.');
+  }
+
+  return applyVehicleLicence(citizenId, {
+    ...data,
+    vehicleId: licence.vehicle_id,
+  }, user);
 }
 
 // ─── Transport permits ────────────────────────────────────────────────
@@ -568,6 +600,7 @@ module.exports = {
   getVehicles, registerVehicle, updateVehicle, deleteVehicle,
   bookInspection, getInspections, cancelInspection, getStaffInspections, processInspection,
   applyVehicleLicence, getVehicleLicences,
+  renewVehicleLicence,
   applyTransportPermit, getTransportPermits, getStaffTransportPermits, processTransportPermit,
   applyForLearnersLicence, applyForDrivingLicence, applyForPublicDrivingPermit,
   getMyApplications, getApplicationByReference,

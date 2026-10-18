@@ -28,6 +28,8 @@ export const cancelInspection = (id) => apiClient.delete(`/traffic/inspections/$
 
 // Citizen — vehicle licences
 export const applyVehicleLicence = (data) => apiClient.post('/traffic/vehicle-licences', data);
+export const renewVehicleLicence = (id, data) =>
+  apiClient.post(`/traffic/vehicle-licences/${id}/renew`, data);
 export const getVehicleLicences = () => apiClient.get('/traffic/vehicle-licences');
 
 // Citizen — transport permits

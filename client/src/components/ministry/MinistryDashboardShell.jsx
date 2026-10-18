@@ -46,6 +46,8 @@ function MinistryDashboardShell({
   const legacyRoutes = {
     // Traffic
     DRIVERS_LICENCE_VIEW: '/traffic/licence',
+    DRIVING_LICENCE: '/traffic/licence/driving',
+    DRIVING_LICENCE_APPLY: '/traffic/licence/driving',
     LICENCE_RENEWAL: '/traffic/renew',
     DRIVING_TEST_BOOKING: '/traffic/book-test',
     MY_APPOINTMENTS: '/traffic/appointments',
@@ -64,6 +66,8 @@ function MinistryDashboardShell({
     PENSION_HISTORY: '/pensions/history',
     // Passport
     PASSPORT_APPLY: '/passport/apply',
+    PASSPORT_NEW: '/passport/apply',
+    PASSPORT_RENEWAL: '/passport/apply?type=renewal',
     PASSPORT_STATUS: '/passport/status',
     // Finance
     TAX_REGISTER: '/finance/tax/register',

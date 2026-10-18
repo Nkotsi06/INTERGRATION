@@ -2,13 +2,25 @@ const { query } = require('../config/database');
 
 async function findByCitizen(citizenId) {
   const result = await query(
-    `SELECT * FROM driver_licences
-     WHERE citizen_id = $1
-     ORDER BY created_at DESC
+    `SELECT dl.*,
+            c.first_name || ' ' || c.last_name AS full_name,
+            c.national_id
+     FROM driver_licences dl
+     JOIN citizens c ON c.id = dl.citizen_id
+     WHERE dl.citizen_id = $1
+     ORDER BY dl.created_at DESC
      LIMIT 1`,
     [citizenId]
   );
-  return result.rows[0] || null;
+  const licence = result.rows[0];
+  if (!licence) return null;
+  return {
+    ...licence,
+    fullName: licence.full_name,
+    nationalId: licence.national_id,
+    licenceNumber: licence.licence_number,
+    expiryDate: licence.expiry_date,
+  };
 }
 
 async function findByApplicationId(applicationId) {

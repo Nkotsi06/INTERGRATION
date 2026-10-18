@@ -17,3 +17,6 @@ export const updateService = (id, data) =>
 
 export const applyForService = (serviceId, formData) =>
   apiClient.post(`/services/${serviceId}/apply`, { formData });
+
+export const getPublicBranches = (ministry) =>
+  apiClient.get(`/settings/branches?ministry=${encodeURIComponent(ministry)}`);

@@ -31,6 +31,7 @@ router.delete('/inspections/:id', authMiddleware, c.cancelInspection);
 // Citizen — vehicle licences
 router.post('/vehicle-licences', authMiddleware, c.applyVehicleLicence);
 router.get('/vehicle-licences', authMiddleware, c.getVehicleLicences);
+router.post('/vehicle-licences/:id/renew', authMiddleware, c.renewVehicleLicence);
 
 // Citizen — transport permits
 router.post('/permits', authMiddleware, c.applyTransportPermit);

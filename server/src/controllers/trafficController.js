@@ -69,6 +69,7 @@ async function processInspection(req, res, next) { try { res.json(await trafficS
 // Vehicle licences
 async function applyVehicleLicence(req, res, next) { try { res.status(201).json(await trafficService.applyVehicleLicence(citizenIdFrom(req), req.body, req.user)); } catch (e) { next(e); } }
 async function getVehicleLicences(req, res, next) { try { res.json(await trafficService.getVehicleLicences(citizenIdFrom(req))); } catch (e) { next(e); } }
+async function renewVehicleLicence(req, res, next) { try { res.status(201).json(await trafficService.renewVehicleLicence(citizenIdFrom(req), req.params.id, req.body, req.user)); } catch (e) { next(e); } }
 
 // Transport permits
 async function applyTransportPermit(req, res, next) { try { res.status(201).json(await trafficService.applyTransportPermit(citizenIdFrom(req), req.body, req.user)); } catch (e) { next(e); } }
@@ -95,7 +96,7 @@ module.exports = {
   getStaffApplications, processApplication, issueLicence,
   getVehicles, registerVehicle, updateVehicle, deleteVehicle,
   bookInspection, getInspections, cancelInspection, getStaffInspections, processInspection,
-  applyVehicleLicence, getVehicleLicences,
+  applyVehicleLicence, getVehicleLicences, renewVehicleLicence,
   applyTransportPermit, getTransportPermits, getStaffTransportPermits, processTransportPermit,
   applyForLearnersLicence, applyForDrivingLicence, applyForPublicDrivingPermit,
   getMyApplications, getApplicationByReference,

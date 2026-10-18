@@ -68,6 +68,13 @@ function RenewLicence() {
           {loading ? (
             <p className="text-muted">Loading…</p>
           ) : (
+            <>
+            {!licence && (
+              <Alert
+                type="warning"
+                message="No driving licence is on record for your verified citizen profile."
+              />
+            )}
             <div className="card card-flat">
               <h3>Review your information</h3>
               <p className="text-muted">
@@ -80,10 +87,12 @@ function RenewLicence() {
                 <ReadOnly label="Expiry date" value={formatDate(licence?.expiryDate)} />
               </div>
             </div>
+            </>
           )}
 
           <FormActions
             primaryLabel="Continue to payment"
+            primaryDisabled={loading || !licence}
             onPrimary={() => setStep(2)}
             onSecondary={() => navigate('/traffic/dashboard')}
           />

@@ -297,6 +297,7 @@ async function issueBirthCertificate(citizenId, data, staffUser) {
     childFullName: data.childFullName || `${citizen.first_name} ${citizen.last_name}`.trim(),
     childDateOfBirth: data.childDateOfBirth || citizen.date_of_birth,
     childGender: data.childGender || citizen.gender,
+    childNationalId: citizen.national_id,
     placeOfBirth: data.placeOfBirth || citizen.place_of_birth,
     fatherFullName: data.fatherFullName || null,
     fatherNationalId: data.fatherNationalId || null,

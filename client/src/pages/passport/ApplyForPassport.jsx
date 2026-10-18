@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import PageWrapper from '../../components/layout/PageWrapper';
 import StepIndicator from '../../components/common/StepIndicator';
 import Select from '../../components/common/Select';
@@ -8,22 +8,29 @@ import Checkbox from '../../components/common/Checkbox';
 import FormActions from '../../components/common/FormActions';
 import Alert from '../../components/common/Alert';
 import CitizenReadOnlyBlock from '../../components/ministry/CitizenReadOnlyBlock';
-import DocumentUpload from '../../components/documents/DocumentUpload';
 import useFetch from '../../hooks/useFetch';
 import useServiceFee from '../../hooks/useServiceFees';
 import { getProfile } from '../../api/citizenApi';
-import { applyForPassport } from '../../api/passportApi';
-import { uploadDocument } from '../../api/documentApi';
+import apiClient from '../../api/apiClient';
+import { applyForPassport, getCurrentPassport } from '../../api/passportApi';
 import { useNotification } from '../../context/NotificationContext';
 import { formatCurrency } from '../../utils/formatters';
 
 function ApplyForPassport() {
   const { data: profile } = useFetch(getProfile, []);
-  const { fee, currency } = useServiceFee('PASSPORT', 'PASSPORT_APPLY');
+  const { data: currentPassport, loading: passportLoading } = useFetch(getCurrentPassport, []);
+  const [searchParams] = useSearchParams();
+  const isRenewal = searchParams.get('type') === 'renewal';
+  const { fee, currency } = useServiceFee(
+    'PASSPORT',
+    isRenewal ? 'PASSPORT_RENEWAL' : 'PASSPORT_NEW'
+  );
   const [step, setStep] = useState(1);
+  const [photoUrl, setPhotoUrl] = useState(null);
+  const [photoError, setPhotoError] = useState(null);
   const [details, setDetails] = useState({
     passportType: 'ORDINARY',
-    reason: '',
+    reason: isRenewal ? 'RENEWAL' : '',
     collectionOffice: 'MASERU',
     method: 'MOBILE_MONEY',
     mobile: '',
@@ -34,8 +41,36 @@ function ApplyForPassport() {
   const navigate = useNavigate();
   const { success } = useNotification();
 
+  useEffect(() => {
+    let objectUrl;
+    let cancelled = false;
+    apiClient.get('/citizen/photo', { responseType: 'blob' })
+      .then((blob) => {
+        if (cancelled) return;
+        objectUrl = URL.createObjectURL(blob);
+        setPhotoUrl(objectUrl);
+      })
+      .catch((err) => {
+        if (!cancelled) {
+          setPhotoError(err.message || 'Could not load your Home Affairs photo.');
+        }
+      });
+    return () => {
+      cancelled = true;
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+  }, []);
+
   const handleSubmit = async () => {
     setError(null);
+    if (isRenewal && !currentPassport) {
+      setError('No issued passport was found to renew.');
+      return;
+    }
+    if (!photoUrl || !profile?.nationalId) {
+      setError(photoError || 'Your Home Affairs photo and National ID must be available before applying.');
+      return;
+    }
     if (!confirmed) {
       setError('Please confirm your information before submitting.');
       return;
@@ -46,7 +81,12 @@ function ApplyForPassport() {
     }
     setLoading(true);
     try {
-      const result = await applyForPassport(details);
+      const result = await applyForPassport({
+        ...details,
+        isRenewal,
+        nationalId: profile.nationalId,
+        amount: fee,
+      });
       success('Application submitted');
       navigate('/passport/confirmation', { state: { result } });
     } catch (err) {
@@ -58,17 +98,17 @@ function ApplyForPassport() {
 
   return (
     <PageWrapper
-      title="Apply for Passport"
+      title={isRenewal ? 'Renew Passport' : 'Apply for Passport'}
       showBack
       backPath="/passport/dashboard"
       accentColour="#17A2B8"
     >
-      <h1>Apply for passport</h1>
+      <h1>{isRenewal ? 'Renew passport' : 'Apply for passport'}</h1>
 
       <StepIndicator
         current={step}
-        total={4}
-        labels={['Review info', 'Passport details', 'Documents', 'Review & submit']}
+        total={3}
+        labels={['Review info', 'Passport details', 'Review & submit']}
       />
 
       {error && <Alert type="error" message={error} />}
@@ -89,6 +129,22 @@ function ApplyForPassport() {
 
       {step === 2 && (
         <>
+          {isRenewal && (
+            <div className="card card-flat">
+              <h3>Existing passport</h3>
+              {passportLoading ? (
+                <p className="text-muted">Loading your passport information…</p>
+              ) : (
+                <div className="form-grid">
+                  <ReadOnly label="Passport number" value={currentPassport?.passport_number} />
+                  <ReadOnly label="Passport type" value={currentPassport?.passport_type} />
+                  <ReadOnly label="Issued" value={currentPassport?.issue_date} />
+                  <ReadOnly label="Expires" value={currentPassport?.expiry_date} />
+                  <ReadOnly label="Collection office" value={currentPassport?.collection_office} />
+                </div>
+              )}
+            </div>
+          )}
           <div className="form-grid">
             <Select
               label="Passport type"
@@ -114,9 +170,23 @@ function ApplyForPassport() {
               label="Reason for application"
               value={details.reason}
               onChange={(e) => setDetails({ ...details, reason: e.target.value })}
-              placeholder="First passport, replacement, etc."
+              placeholder={isRenewal ? 'Passport renewal' : 'First passport, replacement, etc.'}
               full
             />
+          </div>
+          <div className="form-section">
+            <h3 className="form-section-title">Home Affairs photograph</h3>
+            <p className="text-muted">
+              Your verified Home Affairs photo and National ID will be used. No separate photo upload is needed.
+            </p>
+            {photoUrl && (
+              <img
+                src={photoUrl}
+                alt="Photo on your Home Affairs identity record"
+                style={{ width: 140, height: 170, objectFit: 'cover', borderRadius: 4 }}
+              />
+            )}
+            {photoError && <Alert type="error" message={photoError} />}
           </div>
 
           {fee > 0 && (
@@ -160,48 +230,17 @@ function ApplyForPassport() {
 
       {step === 3 && (
         <>
-          <DocumentUpload
-            documentType="NATIONAL_ID"
-            label="National ID copy"
-            onUpload={async (formData, config) => {
-              await uploadDocument(formData, config);
-              success('Document uploaded');
-            }}
-          />
-          <DocumentUpload
-            documentType="BIRTH_CERTIFICATE"
-            label="Birth certificate"
-            onUpload={async (formData, config) => {
-              await uploadDocument(formData, config);
-              success('Document uploaded');
-            }}
-          />
-          <DocumentUpload
-            documentType="PASSPORT_PHOTO"
-            label="Passport photograph"
-            onUpload={async (formData, config) => {
-              await uploadDocument(formData, config);
-              success('Document uploaded');
-            }}
-          />
-
-          <FormActions
-            primaryLabel="Continue"
-            onPrimary={() => setStep(4)}
-            onSecondary={() => setStep(2)}
-          />
-        </>
-      )}
-
-      {step === 4 && (
-        <>
           <div className="card card-flat">
             <h3>Application summary</h3>
             <div className="form-grid">
               <ReadOnly label="Full name" value={profile?.fullName} />
               <ReadOnly label="National ID" value={profile?.nationalId} />
+              {isRenewal && (
+                <ReadOnly label="Existing passport" value={currentPassport?.passport_number} />
+              )}
               <ReadOnly label="Passport type" value={details.passportType} />
               <ReadOnly label="Collection office" value={details.collectionOffice} />
+              {photoUrl && <p className="text-muted">Home Affairs photo will be used.</p>}
               {fee > 0 && (
                 <ReadOnly label="Application fee" value={formatCurrency(fee, currency)} />
               )}
@@ -212,7 +251,7 @@ function ApplyForPassport() {
           </div>
 
           <Checkbox
-            label="I confirm that my details and supporting documents are correct."
+            label="I confirm that my details and existing Home Affairs records are correct."
             checked={confirmed}
             onChange={(e) => setConfirmed(e.target.checked)}
           />
@@ -225,7 +264,7 @@ function ApplyForPassport() {
             }
             primaryLoading={loading}
             onPrimary={handleSubmit}
-            onSecondary={() => setStep(3)}
+            onSecondary={() => setStep(2)}
           />
         </>
       )}

@@ -1,17 +1,20 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import PageWrapper from '../../components/layout/PageWrapper';
 import Select from '../../components/common/Select';
 import Input from '../../components/common/Input';
 import FormActions from '../../components/common/FormActions';
 import Alert from '../../components/common/Alert';
 import useServiceFee from '../../hooks/useServiceFees';
-import { getVehicles, applyVehicleLicence } from '../../api/trafficApi';
+import { getVehicles, applyVehicleLicence, renewVehicleLicence } from '../../api/trafficApi';
 import { useNotification } from '../../context/NotificationContext';
 import { formatCurrency } from '../../utils/formatters';
 
 function ApplyVehicleLicence() {
   const { fee, currency } = useServiceFee('TRAFFIC', 'VEHICLE_LICENCE');
+  const [searchParams] = useSearchParams();
+  const renewalId = searchParams.get('renewalId');
+  const renewalVehicleId = searchParams.get('vehicleId');
   const [vehicles, setVehicles] = useState([]);
   const [form, setForm] = useState({
     vehicleId: '',
@@ -26,10 +29,20 @@ function ApplyVehicleLicence() {
   useEffect(() => {
     let cancelled = false;
     getVehicles()
-      .then((v) => { if (!cancelled) setVehicles(Array.isArray(v) ? v : []); })
-      .catch(() => { /* silent */ });
+      .then((v) => {
+        if (cancelled) return;
+        const rows = Array.isArray(v) ? v : [];
+        setVehicles(rows);
+        if (renewalId) {
+          const vehicle = rows.find((row) => row.id === renewalVehicleId);
+          if (vehicle) setForm((prev) => ({ ...prev, vehicleId: vehicle.id }));
+        }
+      })
+      .catch((err) => {
+        if (!cancelled) setError(err.message || 'Could not load your vehicles.');
+      });
     return () => { cancelled = true; };
-  }, []);
+  }, [renewalId, renewalVehicleId]);
 
   const handleSubmit = async () => {
     setError(null);
@@ -43,13 +56,18 @@ function ApplyVehicleLicence() {
     }
     setLoading(true);
     try {
-      await applyVehicleLicence({
+      const request = {
         vehicleId: form.vehicleId,
         feeAmount: fee,
         method: form.method,
         mobile: form.mobile,
         amount: fee,
-      });
+      };
+      if (renewalId) {
+        await renewVehicleLicence(renewalId, request);
+      } else {
+        await applyVehicleLicence(request);
+      }
       success('Application submitted');
       navigate('/traffic/vehicle-licences');
     } catch (err) {
@@ -61,12 +79,12 @@ function ApplyVehicleLicence() {
 
   return (
     <PageWrapper
-      title="Apply for Vehicle Licence"
+      title={renewalId ? 'Renew Vehicle Licence' : 'Apply for Vehicle Licence'}
       showBack
       backPath="/traffic/vehicle-licences"
       accentColour="#B9770E"
     >
-      <h1>Apply for a vehicle licence</h1>
+      <h1>{renewalId ? 'Renew vehicle licence' : 'Apply for a vehicle licence'}</h1>
 
       {error && <Alert type="error" message={error} />}
 
@@ -74,6 +92,7 @@ function ApplyVehicleLicence() {
         label="Vehicle"
         value={form.vehicleId}
         onChange={(e) => setForm({ ...form, vehicleId: e.target.value })}
+        disabled={!!renewalId}
         options={vehicles.map((v) => ({
           value: v.id,
           label: `${v.registration_number} — ${v.make || ''} ${v.model || ''}`.trim(),
@@ -111,7 +130,9 @@ function ApplyVehicleLicence() {
 
       <FormActions
         primaryLabel={
-          fee > 0 ? `Pay ${formatCurrency(fee, currency)} and submit` : 'Submit'
+          fee > 0
+            ? `Pay ${formatCurrency(fee, currency)} and ${renewalId ? 'renew' : 'submit'}`
+            : renewalId ? 'Submit renewal' : 'Submit'
         }
         primaryLoading={loading}
         onPrimary={handleSubmit}

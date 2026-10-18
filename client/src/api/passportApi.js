@@ -2,6 +2,7 @@ import apiClient from './apiClient';
 
 // Citizen
 export const applyForPassport = (data) => apiClient.post('/passport/apply', data);
+export const getCurrentPassport = () => apiClient.get('/passport/current');
 export const getMyApplications = (params) =>
   apiClient.get('/passport/applications', { params });
 export const getApplicationByRef = (ref) =>

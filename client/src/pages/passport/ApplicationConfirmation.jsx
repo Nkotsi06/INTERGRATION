@@ -25,6 +25,7 @@ function ApplicationConfirmation() {
           <ReadOnly label="Applicant" value={result.applicantName} />
           <ReadOnly label="Date submitted" value={result.dateSubmitted} />
           <ReadOnly label="Passport type" value={result.passportType} />
+          <ReadOnly label="Passport number" value={result.passportNumber} />
           <ReadOnly label="Collection office" value={result.collectionOffice} />
         </div>
 

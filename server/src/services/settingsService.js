@@ -1,4 +1,5 @@
 const settingsRepository = require('../repositories/settingsRepository');
+const branchRepository = require('../repositories/branchRepository');
 const { loadPublicSettings, clearCache } = require('../config/settingsLoader');
 const auditService = require('./auditService');
 const { getPublicUrl } = require('../utils/fileStorage');
@@ -42,6 +43,10 @@ async function getTranslations(code) {
   return settingsRepository.getTranslations(code);
 }
 
+async function getPublicBranches(ministryCode) {
+  return branchRepository.findAll({ ministryCode, activeOnly: true });
+}
+
 async function updateMinistry(id, data, adminUser) {
   const updated = await settingsRepository.updateMinistry(id, data);
   clearCache();
@@ -54,5 +59,6 @@ module.exports = {
   update,
   getLanguages,
   getTranslations,
+  getPublicBranches,
   updateMinistry,
 };

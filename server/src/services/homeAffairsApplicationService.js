@@ -62,20 +62,11 @@ async function updateStatus(id, newStatus, staffUser) {
     [id, newStatus, staffUser.userId, `Status changed to ${newStatus} by staff.`]
   );
 
-  // When a National ID application reaches COLLECTED, persist the card
-  // in national_id_cards so it appears in the citizen's My Documents.
-  if (newStatus === 'COLLECTED') {
-    try {
-      await certificateService.createNationalIdCardFromApplication({
-        application: app,
-        staffUser,
-      });
-    } catch (err) {
-      // Never let the card creation break the collection recording;
-      // the officer's action succeeded. Log and continue.
-      // eslint-disable-next-line no-console
-      console.error('National ID card creation failed:', err.message);
-    }
+  if (newStatus === 'READY_FOR_COLLECTION' || newStatus === 'COLLECTED') {
+    await certificateService.createNationalIdCardFromApplication({
+      application: app,
+      staffUser,
+    });
   }
 
   const owner = await userRepository.findByCitizenId(app.citizen_id);
@@ -117,18 +108,10 @@ async function recordCollection(id, data, staffUser) {
     [id, staffUser.userId, `Collected by ${data.collectedByName}. ID Checked: ${data.idChecked ? 'Yes' : 'No'}.`]
   );
 
-  // Same card-creation hook for the "record collection" path.
-  if (app.data?.serviceCode) {
-    try {
-      await certificateService.createNationalIdCardFromApplication({
-        application: app,
-        staffUser,
-      });
-    } catch (err) {
-      // eslint-disable-next-line no-console
-      console.error('National ID card creation failed:', err.message);
-    }
-  }
+  await certificateService.createNationalIdCardFromApplication({
+    application: app,
+    staffUser,
+  });
 
   const owner = await userRepository.findByCitizenId(app.citizen_id);
   if (owner) {

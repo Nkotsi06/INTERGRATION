@@ -5,6 +5,7 @@ const verificationMiddleware = require('../middleware/verificationMiddleware');
 const passportController = require('../controllers/passportController');
 
 router.post('/apply', authMiddleware, verificationMiddleware, passportController.apply);
+router.get('/current', authMiddleware, verificationMiddleware, passportController.getCurrentPassport);
 router.get('/applications', authMiddleware, verificationMiddleware, passportController.getMyApplications);
 router.get('/applications/:ref', authMiddleware, verificationMiddleware, passportController.getApplicationByRef);
 

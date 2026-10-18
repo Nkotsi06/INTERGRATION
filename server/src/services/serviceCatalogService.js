@@ -6,6 +6,7 @@ const feeScheduleService = require('./feeScheduleService');
 const certificateService = require('./certificateService');
 const pensionsService = require('./pensionsService');
 const userRepository = require('../repositories/userRepository');
+const branchRepository = require('../repositories/branchRepository');
 const { generateReference } = require('../utils/referenceGenerator');
 const auditService = require('./auditService');
 
@@ -95,6 +96,15 @@ async function submitApplication({ serviceId, citizenId, formData, user }) {
     .filter((f) => f.required && !formData?.[f.key])
     .map((f) => f.label || f.key);
   if (missing.length > 0) throw badRequest(`Please complete: ${missing.join(', ')}`);
+
+  if (service.ministry === 'HOME_AFFAIRS') {
+    const branch = formData?.branchId
+      ? await branchRepository.findById(formData.branchId)
+      : null;
+    if (!branch || !branch.is_active || branch.ministry_code !== 'HOME_AFFAIRS') {
+      throw badRequest('Please choose an active Home Affairs collection branch.');
+    }
+  }
 
   const fee = await feeScheduleService.getFeeForService(service.ministry, service.code);
   const feeAmount = fee ? Number(fee.amount) : Number(service.fee);

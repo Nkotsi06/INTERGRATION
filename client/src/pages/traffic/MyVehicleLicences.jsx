@@ -27,6 +27,19 @@ function MyVehicleLicences() {
     { key: 'expiry_date', label: 'Expires', render: (r) => (r.expiry_date ? formatDate(r.expiry_date) : '—') },
     { key: 'fee_amount', label: 'Fee', render: (r) => `M ${Number(r.fee_amount || 0).toFixed(2)}` },
     { key: 'status', label: 'Status', render: (r) => <StatusBadge variant={STATUS_VARIANT[r.status] || 'pending'} label={r.status} /> },
+    {
+      key: 'actions',
+      label: 'Actions',
+      render: (row) => ['ISSUED', 'RENEWED', 'EXPIRED'].includes(row.status) ? (
+        <Button
+          variant="secondary"
+          size="small"
+          onClick={() => navigate(`/traffic/vehicle-licences/new?renewalId=${row.id}&vehicleId=${row.vehicle_id}`)}
+        >
+          Renew
+        </Button>
+      ) : '—',
+    },
   ];
 
   return (
