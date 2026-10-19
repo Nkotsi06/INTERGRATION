@@ -277,27 +277,30 @@ async function markReadyForCollection(id, staffUser) {
     staffUser.userId
   );
 
-  await auditService.log({
-    userId: staffUser.userId,
-    username: staffUser.username,
-    action: 'PASSPORT_MARKED_READY_FOR_COLLECTION',
-    recordType: 'APPLICATION',
-    recordId: id,
-    result: 'SUCCESS',
-  });
-
+  const assignedPassportNumber = application.passport_number || passportNumber;
   const branchAddress = [
     application.branch_name,
     application.branch_address,
     application.branch_district,
-  ].filter(Boolean).join(', ');
-  await notifyCitizen(
-    application.citizen_id,
-    'Passport ready for collection',
-    `Your passport ${passportNumber} is ready for collection at ${branchAddress}.`
-  );
+  ].filter(Boolean).join(', ') || application.collection_office || 'the selected collection branch';
 
-  return { passportNumber, status: 'READY_FOR_COLLECTION' };
+  if (!application.alreadyReady) {
+    await auditService.log({
+      userId: staffUser.userId,
+      username: staffUser.username,
+      action: 'PASSPORT_MARKED_READY_FOR_COLLECTION',
+      recordType: 'APPLICATION',
+      recordId: id,
+      result: 'SUCCESS',
+    });
+    await notifyCitizen(
+      application.citizen_id,
+      'Passport ready for collection',
+      `Your passport ${assignedPassportNumber} is ready for collection at ${branchAddress}.`
+    );
+  }
+
+  return { passportNumber: assignedPassportNumber, status: 'READY_FOR_COLLECTION' };
 }
 
 async function recordCollection(id, data, staffUser) {

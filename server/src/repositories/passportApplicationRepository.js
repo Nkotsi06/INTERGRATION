@@ -109,6 +109,7 @@ async function markReadyForCollection(applicationId, passportNumber, issuedBy) {
               a.reference_number,
               a.status AS application_status,
               pa.status AS passport_status,
+              pa.passport_number,
               pa.collection_office,
               b.name AS branch_name,
               b.address AS branch_address,
@@ -124,15 +125,14 @@ async function markReadyForCollection(applicationId, passportNumber, issuedBy) {
     if (!application) {
       throw lifecycleError('Passport application not found.', 404);
     }
-    if (application.application_status !== 'APPROVED' ||
-        application.passport_status !== 'APPROVED') {
-      throw lifecycleError('Only approved passport applications can be marked ready.', 409);
+    if (application.application_status === 'READY_FOR_COLLECTION' &&
+        application.passport_status === 'READY_FOR_COLLECTION' &&
+        application.passport_number) {
+      return { ...application, alreadyReady: true };
     }
-    if (!application.branch_name || !application.branch_address) {
-      throw lifecycleError(
-        'The selected collection branch does not have a complete address on record.',
-        409
-      );
+    if (application.application_status !== 'APPROVED' ||
+        !['APPROVED', 'SUBMITTED', 'UNDER_REVIEW'].includes(application.passport_status)) {
+      throw lifecycleError('Only approved passport applications can be marked ready.', 409);
     }
 
     await client.query(
