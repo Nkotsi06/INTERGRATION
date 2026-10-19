@@ -10,6 +10,7 @@ export const SIDEBAR_BY_ROLE = {
       { to: '/citizen/applications', label: 'My Applications' },
       { to: '/citizen/documents', label: 'My Documents' },
       { to: '/citizen/certificates', label: 'My Certificates' },
+      { to: '/police/cases', label: 'My Police Cases' },
       NOTIFICATIONS_LINK,
       HELP_LINK,
     ],
@@ -63,6 +64,8 @@ export const SIDEBAR_BY_ROLE = {
     links: [
       { to: '/police/staff', label: 'Dashboard' },
       { to: '/police/manage', label: 'Manage Cases' },
+      { to: '/police/staff/clearances', label: 'Clearances' },
+      { to: '/police/staff/criminal-records', label: 'Criminal Records' },
       NOTIFICATIONS_LINK,
       HELP_LINK,
     ],

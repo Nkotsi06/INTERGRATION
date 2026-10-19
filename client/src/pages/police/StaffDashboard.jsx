@@ -45,6 +45,12 @@ function PoliceStaffDashboard() {
         <Button variant="primary" onClick={() => navigate('/police/manage')}>
           Manage cases
         </Button>
+        <Button variant="secondary" onClick={() => navigate('/police/staff/clearances')}>
+          Manage clearances
+        </Button>
+        <Button variant="secondary" onClick={() => navigate('/police/staff/criminal-records')}>
+          Manage criminal records
+        </Button>
       </div>
     </PageWrapper>
   );

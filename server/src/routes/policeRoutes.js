@@ -24,6 +24,8 @@ router.get('/staff/cases', authMiddleware, roleMiddleware(['POLICE']), policeCon
 router.put('/staff/cases/:id', authMiddleware, roleMiddleware(['POLICE']), policeController.updateCase);
 router.post('/staff/cases/:id/updates', authMiddleware, roleMiddleware(['POLICE']), policeController.addCaseUpdate);
 
+router.get('/staff/clearances', authMiddleware, roleMiddleware(['POLICE']), policeController.getStaffClearances);
+router.put('/staff/clearances/:id', authMiddleware, roleMiddleware(['POLICE']), policeController.processClearance);
 router.get('/staff/criminal-records', authMiddleware, roleMiddleware(['POLICE']), policeController.getStaffCriminalRecords);
 router.put('/staff/criminal-records/:id', authMiddleware, roleMiddleware(['POLICE']), policeController.processCriminalRecord);
 

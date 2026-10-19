@@ -3,6 +3,7 @@ const notificationService = require('./notificationService');
 const certificateService = require('./certificateService');
 const userRepository = require('../repositories/userRepository');
 const auditService = require('./auditService');
+const logger = require('../utils/logger');
 
 async function listApplications(filters) {
   let sql = `
@@ -52,7 +53,11 @@ async function updateStatus(id, newStatus, staffUser) {
   }
 
   await query(
-    `UPDATE applications SET status = $1, updated_at = NOW() WHERE id = $2`,
+    `UPDATE applications
+     SET status = $1,
+         collected_at = CASE WHEN $1 = 'COLLECTED' THEN NOW() ELSE collected_at END,
+         updated_at = NOW()
+     WHERE id = $2`,
     [newStatus, id]
   );
 
@@ -63,10 +68,17 @@ async function updateStatus(id, newStatus, staffUser) {
   );
 
   if (newStatus === 'READY_FOR_COLLECTION' || newStatus === 'COLLECTED') {
-    await certificateService.createNationalIdCardFromApplication({
-      application: app,
-      staffUser,
-    });
+    try {
+      await certificateService.createNationalIdCardFromApplication({
+        application: app,
+        staffUser,
+      });
+    } catch (err) {
+      logger.error(
+        `Could not create a National ID card for application ${id}:`,
+        err
+      );
+    }
   }
 
   const owner = await userRepository.findByCitizenId(app.citizen_id);
@@ -108,10 +120,17 @@ async function recordCollection(id, data, staffUser) {
     [id, staffUser.userId, `Collected by ${data.collectedByName}. ID Checked: ${data.idChecked ? 'Yes' : 'No'}.`]
   );
 
-  await certificateService.createNationalIdCardFromApplication({
-    application: app,
-    staffUser,
-  });
+  try {
+    await certificateService.createNationalIdCardFromApplication({
+      application: app,
+      staffUser,
+    });
+  } catch (err) {
+    logger.error(
+      `Could not create a National ID card for application ${id}:`,
+      err
+    );
+  }
 
   const owner = await userRepository.findByCitizenId(app.citizen_id);
   if (owner) {

@@ -32,13 +32,17 @@ async function findByReference(ref) {
 }
 
 async function findAll(filters = {}) {
-  let sql = 'SELECT * FROM criminal_records WHERE 1=1';
+  let sql = `SELECT cr.*, c.first_name, c.last_name,
+                    (c.first_name || ' ' || c.last_name) AS citizen_name
+             FROM criminal_records cr
+             LEFT JOIN citizens c ON c.id = cr.citizen_id
+             WHERE 1=1`;
   const params = [];
   if (filters.status) {
     params.push(filters.status);
-    sql += ` AND status = $${params.length}`;
+    sql += ` AND cr.status = $${params.length}`;
   }
-  sql += ' ORDER BY created_at DESC';
+  sql += ' ORDER BY cr.created_at DESC';
   const result = await query(sql, params);
   return result.rows;
 }

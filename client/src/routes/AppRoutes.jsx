@@ -77,6 +77,8 @@ import ManageCases from '../pages/police/ManageCases';
 import CaseUpdate from '../pages/police/CaseUpdate';
 import RequestCriminalRecord from '../pages/police/RequestCriminalRecord';
 import MyCriminalRecords from '../pages/police/MyCriminalRecords';
+import ManageClearances from '../pages/police/ManageClearances';
+import ManageCriminalRecords from '../pages/police/ManageCriminalRecords';
 
 import FinanceDashboard from '../pages/finance/FinanceDashboard';
 import TaxRegistration from '../pages/finance/TaxRegistration';
@@ -236,6 +238,8 @@ function AppRoutes() {
       {/* Police — staff */}
       <Route path="/police/staff" element={<RoleRoute roles={['POLICE']}><PoliceStaffDashboard /></RoleRoute>} />
       <Route path="/police/manage" element={<RoleRoute roles={['POLICE']}><ManageCases /></RoleRoute>} />
+      <Route path="/police/staff/clearances" element={<RoleRoute roles={['POLICE']}><ManageClearances /></RoleRoute>} />
+      <Route path="/police/staff/criminal-records" element={<RoleRoute roles={['POLICE']}><ManageCriminalRecords /></RoleRoute>} />
       <Route path="/police/update/:id" element={<RoleRoute roles={['POLICE']}><CaseUpdate /></RoleRoute>} />
 
       {/* Finance — citizen */}

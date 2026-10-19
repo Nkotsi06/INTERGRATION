@@ -5,6 +5,7 @@ const userRepository = require('../repositories/userRepository');
 const { generateCaseNumber, generateReference } = require('../utils/referenceGenerator');
 const auditService = require('./auditService');
 const { query } = require('../config/database');
+const applicationRepository = require('../repositories/applicationRepository');
 
 async function notifyCitizen(citizenId, title, message) {
   if (!citizenId) return;
@@ -111,30 +112,110 @@ async function requestClearance(citizenId, data, user) {
     throw err;
   }
 
-  const referenceNumber = await generateReference('POLICE_CASE');
+  const referenceNumber = await generateReference('APPLICATION');
 
-  const created = await policeCaseRepository.create({
-    caseNumber: referenceNumber,
+  const created = await applicationRepository.create({
+    referenceNumber,
     citizenId,
-    caseType: 'CLEARANCE',
-    incidentDate: new Date().toISOString().slice(0, 10),
-    location: data.station,
-    description:
-      `Clearance request.\nPurpose: ${data.purpose}` +
-      (data.contactNumber ? `\nContact: ${data.contactNumber}` : '') +
-      (data.email ? `\nEmail: ${data.email}` : ''),
+    service: 'POLICE',
+    data: {
+      serviceCode: 'POLICE_CLEARANCE',
+      serviceName: 'Clearance certificate',
+      formData: {
+        purpose: data.purpose,
+        station: data.station,
+        contactNumber: data.contactNumber || '',
+        email: data.email || '',
+      },
+    },
   });
 
   await auditService.log({
     userId: user.userId, username: user.username,
     action: 'POLICE_CLEARANCE_REQUESTED',
-    recordType: 'POLICE_CASE', recordId: created.id, result: 'SUCCESS',
+    recordType: 'APPLICATION', recordId: created.id, result: 'SUCCESS',
   });
 
   await notifyCitizen(citizenId, 'Clearance request received',
     `Your clearance request ${referenceNumber} has been received.`);
 
-  return created;
+  return { ...created, reference_number: referenceNumber };
+}
+
+async function getStaffClearances(filters = {}) {
+  const params = [];
+  let sql = `
+    SELECT a.*, c.first_name, c.last_name,
+           (c.first_name || ' ' || c.last_name) AS citizen_name,
+           a.data->'formData' AS form_data
+    FROM applications a
+    LEFT JOIN citizens c ON c.id = a.citizen_id
+    WHERE a.service = 'POLICE'
+      AND a.data->>'serviceCode' = 'POLICE_CLEARANCE'
+  `;
+  if (filters.status) {
+    params.push(filters.status);
+    sql += ` AND a.status = $${params.length}`;
+  }
+  sql += ' ORDER BY a.submitted_at DESC';
+  const result = await query(sql, params);
+  return result.rows;
+}
+
+async function processClearance(id, action, staffUser) {
+  const status = String(action || '').toUpperCase();
+  if (!['APPROVE', 'REJECT'].includes(status)) {
+    const err = new Error('Action must be APPROVE or REJECT.');
+    err.statusCode = 400;
+    throw err;
+  }
+
+  const applicationResult = await query(
+    `SELECT id, citizen_id, reference_number, status
+     FROM applications
+     WHERE id = $1
+       AND service = 'POLICE'
+       AND data->>'serviceCode' = 'POLICE_CLEARANCE'`,
+    [id]
+  );
+  const application = applicationResult.rows[0];
+  if (!application) {
+    const err = new Error('Clearance application not found.');
+    err.statusCode = 404;
+    throw err;
+  }
+  if (application.status !== 'SUBMITTED') {
+    const err = new Error('This clearance application has already been processed.');
+    err.statusCode = 400;
+    throw err;
+  }
+
+  const newStatus = status === 'APPROVE' ? 'APPROVED' : 'REJECTED';
+  await query(
+    `UPDATE applications SET status = $1, updated_at = NOW() WHERE id = $2`,
+    [newStatus, id]
+  );
+  await query(
+    `INSERT INTO application_status_history (application_id, status, changed_by, notes)
+     VALUES ($1, $2, $3, $4)`,
+    [id, newStatus, staffUser.userId, `Clearance application ${newStatus.toLowerCase()} by police staff.`]
+  );
+
+  await auditService.log({
+    userId: staffUser.userId,
+    username: staffUser.username,
+    action: `POLICE_CLEARANCE_${newStatus}`,
+    recordType: 'APPLICATION',
+    recordId: id,
+    result: 'SUCCESS',
+  });
+  await notifyCitizen(
+    application.citizen_id,
+    'Clearance request update',
+    `Your clearance request ${application.reference_number} was ${newStatus.toLowerCase()}.`
+  );
+
+  return { ...application, status: newStatus };
 }
 
 // ─── Criminal record ──────────────────────────────────────────────────
@@ -170,15 +251,27 @@ async function getStaffCriminalRecords(filters) {
 }
 
 async function processCriminalRecord(id, action, data, staffUser) {
+  const operation = String(action || '').toUpperCase();
+  if (!['ISSUE', 'REJECT'].includes(operation)) {
+    const err = new Error('Action must be ISSUE or REJECT.');
+    err.statusCode = 400;
+    throw err;
+  }
+
   const record = await criminalRecordRepository.findById(id);
   if (!record) {
     const err = new Error('Record not found');
     err.statusCode = 404;
     throw err;
   }
+  if (record.status !== 'PENDING') {
+    const err = new Error('This criminal record request has already been processed.');
+    err.statusCode = 400;
+    throw err;
+  }
 
   let updated;
-  if (action === 'ISSUE') {
+  if (operation === 'ISSUE') {
     const validUntil = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000)
       .toISOString().slice(0, 10);
     updated = await criminalRecordRepository.issue(id, {
@@ -195,7 +288,7 @@ async function processCriminalRecord(id, action, data, staffUser) {
 
   await auditService.log({
     userId: staffUser.userId, username: staffUser.username,
-    action: `CRIMINAL_RECORD_${action}`,
+    action: `CRIMINAL_RECORD_${operation}`,
     recordType: 'CRIMINAL_RECORD', recordId: id, result: 'SUCCESS',
   });
 
@@ -209,5 +302,6 @@ module.exports = {
   getStaffStats,
   reportCase, getMyCases, getCaseByNumber, getStaffCases, updateCase, addCaseUpdate,
   requestClearance,
+  getStaffClearances, processClearance,
   requestCriminalRecord, getMyCriminalRecords, getStaffCriminalRecords, processCriminalRecord,
 };

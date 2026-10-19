@@ -15,6 +15,9 @@ function formatTypeLabel(certificate) {
   if (certificate.certificate_type === 'ID_CARD') {
     return 'National ID card';
   }
+  if (certificate.certificate_type === 'BIRTH') {
+    return 'Birth certificate';
+  }
   if (certificate.certificate_type === 'PASSPORT') {
     return 'Passport';
   }
@@ -23,7 +26,11 @@ function formatTypeLabel(certificate) {
 
 function MyDocuments() {
   const { data: certificates, loading, error } = useFetch(getMyCertificates, []);
-  const { data: profile } = useFetch(getProfile, []);
+  const {
+    data: profile,
+    loading: profileLoading,
+    error: profileError,
+  } = useFetch(getProfile, []);
   const [selectedDoc, setSelectedDoc] = useState(null);
   const [photoUrl, setPhotoUrl] = useState(null);
   const [photoError, setPhotoError] = useState(null);
@@ -58,7 +65,7 @@ function MyDocuments() {
       {loading && <p>Loading documents...</p>}
       {!loading && error && <Alert type="error" message={error} />}
 
-      {!selectedDoc && !error && certificates?.map((cert) => (
+      {!selectedDoc && !error && Array.isArray(certificates) && certificates.map((cert) => (
         <div
           key={`${cert.certificate_type}-${cert.id}`}
           className="card card-flat"
@@ -80,11 +87,18 @@ function MyDocuments() {
         </div>
       ))}
 
-      {!selectedDoc && !error && certificates && certificates.length === 0 && (
+      {!selectedDoc && !error && Array.isArray(certificates) && certificates.length === 0 && (
         <p className="text-muted">
           You have no documents yet. Certificates, National ID cards, and passports
           appear here once they have been issued.
         </p>
+      )}
+
+      {!selectedDoc && profileError && (
+        <Alert
+          type="error"
+          message="Your citizen profile could not be loaded. Your document list is still available, but profile details cannot be displayed."
+        />
       )}
 
       {selectedDoc && (
@@ -109,7 +123,16 @@ function MyDocuments() {
             <DeathCertificateView data={selectedDoc} />
           )}
           {selectedDoc.certificate_type === 'ID_CARD' && (
-            <NationalIdCardView data={profile} photoUrl={photoUrl} />
+            profile ? (
+              <NationalIdCardView data={profile} photoUrl={photoUrl} />
+            ) : (
+              <Alert
+                type="error"
+                message={profileLoading
+                  ? 'Loading your citizen profile...'
+                  : profileError || 'Your citizen profile is not available, so the ID card cannot be displayed.'}
+              />
+            )
           )}
           {selectedDoc.certificate_type === 'PASSPORT' && (
             <>

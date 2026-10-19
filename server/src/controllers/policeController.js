@@ -1,7 +1,7 @@
 const policeService = require('../services/policeService');
 
 function citizenIdFrom(req) {
-  return req.session?.verifiedCitizenId || req.user?.citizenId || null;
+  return req.user?.citizenId || req.session?.verifiedCitizenId || null;
 }
 
 async function getStaffStats(req, res, next) {
@@ -56,6 +56,20 @@ async function requestClearance(req, res, next) {
   } catch (err) { next(err); }
 }
 
+async function getStaffClearances(req, res, next) {
+  try { res.json(await policeService.getStaffClearances(req.query)); }
+  catch (err) { next(err); }
+}
+
+async function processClearance(req, res, next) {
+  try {
+    const updated = await policeService.processClearance(
+      req.params.id, req.body.action, req.user
+    );
+    res.json(updated);
+  } catch (err) { next(err); }
+}
+
 async function requestCriminalRecord(req, res, next) {
   try {
     const created = await policeService.requestCriminalRecord(
@@ -88,5 +102,6 @@ module.exports = {
   getStaffStats,
   reportCase, getMyCases, getCaseByNumber, getStaffCases, updateCase, addCaseUpdate,
   requestClearance,
+  getStaffClearances, processClearance,
   requestCriminalRecord, getMyCriminalRecords, getStaffCriminalRecords, processCriminalRecord,
 };
