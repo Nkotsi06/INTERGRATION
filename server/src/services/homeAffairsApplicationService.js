@@ -34,7 +34,11 @@ async function listApplications(filters) {
 
 async function getApplication(id) {
   const result = await query(
-    `SELECT a.*, c.*, b.name as branch_name, b.address as branch_address
+    `SELECT a.*,
+            c.first_name, c.last_name, c.national_id AS citizen_national_id,
+            c.date_of_birth, c.gender, c.place_of_birth, c.address,
+            c.phone, c.email, c.nationality, c.is_verified,
+            b.name AS branch_name, b.address AS branch_address
      FROM applications a
      LEFT JOIN citizens c ON c.id = a.citizen_id
      LEFT JOIN branches b ON b.id::text = (a.data->'formData'->>'branchId')
@@ -52,14 +56,19 @@ async function updateStatus(id, newStatus, staffUser) {
     throw new Error('This application has already been collected and cannot be changed.');
   }
 
-  await query(
-    `UPDATE applications
-     SET status = $1,
-         collected_at = CASE WHEN $1 = 'COLLECTED' THEN NOW() ELSE collected_at END,
-         updated_at = NOW()
-     WHERE id = $2`,
-    [newStatus, id]
-  );
+  if (newStatus === 'COLLECTED') {
+    await query(
+      `UPDATE applications
+       SET status = $1, collected_at = NOW(), updated_at = NOW()
+       WHERE id = $2`,
+      [newStatus, id]
+    );
+  } else {
+    await query(
+      `UPDATE applications SET status = $1, updated_at = NOW() WHERE id = $2`,
+      [newStatus, id]
+    );
+  }
 
   await query(
     `INSERT INTO application_status_history (application_id, status, changed_by, notes)
