@@ -1,5 +1,4 @@
 const passportService = require('../services/passportService');
-const signatureService = require('../services/signatureService');
 
 async function getStaffStats(req, res, next) {
   try { res.json(await passportService.getStaffStats()); } catch (err) { next(err); }
@@ -52,25 +51,25 @@ async function processApplication(req, res, next) {
   } catch (err) { next(err); }
 }
 
+async function markReadyForCollection(req, res, next) {
+  try {
+    res.json(await passportService.markReadyForCollection(req.params.id, req.user));
+  } catch (err) { next(err); }
+}
+
+async function recordCollection(req, res, next) {
+  try {
+    res.json(
+      await passportService.recordCollection(req.params.id, req.body, req.user)
+    );
+  } catch (err) { next(err); }
+}
+
 async function issuePassport(req, res, next) {
   try {
-    const { id } = req.params;
-    const { signature } = req.body;
-
-    if (!signature) {
-      return res.status(400).json({ message: 'Signature is required.' });
-    }
-
-    await signatureService.save(
-      {
-        citizenId: id,
-        documentTypeCode: 'PASSPORT',
-        signatureData: signature,
-      },
-      req.user
+    res.json(
+      await passportService.recordCollection(req.params.id, req.body, req.user)
     );
-
-    res.json({ message: 'Passport issued successfully' });
   } catch (err) { next(err); }
 }
 
@@ -82,5 +81,7 @@ module.exports = {
   getApplicationByRef,
   getStaffApplications,
   processApplication,
+  markReadyForCollection,
+  recordCollection,
   issuePassport,
 };

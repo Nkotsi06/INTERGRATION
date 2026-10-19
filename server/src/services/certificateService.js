@@ -74,7 +74,7 @@ async function recordCertificateApplication({ application, formData, citizenId }
 
 // ─── List certificates for one citizen (includes ID cards) ───────────
 async function listForCitizen(citizenId) {
-  const [birth, death, marriage, divorce, cards] = await Promise.all([
+  const [birth, death, marriage, divorce, cards, passports] = await Promise.all([
     certificateRepository.findByCitizen('BIRTH', citizenId),
     certificateRepository.findByCitizen('DEATH', citizenId),
     certificateRepository.findByCitizen('MARRIAGE', citizenId),
@@ -83,6 +83,34 @@ async function listForCitizen(citizenId) {
       `SELECT * FROM national_id_cards
        WHERE citizen_id = $1
        ORDER BY created_at DESC`,
+      [citizenId]
+    ).then((r) => r.rows),
+    query(
+      `SELECT pa.id,
+              pa.citizen_id,
+              pa.application_id,
+              pa.passport_number,
+              pa.passport_type,
+              pa.issue_date,
+              pa.expiry_date,
+              pa.issued_at,
+              pa.collected_at,
+              pa.collected_by_name,
+              pa.collection_office,
+              pa.signature_id,
+              pa.created_at,
+              a.status,
+              b.name AS collection_branch,
+              b.address AS collection_address,
+              b.district AS collection_district,
+              a.data->'formData'->>'childPhoto' AS applicant_photo
+       FROM passport_applications pa
+       JOIN applications a ON a.id = pa.application_id
+       LEFT JOIN branches b ON b.id::text = pa.collection_office
+       WHERE pa.citizen_id = $1
+         AND pa.passport_number IS NOT NULL
+         AND a.status IN ('READY_FOR_COLLECTION', 'COLLECTED', 'COMPLETED')
+       ORDER BY pa.created_at DESC`,
       [citizenId]
     ).then((r) => r.rows),
   ]);
@@ -96,6 +124,11 @@ async function listForCitizen(citizenId) {
       ...r,
       certificate_type: 'ID_CARD',
       certificate_number: r.card_number,
+    })),
+    ...passports.map((r) => ({
+      ...r,
+      certificate_type: 'PASSPORT',
+      certificate_number: r.passport_number,
     })),
   ];
 

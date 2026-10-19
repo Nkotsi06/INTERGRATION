@@ -2,6 +2,7 @@ const passportApplicationRepository = require('../repositories/passportApplicati
 const applicationRepository = require('../repositories/applicationRepository');
 const notificationService = require('./notificationService');
 const paymentService = require('./paymentService');
+const signatureService = require('./signatureService');
 const userRepository = require('../repositories/userRepository');
 const citizenRepository = require('../repositories/citizenRepository');
 const biometricRepository = require('../repositories/biometricRepository');
@@ -123,11 +124,6 @@ async function applyForPassport(citizenId, data, user) {
     throw badRequest('Complete the child and guardian details before applying.');
   }
 
-  const passportSequence = await query(
-    "SELECT nextval('passport_number_seq') AS number"
-  );
-  const passportNumber =
-    `PPT-${new Date().getFullYear()}-${String(passportSequence.rows[0].number).padStart(6, '0')}`;
   const referenceNumber = await generateReference('PASSPORT_APPLICATION');
 
   const application = await applicationRepository.create({
@@ -141,7 +137,7 @@ async function applyForPassport(citizenId, data, user) {
       collectionOffice: data.collectionOffice,
       isRenewal,
       nationalId: citizen.national_id,
-      passportNumber,
+      passportNumber: null,
       previousPassportNumber: isRenewal
         ? currentPassport.passport_number
         : null,
@@ -167,7 +163,7 @@ async function applyForPassport(citizenId, data, user) {
     citizenId,
     passportType: data.passportType,
     reason: data.reason,
-    passportNumber,
+    passportNumber: null,
     collectionOffice: data.collectionOffice,
     isRenewal,
     previousPassportNumber: isRenewal
@@ -208,7 +204,7 @@ async function applyForPassport(citizenId, data, user) {
 
   return {
     referenceNumber,
-    passportNumber,
+    passportNumber: null,
     applicantName: `${citizen.first_name} ${citizen.last_name}`.trim(),
     dateSubmitted: application.submitted_at,
     passportType: data.passportType,
@@ -250,8 +246,12 @@ async function processApplication(id, action, staffUser) {
   const status =
     action === 'APPROVE' ? 'APPROVED' : action === 'REJECT' ? 'REJECTED' : 'UNDER_REVIEW';
 
-  await applicationRepository.updateStatus(id, status, staffUser.userId, action);
-  await passportApplicationRepository.updateStatus(id, status);
+  await passportApplicationRepository.updateApplicationStatus(
+    id,
+    status,
+    staffUser.userId,
+    action
+  );
 
   await auditService.log({
     userId: staffUser.userId,
@@ -269,6 +269,100 @@ async function processApplication(id, action, staffUser) {
   );
 }
 
+async function markReadyForCollection(id, staffUser) {
+  const passportNumber = await generateReference('PASSPORT_NUMBER');
+  const application = await passportApplicationRepository.markReadyForCollection(
+    id,
+    passportNumber,
+    staffUser.userId
+  );
+
+  await auditService.log({
+    userId: staffUser.userId,
+    username: staffUser.username,
+    action: 'PASSPORT_MARKED_READY_FOR_COLLECTION',
+    recordType: 'APPLICATION',
+    recordId: id,
+    result: 'SUCCESS',
+  });
+
+  const branchAddress = [
+    application.branch_name,
+    application.branch_address,
+    application.branch_district,
+  ].filter(Boolean).join(', ');
+  await notifyCitizen(
+    application.citizen_id,
+    'Passport ready for collection',
+    `Your passport ${passportNumber} is ready for collection at ${branchAddress}.`
+  );
+
+  return { passportNumber, status: 'READY_FOR_COLLECTION' };
+}
+
+async function recordCollection(id, data, staffUser) {
+  if (typeof data.signature !== 'string' ||
+      !/^data:image\/png;base64,/.test(data.signature) ||
+      data.signature.length > 2_000_000) {
+    throw badRequest('A valid saved signature is required to record collection.');
+  }
+  if (typeof data.collectedByName !== 'string' || !data.collectedByName.trim()) {
+    throw badRequest('Enter the name of the person collecting the passport.');
+  }
+  if (data.collectedByName.trim().length > 200) {
+    throw badRequest('The collector name cannot exceed 200 characters.');
+  }
+  if (data.idChecked !== true) {
+    throw badRequest('Confirm that the citizen’s ID has been verified.');
+  }
+
+  const app = await applicationRepository.findById(id);
+  if (!app || app.service !== 'PASSPORT') {
+    const error = new Error('Passport application not found.');
+    error.statusCode = 404;
+    throw error;
+  }
+  if (app.status !== 'READY_FOR_COLLECTION') {
+    const error = new Error('Only passports ready for collection can be collected.');
+    error.statusCode = 409;
+    throw error;
+  }
+
+  const signature = await signatureService.save(
+    {
+      citizenId: app.citizen_id,
+      documentTypeCode: 'PASSPORT',
+      signatureData: data.signature,
+    },
+    staffUser
+  );
+  await passportApplicationRepository.recordCollection(
+    id,
+    {
+      collectedByName: data.collectedByName.trim(),
+      idChecked: data.idChecked,
+      signatureId: signature.id,
+    },
+    staffUser.userId
+  );
+
+  await auditService.log({
+    userId: staffUser.userId,
+    username: staffUser.username,
+    action: 'PASSPORT_COLLECTED',
+    recordType: 'APPLICATION',
+    recordId: id,
+    result: 'SUCCESS',
+  });
+  await notifyCitizen(
+    app.citizen_id,
+    'Passport collected',
+    `Your passport for application ${app.reference_number} has been recorded as collected.`
+  );
+
+  return { status: 'COLLECTED' };
+}
+
 module.exports = {
   getStaffStats,
   applyForPassport,
@@ -277,4 +371,6 @@ module.exports = {
   getApplicationByRef,
   getStaffApplications,
   processApplication,
+  markReadyForCollection,
+  recordCollection,
 };

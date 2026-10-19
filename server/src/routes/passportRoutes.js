@@ -14,6 +14,18 @@ router.get('/staff/stats', authMiddleware, roleMiddleware(['PASSPORT']), passpor
 
 router.get('/staff/applications', authMiddleware, roleMiddleware(['PASSPORT']), passportController.getStaffApplications);
 router.put('/staff/applications/:id', authMiddleware, roleMiddleware(['PASSPORT']), passportController.processApplication);
+router.put(
+  '/staff/applications/:id/ready',
+  authMiddleware,
+  roleMiddleware(['PASSPORT']),
+  passportController.markReadyForCollection
+);
+router.post(
+  '/staff/applications/:id/collect',
+  authMiddleware,
+  roleMiddleware(['PASSPORT']),
+  passportController.recordCollection
+);
 router.post('/issue/:id', authMiddleware, roleMiddleware(['PASSPORT']), passportController.issuePassport);
 
 module.exports = router;

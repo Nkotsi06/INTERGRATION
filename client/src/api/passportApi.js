@@ -13,6 +13,10 @@ export const getStaffApplications = (params) =>
   apiClient.get('/passport/staff/applications', { params });
 export const processApplication = (id, data) =>
   apiClient.put(`/passport/staff/applications/${id}`, data);
+export const markReadyForCollection = (id) =>
+  apiClient.put(`/passport/staff/applications/${id}/ready`);
+export const recordCollection = (id, data) =>
+  apiClient.post(`/passport/staff/applications/${id}/collect`, data);
 export const issuePassport = (id, data) =>
   apiClient.post(`/passport/issue/${id}`, data);
 export const getStaffStats = () => apiClient.get('/passport/staff/stats');

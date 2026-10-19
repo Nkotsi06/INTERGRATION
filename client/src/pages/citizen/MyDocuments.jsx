@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import PageWrapper from '../../components/layout/PageWrapper';
 import useFetch from '../../hooks/useFetch';
 import { getMyCertificates } from '../../api/certificateApi';
@@ -7,31 +7,43 @@ import apiClient from '../../api/apiClient';
 import BirthCertificateView from '../../components/documents/BirthCertificateView';
 import DeathCertificateView from '../../components/documents/DeathCertificateView';
 import NationalIdCardView from '../../components/documents/NationalIdCardView';
+import PassportView from '../../components/documents/PassportView';
 import Button from '../../components/common/Button';
+import Alert from '../../components/common/Alert';
 
 function formatTypeLabel(certificate) {
   if (certificate.certificate_type === 'ID_CARD') {
     return 'National ID card';
   }
+  if (certificate.certificate_type === 'PASSPORT') {
+    return 'Passport';
+  }
   return `${certificate.certificate_type} certificate`;
 }
 
 function MyDocuments() {
-  const { data: certificates, loading } = useFetch(getMyCertificates, []);
+  const { data: certificates, loading, error } = useFetch(getMyCertificates, []);
   const { data: profile } = useFetch(getProfile, []);
   const [selectedDoc, setSelectedDoc] = useState(null);
   const [photoUrl, setPhotoUrl] = useState(null);
+  const [photoError, setPhotoError] = useState(null);
+
+  useEffect(() => () => {
+    if (photoUrl?.startsWith('blob:')) URL.revokeObjectURL(photoUrl);
+  }, [photoUrl]);
 
   const handleView = async (cert) => {
     setSelectedDoc(cert);
-    // The National ID card needs the holder's photo. Fetch it through
-    // the authenticated photo endpoint.
-    if (cert.certificate_type === 'ID_CARD') {
+    setPhotoError(null);
+    setPhotoUrl(cert.applicant_photo || null);
+    if (cert.certificate_type === 'ID_CARD' ||
+        (cert.certificate_type === 'PASSPORT' && !cert.applicant_photo)) {
       try {
         const blob = await apiClient.get('/citizen/photo', { responseType: 'blob' });
         setPhotoUrl(URL.createObjectURL(blob));
-      } catch {
+      } catch (err) {
         setPhotoUrl(null);
+        setPhotoError(err.message || 'Could not load the document photo.');
       }
     }
   };
@@ -44,8 +56,9 @@ function MyDocuments() {
       </p>
 
       {loading && <p>Loading documents...</p>}
+      {!loading && error && <Alert type="error" message={error} />}
 
-      {!selectedDoc && certificates?.map((cert) => (
+      {!selectedDoc && !error && certificates?.map((cert) => (
         <div
           key={`${cert.certificate_type}-${cert.id}`}
           className="card card-flat"
@@ -56,7 +69,9 @@ function MyDocuments() {
             <p className="text-muted" style={{ margin: 0 }}>
               {cert.certificate_type === 'ID_CARD'
                 ? cert.card_number
-                : cert.certificate_number}
+                : cert.certificate_type === 'PASSPORT'
+                  ? cert.passport_number
+                  : cert.certificate_number}
             </p>
           </div>
           <Button variant="primary" onClick={() => handleView(cert)}>
@@ -65,9 +80,9 @@ function MyDocuments() {
         </div>
       ))}
 
-      {!selectedDoc && certificates && certificates.length === 0 && (
+      {!selectedDoc && !error && certificates && certificates.length === 0 && (
         <p className="text-muted">
-          You have no documents yet. Certificates and National ID cards
+          You have no documents yet. Certificates, National ID cards, and passports
           appear here once they have been issued.
         </p>
       )}
@@ -95,6 +110,12 @@ function MyDocuments() {
           )}
           {selectedDoc.certificate_type === 'ID_CARD' && (
             <NationalIdCardView data={profile} photoUrl={photoUrl} />
+          )}
+          {selectedDoc.certificate_type === 'PASSPORT' && (
+            <>
+              {photoError && <Alert type="error" message={photoError} />}
+              <PassportView data={selectedDoc} photoUrl={photoUrl} />
+            </>
           )}
         </div>
       )}

@@ -11,6 +11,15 @@ async function generateReference(formatName) {
   const year = new Date().getFullYear();
   const yearStr = format.year_format === 'YYYY' ? year : String(year).slice(-2);
 
+  if (formatName === 'PASSPORT_NUMBER') {
+    const result = await query("SELECT nextval('passport_number_seq') AS number");
+    const sequence = String(result.rows[0].number).padStart(
+      format.sequence_length,
+      '0'
+    );
+    return `${format.prefix}-${yearStr}-${sequence}`;
+  }
+
   const result = await query(
     `SELECT COUNT(*) AS count FROM applications WHERE reference_number LIKE $1`,
     [`${format.prefix}-${yearStr}-%`]
