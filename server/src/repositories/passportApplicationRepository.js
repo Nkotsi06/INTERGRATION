@@ -31,12 +31,7 @@ async function findByApplicationId(applicationId) {
 async function updateStatus(applicationId, status) {
   const result = await query(
     `UPDATE passport_applications
-     SET status = $2,
-         issue_date = CASE WHEN $2 = 'APPROVED' THEN CURRENT_DATE ELSE issue_date END,
-         expiry_date = CASE
-           WHEN $2 = 'APPROVED' THEN CURRENT_DATE + INTERVAL '10 years'
-           ELSE expiry_date
-         END
+     SET status = $2
      WHERE application_id = $1
      RETURNING *`,
     [applicationId, status]
@@ -44,12 +39,44 @@ async function updateStatus(applicationId, status) {
   return result.rows[0];
 }
 
+async function findForStaff(filters = {}) {
+  const params = [];
+  let conditions = "a.service = 'PASSPORT'";
+  if (filters.status) {
+    params.push(filters.status);
+    conditions += ` AND a.status = $${params.length}`;
+  }
+  const result = await query(
+    `SELECT a.id,
+            a.reference_number AS "referenceNumber",
+            a.status,
+            a.submitted_at AS "dateSubmitted",
+            a.updated_at AS "dateUpdated",
+            a.data,
+            c.first_name || ' ' || c.last_name AS "citizenName",
+            c.national_id AS "nationalId",
+            pa.passport_type AS "passportType",
+            pa.passport_number AS "passportNumber",
+            pa.is_renewal AS "isRenewal",
+            pa.collection_office AS "collectionOffice"
+     FROM applications a
+     LEFT JOIN citizens c ON c.id = a.citizen_id
+     LEFT JOIN passport_applications pa ON pa.application_id = a.id
+     WHERE ${conditions}
+     ORDER BY a.submitted_at DESC`,
+    params
+  );
+  return result.rows;
+}
+
 async function findCurrentByCitizen(citizenId) {
   const result = await query(
-    `SELECT pa.passport_number, pa.passport_type, pa.collection_office,
-            pa.created_at, pa.is_renewal, pa.issue_date, pa.expiry_date, a.status
+    `SELECT pa.passport_number, pa.passport_type,
+            COALESCE(b.name, pa.collection_office) AS collection_office,
+            pa.created_at, pa.is_renewal, a.status
      FROM passport_applications pa
      JOIN applications a ON a.id = pa.application_id
+     LEFT JOIN branches b ON b.id::text = pa.collection_office
      WHERE pa.citizen_id = $1
        AND pa.passport_number IS NOT NULL
        AND a.status IN ('APPROVED', 'COMPLETED')
@@ -60,4 +87,10 @@ async function findCurrentByCitizen(citizenId) {
   return result.rows[0] || null;
 }
 
-module.exports = { create, findByApplicationId, updateStatus, findCurrentByCitizen };
+module.exports = {
+  create,
+  findByApplicationId,
+  findForStaff,
+  updateStatus,
+  findCurrentByCitizen,
+};

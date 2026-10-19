@@ -5,9 +5,26 @@ const paymentService = require('./paymentService');
 const userRepository = require('../repositories/userRepository');
 const citizenRepository = require('../repositories/citizenRepository');
 const biometricRepository = require('../repositories/biometricRepository');
+const branchRepository = require('../repositories/branchRepository');
+const policeCaseRepository = require('../repositories/policeCaseRepository');
 const { generateReference } = require('../utils/referenceGenerator');
 const auditService = require('./auditService');
 const { query } = require('../config/database');
+const feeScheduleService = require('./feeScheduleService');
+
+const PASSPORT_SERVICE_CODES = new Set([
+  'PASSPORT_NEW',
+  'PASSPORT_RENEWAL',
+  'PASSPORT_LOST',
+  'PASSPORT_URGENT',
+  'PASSPORT_MINOR',
+]);
+
+function badRequest(message) {
+  const error = new Error(message);
+  error.statusCode = 400;
+  return error;
+}
 
 async function notifyCitizen(citizenId, title, message) {
   if (!citizenId) return;
@@ -48,28 +65,62 @@ async function getStaffStats() {
 }
 
 async function applyForPassport(citizenId, data, user) {
-  if (!data.passportType) {
-    const err = new Error('Passport type is required.');
-    err.statusCode = 400;
-    throw err;
+  if (!['ORDINARY', 'OFFICIAL'].includes(data.passportType)) {
+    throw badRequest('Choose a valid passport type.');
   }
-  const currentPassport = await passportApplicationRepository.findCurrentByCitizen(citizenId);
-  if (data.isRenewal && !currentPassport) {
-    const err = new Error('No issued passport was found to renew.');
-    err.statusCode = 400;
-    throw err;
+  const serviceCode = PASSPORT_SERVICE_CODES.has(data.serviceCode)
+    ? data.serviceCode
+    : data.isRenewal ? 'PASSPORT_RENEWAL' : 'PASSPORT_NEW';
+  const isRenewal = serviceCode === 'PASSPORT_RENEWAL' || serviceCode === 'PASSPORT_LOST';
+  const isMinor = serviceCode === 'PASSPORT_MINOR';
+  const currentPassport = isRenewal
+    ? await passportApplicationRepository.findCurrentByCitizen(citizenId)
+    : null;
+  if (isRenewal && !currentPassport) {
+    throw badRequest('No issued passport was found for this application.');
   }
-  const biometric = await biometricRepository.findByCitizen(citizenId);
-  if (!biometric?.facial_image) {
-    const err = new Error('A Home Affairs photo is required before applying for a passport.');
-    err.statusCode = 400;
-    throw err;
+
+  const childPhoto = data.childPhoto;
+  if (isMinor) {
+    if (typeof childPhoto !== 'string' ||
+        !/^data:image\/(?:jpeg|png);base64,/.test(childPhoto) ||
+        childPhoto.length > 2_000_000) {
+      throw badRequest('Capture a valid photo of the child before applying.');
+    }
+  } else {
+    const biometric = await biometricRepository.findByCitizen(citizenId);
+    if (!biometric?.facial_image) {
+      throw badRequest('A Home Affairs photo is required before applying for a passport.');
+    }
   }
+
   const citizen = await citizenRepository.findById(citizenId);
   if (!citizen?.national_id) {
-    const err = new Error('A Home Affairs National ID is required before applying for a passport.');
-    err.statusCode = 400;
-    throw err;
+    throw badRequest('A Home Affairs National ID is required before applying for a passport.');
+  }
+  if (!data.collectionOffice) {
+    throw badRequest('Please choose a passport collection office.');
+  }
+  const branch = await branchRepository.findById(data.collectionOffice);
+  if (!branch || !branch.is_active || branch.ministry_code !== 'PASSPORT') {
+    throw badRequest('Choose an active Passport Office collection branch.');
+  }
+  if (serviceCode === 'PASSPORT_LOST') {
+    if (!data.policeCaseNumber) {
+      throw badRequest('Choose the police case for your lost passport report.');
+    }
+    const policeCase = await policeCaseRepository.findByCaseNumber(data.policeCaseNumber);
+    if (!policeCase || policeCase.citizen_id !== citizenId ||
+        !['LOST_PROPERTY', 'LOST', 'STOLEN', 'THEFT'].includes(policeCase.case_type)) {
+      throw badRequest('The selected police case is not a valid lost-property case.');
+    }
+  }
+  if (serviceCode === 'PASSPORT_URGENT' && (!data.travelDate || !data.travelReason)) {
+    throw badRequest('Travel date and reason are required for an urgent passport.');
+  }
+  if (isMinor && (!data.childFullName || !data.childDateOfBirth ||
+      !data.guardianFullName || !data.guardianNationalId || !data.guardianRelationship)) {
+    throw badRequest('Complete the child and guardian details before applying.');
   }
 
   const passportSequence = await query(
@@ -86,14 +137,28 @@ async function applyForPassport(citizenId, data, user) {
     data: {
       passportType: data.passportType,
       reason: data.reason,
+      serviceCode,
       collectionOffice: data.collectionOffice,
-      isRenewal: !!data.isRenewal,
+      isRenewal,
       nationalId: citizen.national_id,
       passportNumber,
-      previousPassportNumber: data.isRenewal
+      previousPassportNumber: isRenewal
         ? currentPassport.passport_number
         : null,
-      usesHomeAffairsPhoto: true,
+      usesHomeAffairsPhoto: !isMinor,
+      formData: {
+        circumstances: data.circumstances,
+        policeCaseNumber: data.policeCaseNumber,
+        travelDate: data.travelDate,
+        travelReason: data.travelReason,
+        childFullName: data.childFullName,
+        childDateOfBirth: data.childDateOfBirth,
+        childNationalId: data.childNationalId,
+        guardianFullName: data.guardianFullName,
+        guardianNationalId: data.guardianNationalId,
+        guardianRelationship: data.guardianRelationship,
+        childPhoto: isMinor ? childPhoto : undefined,
+      },
     },
   });
 
@@ -104,21 +169,20 @@ async function applyForPassport(citizenId, data, user) {
     reason: data.reason,
     passportNumber,
     collectionOffice: data.collectionOffice,
-    isRenewal: !!data.isRenewal,
-    previousPassportNumber: data.isRenewal
+    isRenewal,
+    previousPassportNumber: isRenewal
       ? currentPassport.passport_number
       : null,
   });
 
-  const amount = data.amount == null
-    ? (data.passportType === 'OFFICIAL' ? 700 : 500)
-    : Number(data.amount);
+  const fee = await feeScheduleService.getFeeForService('PASSPORT', serviceCode);
+  const amount = fee?.is_active ? Number(fee.amount) : 0;
 
   if (amount > 0) {
     await paymentService.recordPayment({
       citizenId,
       ministry: 'PASSPORT',
-      service: data.isRenewal ? 'PASSPORT_RENEWAL' : 'PASSPORT_NEW',
+      service: serviceCode,
       applicationReference: referenceNumber,
       amount,
       method: data.method || 'MOBILE_MONEY',
@@ -170,10 +234,19 @@ async function getApplicationByRef(ref, citizenId) {
 }
 
 async function getStaffApplications(filters) {
-  return applicationRepository.findByService('PASSPORT', filters);
+  return passportApplicationRepository.findForStaff(filters);
 }
 
 async function processApplication(id, action, staffUser) {
+  const app = await applicationRepository.findById(id);
+  if (!app || app.service !== 'PASSPORT') {
+    const error = new Error('Passport application not found.');
+    error.statusCode = 404;
+    throw error;
+  }
+  if (!['APPROVE', 'REJECT', 'REQUEST_INFO'].includes(action)) {
+    throw badRequest('Invalid passport application action.');
+  }
   const status =
     action === 'APPROVE' ? 'APPROVED' : action === 'REJECT' ? 'REJECTED' : 'UNDER_REVIEW';
 
@@ -189,14 +262,11 @@ async function processApplication(id, action, staffUser) {
     result: 'SUCCESS',
   });
 
-  const app = await applicationRepository.findById(id);
-  if (app) {
-    await notifyCitizen(
-      app.citizen_id,
-      'Passport application update',
-      `Your application ${app.reference_number} is now ${status.toLowerCase()}.`
-    );
-  }
+  await notifyCitizen(
+    app.citizen_id,
+    'Passport application update',
+    `Your application ${app.reference_number} is now ${status.toLowerCase()}.`
+  );
 }
 
 module.exports = {

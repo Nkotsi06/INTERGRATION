@@ -4,6 +4,7 @@ import Table from '../../components/common/Table';
 import StatusBadge from '../../components/common/StatusBadge';
 import Button from '../../components/common/Button';
 import EmptyState from '../../components/common/EmptyState';
+import Alert from '../../components/common/Alert';
 import { TableSkeleton } from '../../components/common/SkeletonLoader';
 import useFetch from '../../hooks/useFetch';
 import { getStaffApplications } from '../../api/passportApi';
@@ -18,7 +19,7 @@ const STATUS_VARIANT = {
 };
 
 function ApplicationHistory() {
-  const { data, loading } = useFetch(getStaffApplications, []);
+  const { data, loading, error } = useFetch(getStaffApplications, []);
   const [statusFilter, setStatusFilter] = useState('');
   const [dateFilter, setDateFilter] = useState('');
 
@@ -96,15 +97,16 @@ function ApplicationHistory() {
       </div>
 
       {loading && <TableSkeleton rows={6} columns={4} />}
+      {!loading && error && <Alert type="error" message={error} />}
 
-      {!loading && filtered.length === 0 && (
+      {!loading && !error && filtered.length === 0 && (
         <EmptyState
           title="No applications match"
           message="Change the filters to see more."
         />
       )}
 
-      {!loading && filtered.length > 0 && (
+      {!loading && !error && filtered.length > 0 && (
         <Table columns={columns} data={filtered} />
       )}
     </PageWrapper>

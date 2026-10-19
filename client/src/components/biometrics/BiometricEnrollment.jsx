@@ -12,7 +12,12 @@ const FINGERPRINTS = [
   { key: 'right_index', label: 'Right Index' },
 ];
 
-function BiometricEnrollment({ onComplete, settings, requireFingerprints = true }) {
+function BiometricEnrollment({
+  onComplete,
+  onChange,
+  settings,
+  requireFingerprints = true,
+}) {
   const [fingerprints, setFingerprints] = useState({});
   const [facialImage, setFacialImage] = useState(null);
   const [facialStage, setFacialStage] = useState('instructions'); // instructions | camera | review
@@ -37,6 +42,7 @@ function BiometricEnrollment({ onComplete, settings, requireFingerprints = true 
     setFacialImage(null);
     setFacialMeta(null);
     setFacialStage('camera');
+    onChange?.(null);
   };
 
   const emitComplete = (image, meta) => {
@@ -100,6 +106,7 @@ function BiometricEnrollment({ onComplete, settings, requireFingerprints = true 
                 setFacialImage(null);
                 setFacialMeta(null);
                 setFacialStage('camera');
+                onChange?.(null);
               }}
             >
               Retake photo

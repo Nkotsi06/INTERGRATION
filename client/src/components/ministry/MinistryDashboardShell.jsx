@@ -68,6 +68,9 @@ function MinistryDashboardShell({
     PASSPORT_APPLY: '/passport/apply',
     PASSPORT_NEW: '/passport/apply',
     PASSPORT_RENEWAL: '/passport/apply?type=renewal',
+    PASSPORT_LOST: '/passport/apply?type=lost',
+    PASSPORT_URGENT: '/passport/apply?type=urgent',
+    PASSPORT_MINOR: '/passport/apply?type=minor',
     PASSPORT_STATUS: '/passport/status',
     // Finance
     TAX_REGISTER: '/finance/tax/register',
