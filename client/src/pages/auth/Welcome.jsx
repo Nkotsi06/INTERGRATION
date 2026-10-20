@@ -15,14 +15,8 @@ export default function WelcomePage() {
     <div className="welcome-page-container">
       <header className="welcome-header">
         <div className="header-left">
-          
-          {/* Replaced the LS text with the actual Logo.jpeg */}
-          <img 
-            src="/Logo.jpeg" 
-            alt="Lesotho Coat of Arms" 
-            className="logo-circle" 
-          />
-          
+          {/* Uses the global app-logo class */}
+          <img src="/Logo.jpeg" alt="Lesotho Coat of Arms" className="app-logo" />
           <div>
             <h2 style={{ margin: 0, color: '#1A5276', fontSize: '1.2rem' }}>Integrated Government Services</h2>
             <p style={{ margin: 0, fontSize: '0.8rem', color: '#666' }}>Government of Lesotho</p>

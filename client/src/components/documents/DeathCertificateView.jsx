@@ -11,10 +11,11 @@ function DeathCertificateView({ data }) {
           {data.certificate_number}
         </div>
         <div style={{ textAlign: 'center', flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          {/* Uses the document-logo class for consistent styling */}
           <img 
             src="/Logo.jpeg" 
             alt="Lesotho Coat of Arms" 
-            style={{ width: 70, height: 70, objectFit: 'contain' }} 
+            className="document-logo" 
           />
           <div style={{ marginTop: 4, fontWeight: 'bold', fontSize: '14px' }}>KINGDOM OF LESOTHO</div>
         </div>

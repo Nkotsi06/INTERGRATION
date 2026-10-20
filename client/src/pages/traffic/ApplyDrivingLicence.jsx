@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import PageWrapper from '../../components/layout/PageWrapper';
 import Select from '../../components/common/Select';
+import Input from '../../components/common/Input'; // <-- ADDED THIS IMPORT
 import FormActions from '../../components/common/FormActions';
 import Alert from '../../components/common/Alert';
 import useServiceFee from '../../hooks/useServiceFees';

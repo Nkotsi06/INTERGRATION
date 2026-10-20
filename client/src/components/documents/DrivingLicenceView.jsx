@@ -14,10 +14,11 @@ function DrivingLicenceView({ data }) {
       
       {/* Header with Coat of Arms and Flag */}
       <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24, borderBottom: '2px solid #1A5276', paddingBottom: 16 }}>
+        {/* Uses the document-logo class */}
         <img 
           src="/Logo.jpeg" 
           alt="Lesotho Coat of Arms" 
-          style={{ width: 60, height: 60, objectFit: 'contain' }} 
+          className="document-logo" 
         />
         
         <div style={{ textAlign: 'center' }}>

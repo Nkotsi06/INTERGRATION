@@ -14,10 +14,27 @@ function PassportView({ data, photoUrl }) {
 
   return (
     <article className="card card-flat print-container" style={{ maxWidth: 760, margin: '0 auto', padding: 24 }}>
-      <header style={{ textAlign: 'center', marginBottom: 24 }}>
-        <h2>Kingdom of Lesotho</h2>
-        <h3>Passport</h3>
+      
+      {/* Header with Coat of Arms and Flag */}
+      <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24, borderBottom: '2px solid #1A5276', paddingBottom: 16 }}>
+        <img 
+          src="/Logo.jpeg" 
+          alt="Lesotho Coat of Arms" 
+          className="document-logo" 
+        />
+        
+        <div style={{ textAlign: 'center' }}>
+          <h2 style={{ margin: 0, color: '#1A5276' }}>Kingdom of Lesotho</h2>
+          <h3 style={{ margin: 0, color: '#555' }}>Passport</h3>
+        </div>
+        
+        <img 
+          src="/background.jpg" 
+          alt="Lesotho Flag" 
+          style={{ width: 60, height: 40, objectFit: 'cover', border: '1px solid #ccc' }} 
+        />
       </header>
+
       <div style={{ display: 'flex', gap: 24, alignItems: 'flex-start', flexWrap: 'wrap' }}>
         <div style={{ width: 150, height: 190, border: '1px solid #ccc', background: '#f2f2f2' }}>
           {photoUrl ? (

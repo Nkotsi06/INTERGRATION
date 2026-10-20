@@ -21,10 +21,11 @@ function NationalIdCardView({ data, photoUrl }) {
         </div>
         
         <div style={{ fontSize: 8 }}>
+           {/* Rounded logo styling applied via inline for the small ID card format */}
            <img 
             src="/Logo.jpeg" 
             alt="Coat of Arms" 
-            style={{ width: 30, height: 25, objectFit: 'contain' }} 
+            style={{ width: 30, height: 30, objectFit: 'cover', borderRadius: '50%', border: '1px solid #1A5276' }} 
           />
         </div>
       </div>
