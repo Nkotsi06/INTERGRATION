@@ -29,7 +29,10 @@ function ApplicationConfirmation() {
             label="Passport number"
             value={result.passportNumber || 'Assigned when ready for collection'}
           />
-          <ReadOnly label="Collection office" value={result.collectionOffice} />
+          <ReadOnly
+            label="Collection branch"
+            value={result.collectionBranch || result.collectionOffice}
+          />
         </div>
 
         <p className="text-muted">

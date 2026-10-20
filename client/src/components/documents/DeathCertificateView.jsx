@@ -10,13 +10,20 @@ function DeathCertificateView({ data }) {
           <strong>Certificate Number</strong><br />
           {data.certificate_number}
         </div>
-        <div style={{ textAlign: 'center', flex: 1 }}>
-          <div style={{ width: 60, height: 60, background: '#eee', margin: '0 auto', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, textAlign: 'center' }}>
-            Coat of<br/>Arms
-          </div>
-          <div style={{ marginTop: 4, fontWeight: 'bold' }}>KINGDOM OF LESOTHO</div>
+        <div style={{ textAlign: 'center', flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          <img 
+            src="/Logo.jpeg" 
+            alt="Lesotho Coat of Arms" 
+            style={{ width: 70, height: 70, objectFit: 'contain' }} 
+          />
+          <div style={{ marginTop: 4, fontWeight: 'bold', fontSize: '14px' }}>KINGDOM OF LESOTHO</div>
         </div>
-        <div style={{ textAlign: 'right' }}>
+        <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
+          <img 
+            src="/background.jpg" 
+            alt="Lesotho Flag" 
+            style={{ width: 60, height: 40, objectFit: 'cover', border: '1px solid #ccc', marginBottom: 8 }} 
+          />
           <Barcode value={data.certificate_number} />
         </div>
       </div>

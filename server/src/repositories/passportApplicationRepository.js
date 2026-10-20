@@ -244,10 +244,13 @@ async function findForStaff(filters = {}) {
             pa.issued_at AS "issuedAt",
             pa.expiry_date AS "expiryDate",
             pa.is_renewal AS "isRenewal",
-            pa.collection_office AS "collectionOffice"
+            pa.collection_office AS "collectionOffice",
+            COALESCE(b.name || CASE WHEN b.district IS NOT NULL AND b.district <> ''
+              THEN ' — ' || b.district ELSE '' END, pa.collection_office) AS "collectionBranch"
      FROM applications a
      LEFT JOIN citizens c ON c.id = a.citizen_id
      LEFT JOIN passport_applications pa ON pa.application_id = a.id
+     LEFT JOIN branches b ON b.id::text = pa.collection_office
      WHERE ${conditions}
      ORDER BY a.submitted_at DESC`,
     params
@@ -258,7 +261,8 @@ async function findForStaff(filters = {}) {
 async function findCurrentByCitizen(citizenId) {
   const result = await query(
     `SELECT pa.passport_number, pa.passport_type,
-            COALESCE(b.name, pa.collection_office) AS collection_office,
+            COALESCE(b.name || CASE WHEN b.district IS NOT NULL AND b.district <> ''
+              THEN ' — ' || b.district ELSE '' END, pa.collection_office) AS collection_office,
             pa.created_at, pa.is_renewal, a.status
      FROM passport_applications pa
      JOIN applications a ON a.id = pa.application_id

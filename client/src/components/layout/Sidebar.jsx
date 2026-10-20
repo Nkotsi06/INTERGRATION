@@ -34,8 +34,7 @@ function Sidebar({ collapsed = false, onNavigate }) {
           </NavLink>
         ))}
       </nav>
-
-      <span className="app-sidebar-footer">{config.label}</span>
+      {/* The footer span that displayed "Citizen workspace" has been completely removed */}
     </aside>
   );
 }

@@ -6,10 +6,12 @@ import { getProfile } from '../../api/citizenApi';
 import apiClient from '../../api/apiClient';
 import BirthCertificateView from '../../components/documents/BirthCertificateView';
 import DeathCertificateView from '../../components/documents/DeathCertificateView';
+import DrivingLicenceView from '../../components/documents/DrivingLicenceView';
 import NationalIdCardView from '../../components/documents/NationalIdCardView';
 import PassportView from '../../components/documents/PassportView';
 import Button from '../../components/common/Button';
 import Alert from '../../components/common/Alert';
+import { getLicence } from '../../api/trafficApi';
 
 function formatTypeLabel(certificate) {
   if (certificate.certificate_type === 'ID_CARD') {
@@ -29,11 +31,17 @@ function MyDocuments() {
     pollInterval: 30000,
   });
   const {
+    data: licence,
+    loading: licenceLoading,
+    error: licenceError,
+  } = useFetch(getLicence, []);
+  const {
     data: profile,
     loading: profileLoading,
     error: profileError,
   } = useFetch(getProfile, []);
   const [selectedDoc, setSelectedDoc] = useState(null);
+  const [showLicence, setShowLicence] = useState(false);
   const [photoUrl, setPhotoUrl] = useState(null);
   const [photoError, setPhotoError] = useState(null);
 
@@ -67,7 +75,7 @@ function MyDocuments() {
       {loading && <p>Loading documents...</p>}
       {!loading && error && <Alert type="error" message={error} />}
 
-      {!selectedDoc && !error && Array.isArray(certificates) && certificates.map((cert) => (
+      {!selectedDoc && !showLicence && !error && Array.isArray(certificates) && certificates.map((cert) => (
         <div
           key={`${cert.certificate_type}-${cert.id}`}
           className="card card-flat"
@@ -89,24 +97,55 @@ function MyDocuments() {
         </div>
       ))}
 
-      {!selectedDoc && !error && Array.isArray(certificates) && certificates.length === 0 && (
+      {!selectedDoc && !showLicence && licence && (
+        <div
+          className="card card-flat"
+          style={{ marginBottom: 10, padding: 15, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+        >
+          <div>
+            <strong>Driving licence</strong>
+            <p className="text-muted" style={{ margin: 0 }}>
+              {licence.licenceNumber || licence.licence_number || 'Licence number unavailable'}
+            </p>
+          </div>
+          <Button variant="primary" onClick={() => setShowLicence(true)}>
+            View
+          </Button>
+        </div>
+      )}
+
+      {!selectedDoc && !showLicence && licenceError && (
+        <Alert
+          type="error"
+          message={licenceError.message || 'Could not load your driving licence.'}
+        />
+      )}
+
+      {!selectedDoc && !showLicence && !error && !licenceLoading &&
+        Array.isArray(certificates) && certificates.length === 0 && !licence && (
         <p className="text-muted">
-          You have no documents yet. Certificates, National ID cards, and passports
-          appear here once they have been issued.
+          You have no documents yet. Certificates, National ID cards, passports,
+          and driving licences appear here once they have been issued.
         </p>
       )}
 
-      {!selectedDoc && profileError && (
+      {!selectedDoc && !showLicence && profileError && (
         <Alert
           type="error"
           message="Your citizen profile could not be loaded. Your document list is still available, but profile details cannot be displayed."
         />
       )}
 
-      {selectedDoc && (
+      {(selectedDoc || showLicence) && (
         <div style={{ marginTop: 20 }}>
           <div className="no-print" style={{ marginBottom: 20 }}>
-            <Button variant="secondary" onClick={() => setSelectedDoc(null)}>
+            <Button
+              variant="secondary"
+              onClick={() => {
+                setSelectedDoc(null);
+                setShowLicence(false);
+              }}
+            >
               Back to list
             </Button>
             <Button
@@ -118,13 +157,13 @@ function MyDocuments() {
             </Button>
           </div>
 
-          {selectedDoc.certificate_type === 'BIRTH' && (
+          {selectedDoc?.certificate_type === 'BIRTH' && (
             <BirthCertificateView data={selectedDoc} />
           )}
-          {selectedDoc.certificate_type === 'DEATH' && (
+          {selectedDoc?.certificate_type === 'DEATH' && (
             <DeathCertificateView data={selectedDoc} />
           )}
-          {selectedDoc.certificate_type === 'ID_CARD' && (
+          {selectedDoc?.certificate_type === 'ID_CARD' && (
             profile ? (
               <NationalIdCardView
                 data={{ ...profile, signatureData: selectedDoc.signature_data }}
@@ -139,12 +178,13 @@ function MyDocuments() {
               />
             )
           )}
-          {selectedDoc.certificate_type === 'PASSPORT' && (
+          {selectedDoc?.certificate_type === 'PASSPORT' && (
             <>
               {photoError && <Alert type="error" message={photoError} />}
               <PassportView data={selectedDoc} photoUrl={photoUrl} />
             </>
           )}
+          {showLicence && licence && <DrivingLicenceView data={licence} />}
         </div>
       )}
     </PageWrapper>

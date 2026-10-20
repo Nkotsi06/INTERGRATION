@@ -76,7 +76,8 @@ function CitizenDashboard() {
 
         {showSkeleton && <StatsSkeleton count={6} />}
 
-        <div className="ministry-grid">
+        {/* Changed from ministry-grid to services-grid */}
+        <div className="services-grid">
           {ministries.map((ministry) => (
             <Card
               key={ministry.code}

@@ -1,28 +1,26 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 
 function FingerprintCapture({ fingerLabel, onCapture, onComplete }) {
-  const [capturing, setCapturing] = useState(false);
   const [captured, setCaptured] = useState(null);
+  const fileInputRef = useRef(null);
 
-  const handleCapture = async () => {
-    setCapturing(true);
-    try {
-      // In production, this integrates with a fingerprint scanner SDK.
-      // For prototype, we simulate the capture.
-      const mockImage = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=';
-      setCaptured(mockImage);
-      onCapture(fingerLabel, mockImage);
-    } finally {
-      setCapturing(false);
-    }
+  const handleFileUpload = (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const base64String = reader.result;
+      setCaptured(base64String);
+      onCapture(fingerLabel, base64String);
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleRetake = () => {
     setCaptured(null);
-  };
-
-  const handleConfirm = () => {
-    onComplete(fingerLabel, captured);
+    onCapture(fingerLabel, null);
+    if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
   return (
@@ -32,14 +30,22 @@ function FingerprintCapture({ fingerLabel, onCapture, onComplete }) {
       {!captured ? (
         <div className="fingerprint-scanner">
           <div className="fingerprint-scanner-placeholder">
-            <span>Place finger on scanner</span>
+            <span>Scan via iFING App & Save</span>
           </div>
+          
+          <input 
+            type="file" 
+            accept="image/*" 
+            ref={fileInputRef} 
+            onChange={handleFileUpload} 
+            style={{ display: 'none' }} 
+          />
+          
           <button
             className="btn btn-primary"
-            onClick={handleCapture}
-            disabled={capturing}
+            onClick={() => fileInputRef.current.click()}
           >
-            {capturing ? 'Capturing...' : 'Capture Fingerprint'}
+            Upload Fingerprint Image
           </button>
         </div>
       ) : (
@@ -49,7 +55,7 @@ function FingerprintCapture({ fingerLabel, onCapture, onComplete }) {
             <button className="btn btn-secondary" onClick={handleRetake}>
               Retake
             </button>
-            <button className="btn btn-primary" onClick={handleConfirm}>
+            <button className="btn btn-primary" onClick={() => onComplete(fingerLabel, captured)}>
               Confirm
             </button>
           </div>

@@ -4,29 +4,32 @@ function NationalIdCardView({ data, photoUrl }) {
   return (
     <div className="id-card-page print-container" style={{ background: 'linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%)' }}>
       
-      {/* Green curved band background */}
       <div style={{ position: 'absolute', top: '20mm', left: '-10mm', width: '120mm', height: '40mm', background: '#e8f5e9', borderRadius: '50%', transform: 'rotate(-10deg)', zIndex: 0 }} />
 
-      {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'relative', zIndex: 1 }}>
         <div style={{ fontSize: 8, fontWeight: 'bold', color: '#000' }}>
-          {/* Flag placeholder */}
-          <div style={{ width: 20, height: 14, background: '#0033A0', borderTop: '4px solid #fff', borderBottom: '4px solid #009543', marginBottom: 2 }}></div>
+          <img 
+            src="/background.jpg" 
+            alt="Lesotho Flag" 
+            style={{ width: 25, height: 18, objectFit: 'cover', border: '1px solid #ccc' }} 
+          />
         </div>
+        
         <div style={{ textAlign: 'center' }}>
           <div style={{ fontSize: 11, fontWeight: 'bold', color: '#0033A0' }}>Kingdom of Lesotho</div>
           <div style={{ fontSize: 8, fontWeight: 'bold', color: '#555' }}>NATIONAL IDENTITY CARD</div>
         </div>
+        
         <div style={{ fontSize: 8 }}>
-           {/* Coat of arms placeholder */}
-           <div style={{ width: 24, height: 20, background: '#ddd', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 5 }}>CoA</div>
+           <img 
+            src="/Logo.jpeg" 
+            alt="Coat of Arms" 
+            style={{ width: 30, height: 25, objectFit: 'contain' }} 
+          />
         </div>
       </div>
 
-      {/* Body */}
       <div style={{ display: 'flex', marginTop: '3mm', position: 'relative', zIndex: 1 }}>
-        
-        {/* Photo */}
         <div style={{ width: '20mm', height: '24mm', background: '#ccc', border: '1px solid #999', overflow: 'hidden' }}>
            {photoUrl ? (
              <img src={photoUrl} alt="Holder" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -35,7 +38,6 @@ function NationalIdCardView({ data, photoUrl }) {
            )}
         </div>
 
-        {/* Details */}
         <div style={{ flex: 1, marginLeft: '4mm', display: 'flex', flexDirection: 'column', gap: '1mm', fontSize: '8px', fontWeight: 'bold', color: '#333' }}>
           <div style={{ display: 'flex' }}>
             <span style={{ width: '25mm' }}>ID Number</span>
@@ -75,7 +77,6 @@ function NationalIdCardView({ data, photoUrl }) {
           </div>
         </div>
 
-        {/* Right side faded photo & signature */}
         <div style={{ width: '15mm', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
           <div style={{ width: '10mm', height: '12mm', background: '#eee', opacity: 0.5, border: '1px solid #ccc' }}></div>
           <div style={{ marginTop: 'auto', fontSize: '6px', textAlign: 'center' }}>
@@ -93,7 +94,6 @@ function NationalIdCardView({ data, photoUrl }) {
         </div>
       </div>
 
-      {/* Bottom stripe / security seal */}
       <div style={{ position: 'absolute', bottom: 2, left: 4, right: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div style={{ width: '10mm', height: '4mm', background: 'linear-gradient(to right, gold, silver)', borderRadius: 2 }}></div>
         <div style={{ fontSize: '5px', color: '#666' }}>This card is the property of the Government of Lesotho</div>

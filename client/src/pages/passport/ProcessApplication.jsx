@@ -130,6 +130,7 @@ function ProcessApplication() {
     { key: 'referenceNumber', label: 'Reference' },
     { key: 'citizenName', label: 'Citizen' },
     { key: 'nationalId', label: 'National ID' },
+    { key: 'collectionBranch', label: 'Collection branch' },
     { key: 'dateSubmitted', label: 'Submitted', render: (r) => formatDate(r.dateSubmitted) },
     { key: 'status', label: 'Status', render: (r) => <StatusBadge variant={STATUS_VARIANT[r.status] || 'pending'} label={r.status} /> },
     {

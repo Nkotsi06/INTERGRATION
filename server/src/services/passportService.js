@@ -219,6 +219,7 @@ async function applyForPassport(citizenId, data, user) {
     dateSubmitted: application.submitted_at,
     passportType: data.passportType,
     collectionOffice: data.collectionOffice,
+    collectionBranch: `${branch.name}${branch.district ? ` — ${branch.district}` : ''}`,
     application,
   };
 }

@@ -80,6 +80,9 @@ function ApplyForPassport() {
     ),
     [policeCases]
   );
+  const selectedCollectionBranch = branches.find(
+    (branch) => branch.id === details.collectionOffice
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -246,7 +249,7 @@ function ApplyForPassport() {
                 <div className="form-grid">
                   <ReadOnly label="Passport number" value={currentPassport?.passport_number} />
                   <ReadOnly label="Passport type" value={currentPassport?.passport_type} />
-                  <ReadOnly label="Collection office" value={currentPassport?.collection_office} />
+                  <ReadOnly label="Collection branch" value={currentPassport?.collection_office} />
                 </div>
               )}
             </div>
@@ -283,7 +286,7 @@ function ApplyForPassport() {
               />
             )}
             <Select
-              label="Collection office"
+              label="Collection branch"
               value={details.collectionOffice}
               onChange={(event) => update('collectionOffice', event.target.value)}
               options={branches.map((branch) => ({
@@ -499,8 +502,10 @@ function ApplyForPassport() {
                 />
               )}
               <ReadOnly
-                label="Collection office"
-                value={branches.find((branch) => branch.id === details.collectionOffice)?.name}
+                label="Collection branch"
+                value={selectedCollectionBranch
+                  ? `${selectedCollectionBranch.name}${selectedCollectionBranch.district ? ` — ${selectedCollectionBranch.district}` : ''}`
+                  : ''}
               />
               <ReadOnly label="Signature" value={details.signature ? 'Provided' : 'Missing'} />
               {isMinor && <ReadOnly label="Child" value={details.childFullName} />}
