@@ -45,6 +45,10 @@ import HAIssueCertificate from '../pages/homeAffairs/IssueCertificate';
 import HAEditCertificate from '../pages/homeAffairs/EditCertificate';
 import HAApplicationQueue from '../pages/homeAffairs/ApplicationQueue';
 import HAApplicationDetail from '../pages/homeAffairs/ApplicationDetail';
+import HAEnquiriesQueue from '../pages/homeAffairs/EnquiriesQueue';
+import HADocumentVerification from '../pages/homeAffairs/DocumentVerification';
+import HAInformationManagement from '../pages/homeAffairs/InformationManagement';
+import HAVerifyDocuments from '../pages/homeAffairs/VerifyDocuments';
 
 import TrafficDashboard from '../pages/traffic/TrafficDashboard';
 import ViewLicence from '../pages/traffic/ViewLicence';
@@ -66,6 +70,7 @@ import MyVehicleLicences from '../pages/traffic/MyVehicleLicences';
 import ApplyVehicleLicence from '../pages/traffic/ApplyVehicleLicence';
 import MyTransportPermits from '../pages/traffic/MyTransportPermits';
 import ApplyTransportPermit from '../pages/traffic/ApplyTransportPermit';
+import DrivingTestQueue from '../pages/traffic/DrivingTestQueue';
 
 import PoliceDashboard from '../pages/police/PoliceDashboard';
 import ReportCase from '../pages/police/ReportCase';
@@ -185,11 +190,15 @@ function AppRoutes() {
 
       {/* Home Affairs staff */}
       <Route path="/home-affairs/dashboard" element={<RoleRoute roles={['HOME_AFFAIRS']}><HAStaffDashboard /></RoleRoute>} />
+      <Route path="/home-affairs/enquiries" element={<RoleRoute roles={['HOME_AFFAIRS']}><HAEnquiriesQueue /></RoleRoute>} />
+      <Route path="/home-affairs/verify-document" element={<RoleRoute roles={['HOME_AFFAIRS']}><HADocumentVerification /></RoleRoute>} />
+      <Route path="/home-affairs/information" element={<RoleRoute roles={['HOME_AFFAIRS']}><HAInformationManagement /></RoleRoute>} />
       <Route path="/home-affairs/registrations" element={<RoleRoute roles={['HOME_AFFAIRS']}><HANewRegistrations /></RoleRoute>} />
       <Route path="/home-affairs/registrations/:id" element={<RoleRoute roles={['HOME_AFFAIRS']}><HACompleteCitizenRecord /></RoleRoute>} />
       <Route path="/home-affairs/record/:id/saved" element={<RoleRoute roles={['HOME_AFFAIRS']}><HARecordSaved /></RoleRoute>} />
       <Route path="/home-affairs/search" element={<RoleRoute roles={['HOME_AFFAIRS']}><HACitizenSearch /></RoleRoute>} />
       <Route path="/home-affairs/citizen/:id" element={<RoleRoute roles={['HOME_AFFAIRS']}><HACitizenProfile /></RoleRoute>} />
+      <Route path="/home-affairs/citizen/:id/documents" element={<RoleRoute roles={['HOME_AFFAIRS']}><HAVerifyDocuments /></RoleRoute>} />
       <Route path="/home-affairs/verify/:id" element={<RoleRoute roles={['HOME_AFFAIRS']}><HAVerifyCitizen /></RoleRoute>} />
       <Route path="/home-affairs/reports" element={<RoleRoute roles={['HOME_AFFAIRS']}><HAReports /></RoleRoute>} />
       <Route path="/home-affairs/certificates" element={<RoleRoute roles={['HOME_AFFAIRS']}><HACertificates /></RoleRoute>} />
@@ -224,6 +233,7 @@ function AppRoutes() {
       {/* Traffic — staff */}
       <Route path="/traffic/staff" element={<RoleRoute roles={['TRAFFIC']}><TrafficStaffDashboard /></RoleRoute>} />
       <Route path="/traffic/processing" element={<RoleRoute roles={['TRAFFIC']}><TrafficApplicationProcessing /></RoleRoute>} />
+      <Route path="/traffic/tests" element={<RoleRoute roles={['TRAFFIC']}><DrivingTestQueue /></RoleRoute>} />
       <Route path="/traffic/issue-licence/:id" element={<RoleRoute roles={['TRAFFIC']}><IssueLicence /></RoleRoute>} />
 
       {/* Police — citizen */}

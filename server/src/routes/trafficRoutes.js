@@ -8,6 +8,7 @@ router.get('/licence', authMiddleware, c.getLicence);
 router.post('/licence/renew', authMiddleware, c.renewLicence);
 router.post('/test/book', authMiddleware, c.bookDrivingTest);
 router.get('/appointments', authMiddleware, c.getAppointments);
+router.get('/test/references', authMiddleware, c.getPassedDrivingTests);
 router.delete('/appointments/:id', authMiddleware, c.cancelAppointment);
 
 // Citizen — licence applications
@@ -46,6 +47,8 @@ router.put('/staff/applications/:id', authMiddleware, roleMiddleware(['TRAFFIC']
 router.post('/issue-licence/:id', authMiddleware, roleMiddleware(['TRAFFIC']), c.issueLicence);
 router.get('/staff/inspections', authMiddleware, roleMiddleware(['TRAFFIC']), c.getStaffInspections);
 router.put('/staff/inspections/:id', authMiddleware, roleMiddleware(['TRAFFIC']), c.processInspection);
+router.get('/staff/tests', authMiddleware, roleMiddleware(['TRAFFIC']), c.getStaffDrivingTests);
+router.put('/staff/tests/:id', authMiddleware, roleMiddleware(['TRAFFIC']), c.processDrivingTest);
 router.get('/staff/permits', authMiddleware, roleMiddleware(['TRAFFIC']), c.getStaffTransportPermits);
 router.put('/staff/permits/:id', authMiddleware, roleMiddleware(['TRAFFIC']), c.processTransportPermit);
 

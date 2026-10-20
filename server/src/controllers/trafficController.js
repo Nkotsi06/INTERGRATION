@@ -28,6 +28,12 @@ async function bookDrivingTest(req, res, next) {
 async function getAppointments(req, res, next) {
   try { res.json(await trafficService.getAppointments(citizenIdFrom(req))); } catch (e) { next(e); }
 }
+async function getPassedDrivingTests(req, res, next) {
+  try { res.json(await trafficService.getPassedDrivingTests(citizenIdFrom(req))); } catch (e) { next(e); }
+}
+async function getStaffDrivingTests(req, res, next) {
+  try { res.json(await trafficService.getStaffDrivingTests()); } catch (e) { next(e); }
+}
 async function cancelAppointment(req, res, next) {
   try { await trafficService.cancelAppointment(req.params.id, citizenIdFrom(req)); res.json({ message: 'Cancelled' }); } catch (e) { next(e); }
 }
@@ -65,6 +71,11 @@ async function getInspections(req, res, next) { try { res.json(await trafficServ
 async function cancelInspection(req, res, next) { try { await trafficService.cancelInspection(citizenIdFrom(req), req.params.id); res.json({ message: 'Cancelled' }); } catch (e) { next(e); } }
 async function getStaffInspections(req, res, next) { try { res.json(await trafficService.getStaffInspections(req.query)); } catch (e) { next(e); } }
 async function processInspection(req, res, next) { try { res.json(await trafficService.processInspection(req.params.id, req.body, req.user)); } catch (e) { next(e); } }
+async function processDrivingTest(req, res, next) {
+  try {
+    res.json(await trafficService.processDrivingTest(req.params.id, req.body, req.user));
+  } catch (e) { next(e); }
+}
 
 // Vehicle licences
 async function applyVehicleLicence(req, res, next) { try { res.status(201).json(await trafficService.applyVehicleLicence(citizenIdFrom(req), req.body, req.user)); } catch (e) { next(e); } }
@@ -92,10 +103,10 @@ async function getApplicationByReference(req, res, next) {
 
 module.exports = {
   getStaffStats,
-  getLicence, renewLicence, bookDrivingTest, getAppointments, cancelAppointment,
+  getLicence, renewLicence, bookDrivingTest, getAppointments, getPassedDrivingTests, getStaffDrivingTests, cancelAppointment,
   getStaffApplications, processApplication, issueLicence,
   getVehicles, registerVehicle, updateVehicle, deleteVehicle,
-  bookInspection, getInspections, cancelInspection, getStaffInspections, processInspection,
+  bookInspection, getInspections, cancelInspection, getStaffInspections, processInspection, processDrivingTest,
   applyVehicleLicence, getVehicleLicences, renewVehicleLicence,
   applyTransportPermit, getTransportPermits, getStaffTransportPermits, processTransportPermit,
   applyForLearnersLicence, applyForDrivingLicence, applyForPublicDrivingPermit,

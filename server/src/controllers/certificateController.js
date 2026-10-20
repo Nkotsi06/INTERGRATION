@@ -2,7 +2,7 @@ const certificateService = require('../services/certificateService');
 
 function badRequest(msg) { const e = new Error(msg); e.statusCode = 400; return e; }
 
-const VALID_TYPES = ['BIRTH', 'DEATH', 'MARRIAGE', 'DIVORCE'];
+const VALID_TYPES = ['BIRTH', 'DEATH', 'MARRIAGE', 'DIVORCE', 'ID_CARD'];
 
 function checkType(req) {
   const type = String(req.params.type || '').toUpperCase();

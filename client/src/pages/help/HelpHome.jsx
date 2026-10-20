@@ -43,6 +43,11 @@ function HelpHome() {
         Find answers about using the Integrated Government Services System.
         If you cannot find what you need, contact the nearest office.
       </p>
+      <p className="text-muted">
+        Need information on immigration, citizenship, refugee services,
+        livestock registration, or document verification? Visit Help and
+        Support.
+      </p>
 
       <div className="services-grid" style={{ marginTop: 24 }}>
         {TOPICS.map((topic) => (

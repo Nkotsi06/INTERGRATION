@@ -12,7 +12,9 @@ import { useNotification } from '../../context/NotificationContext';
 import { formatDate } from '../../utils/formatters';
 
 function MyAppointments() {
-  const { data: appointments, loading, refetch } = useFetch(getAppointments, []);
+  const { data: appointments, loading, refetch } = useFetch(getAppointments, [], {
+    pollInterval: 30000,
+  });
   const [statusFilter, setStatusFilter] = useState('');
   const [dateFilter, setDateFilter] = useState('');
   const [pendingCancel, setPendingCancel] = useState(null);

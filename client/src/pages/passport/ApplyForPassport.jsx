@@ -5,6 +5,7 @@ import StepIndicator from '../../components/common/StepIndicator';
 import Select from '../../components/common/Select';
 import Input from '../../components/common/Input';
 import Checkbox from '../../components/common/Checkbox';
+import SignaturePad from '../../components/signature/SignaturePad';
 import FormActions from '../../components/common/FormActions';
 import Alert from '../../components/common/Alert';
 import CitizenReadOnlyBlock from '../../components/ministry/CitizenReadOnlyBlock';
@@ -65,6 +66,7 @@ function ApplyForPassport() {
     guardianFullName: '',
     guardianNationalId: '',
     guardianRelationship: '',
+    signature: null,
   });
   const [confirmed, setConfirmed] = useState(false);
   const [error, setError] = useState(null);
@@ -172,6 +174,10 @@ function ApplyForPassport() {
     }
     if (!confirmed) {
       setError('Please confirm the information before submitting.');
+      return;
+    }
+    if (!details.signature) {
+      setError('Please provide your signature before submitting.');
       return;
     }
     if (fee > 0 && details.method === 'MOBILE_MONEY' && !details.mobile.trim()) {
@@ -407,6 +413,17 @@ function ApplyForPassport() {
               </>
             )}
 
+            <div className="form-section">
+              <h3 className="form-section-title">Applicant signature</h3>
+              <p className="text-muted">
+                Sign to authorise this passport application.
+              </p>
+              <SignaturePad
+                onSave={(signature) => update('signature', signature)}
+                onClear={() => update('signature', null)}
+              />
+            </div>
+
             {(application.code === 'PASSPORT_NEW' ||
               application.code === 'PASSPORT_RENEWAL') && (
               <Input
@@ -485,6 +502,7 @@ function ApplyForPassport() {
                 label="Collection office"
                 value={branches.find((branch) => branch.id === details.collectionOffice)?.name}
               />
+              <ReadOnly label="Signature" value={details.signature ? 'Provided' : 'Missing'} />
               {isMinor && <ReadOnly label="Child" value={details.childFullName} />}
               {isMinor && childPhoto && <p className="text-muted">Child's face photo captured.</p>}
               {application.code === 'PASSPORT_LOST' && (

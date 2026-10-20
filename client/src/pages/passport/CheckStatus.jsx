@@ -18,7 +18,9 @@ const STATUS_VARIANT = {
 };
 
 function CheckStatus() {
-  const { data, loading } = useFetch(getMyApplications, []);
+  const { data, loading } = useFetch(getMyApplications, [], {
+    pollInterval: 30000,
+  });
   const [statusFilter, setStatusFilter] = useState('');
   const [dateFilter, setDateFilter] = useState('');
 

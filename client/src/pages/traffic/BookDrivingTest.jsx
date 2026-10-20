@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import PageWrapper from '../../components/layout/PageWrapper';
 import Select from '../../components/common/Select';
@@ -8,6 +8,7 @@ import FormActions from '../../components/common/FormActions';
 import Alert from '../../components/common/Alert';
 import useServiceFee from '../../hooks/useServiceFees';
 import { bookDrivingTest } from '../../api/trafficApi';
+import { getPublicBranches } from '../../api/serviceApi';
 import { useNotification } from '../../context/NotificationContext';
 import { formatCurrency } from '../../utils/formatters';
 
@@ -23,8 +24,27 @@ function BookDrivingTest() {
   });
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [branches, setBranches] = useState([]);
+  const [branchesLoading, setBranchesLoading] = useState(true);
   const navigate = useNavigate();
   const { success } = useNotification();
+
+  useEffect(() => {
+    let cancelled = false;
+    getPublicBranches('TRAFFIC')
+      .then((data) => {
+        if (!cancelled) setBranches(Array.isArray(data) ? data : []);
+      })
+      .catch((err) => {
+        if (!cancelled) setError(err.message || 'Could not load Traffic branches.');
+      })
+      .finally(() => {
+        if (!cancelled) setBranchesLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const handleBook = async () => {
     setError(null);
@@ -95,13 +115,16 @@ function BookDrivingTest() {
         label="Location"
         value={form.location}
         onChange={(e) => setForm({ ...form, location: e.target.value })}
-        options={[
-          { value: 'MASERU', label: 'Maseru testing centre' },
-          { value: 'LERIBE', label: 'Leribe testing centre' },
-          { value: 'MAFETENG', label: 'Mafeteng testing centre' },
-        ]}
+        options={branches.map((branch) => ({
+          value: branch.id,
+          label: `${branch.name}${branch.district ? ` (${branch.district})` : ''}`,
+        }))}
+        disabled={branchesLoading || branches.length === 0}
         required
       />
+      {!branchesLoading && branches.length === 0 && (
+        <Alert type="warning" message="No active Traffic testing branches are available." />
+      )}
 
       {fee > 0 && (
         <div className="form-section">

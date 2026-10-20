@@ -35,39 +35,40 @@ async function notifyCitizen(citizenId, title, message) {
 
 // ─── Dashboard stats ──────────────────────────────────────────────
 async function getStaffStats() {
-  const [pending, approvedToday, rejectedToday] = await Promise.all([
-    query(
-      `SELECT COUNT(*)::int AS c
-       FROM applications
-       WHERE service = 'PASSPORT'
-         AND status IN ('SUBMITTED', 'UNDER_REVIEW')`
-    ),
-    query(
-      `SELECT COUNT(*)::int AS c
-       FROM applications
-       WHERE service = 'PASSPORT'
-         AND status IN ('APPROVED', 'COMPLETED')
-         AND updated_at::date = CURRENT_DATE`
-    ),
-    query(
-      `SELECT COUNT(*)::int AS c
-       FROM applications
-       WHERE service = 'PASSPORT'
-         AND status = 'REJECTED'
-         AND updated_at::date = CURRENT_DATE`
-    ),
-  ]);
+  const result = await query(
+    `SELECT
+       COUNT(*) FILTER (
+         WHERE status IN ('SUBMITTED', 'UNDER_REVIEW')
+       )::int AS pending,
+       COUNT(*) FILTER (
+         WHERE status IN ('APPROVED', 'COMPLETED')
+           AND updated_at >= CURRENT_DATE
+           AND updated_at < CURRENT_DATE + INTERVAL '1 day'
+       )::int AS "approvedToday",
+       COUNT(*) FILTER (
+         WHERE status = 'REJECTED'
+           AND updated_at >= CURRENT_DATE
+           AND updated_at < CURRENT_DATE + INTERVAL '1 day'
+       )::int AS "rejectedToday"
+     FROM applications
+     WHERE service = 'PASSPORT'`
+  );
 
   return {
-    pending: pending.rows[0].c,
-    approvedToday: approvedToday.rows[0].c,
-    rejectedToday: rejectedToday.rows[0].c,
+    pending: result.rows[0].pending,
+    approvedToday: result.rows[0].approvedToday,
+    rejectedToday: result.rows[0].rejectedToday,
   };
 }
 
 async function applyForPassport(citizenId, data, user) {
   if (!['ORDINARY', 'OFFICIAL'].includes(data.passportType)) {
     throw badRequest('Choose a valid passport type.');
+  }
+  if (typeof data.signature !== 'string' ||
+      !/^data:image\/png;base64,/.test(data.signature) ||
+      data.signature.length > 2_000_000) {
+    throw badRequest('A valid signature is required for the passport application.');
   }
   const serviceCode = PASSPORT_SERVICE_CODES.has(data.serviceCode)
     ? data.serviceCode
@@ -157,6 +158,15 @@ async function applyForPassport(citizenId, data, user) {
       },
     },
   });
+
+  await signatureService.save(
+    {
+      citizenId,
+      documentTypeCode: 'PASSPORT_APPLICATION',
+      signatureData: data.signature,
+    },
+    user
+  );
 
   await passportApplicationRepository.create({
     applicationId: application.id,

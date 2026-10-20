@@ -30,7 +30,7 @@ function HACitizenSearch() {
       }
       setResult(citizen);
     } catch (err) {
-      setError('No citizen found with those details.');
+      setError(err.message || 'Could not search citizen records.');
     } finally {
       setLoading(false);
     }

@@ -5,6 +5,7 @@ export const getLicence = () => apiClient.get('/traffic/licence');
 export const renewLicence = (data) => apiClient.post('/traffic/licence/renew', data);
 export const bookDrivingTest = (data) => apiClient.post('/traffic/test/book', data);
 export const getAppointments = () => apiClient.get('/traffic/appointments');
+export const getPassedDrivingTests = () => apiClient.get('/traffic/test/references');
 export const cancelAppointment = (id) => apiClient.delete(`/traffic/appointments/${id}`);
 
 // Citizen — licence applications
@@ -42,6 +43,9 @@ export const processApplication = (id, data) => apiClient.put(`/traffic/staff/ap
 export const issueLicence = (id, data) => apiClient.post(`/traffic/issue-licence/${id}`, data);
 export const getStaffInspections = (params) => apiClient.get('/traffic/staff/inspections', { params });
 export const processInspection = (id, data) => apiClient.put(`/traffic/staff/inspections/${id}`, data);
+export const getStaffDrivingTests = () => apiClient.get('/traffic/staff/tests');
+export const processDrivingTest = (id, data) =>
+  apiClient.put(`/traffic/staff/tests/${id}`, data);
 export const getStaffTransportPermits = (params) => apiClient.get('/traffic/staff/permits', { params });
 export const processTransportPermit = (id, data) => apiClient.put(`/traffic/staff/permits/${id}`, data);
 export const getStaffStats = () => apiClient.get('/traffic/staff/stats');

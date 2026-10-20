@@ -20,7 +20,9 @@ const STATUS_VARIANT = {
 };
 
 function MyInspections() {
-  const { data, loading, refetch } = useFetch(getInspections, []);
+  const { data, loading, refetch } = useFetch(getInspections, [], {
+    pollInterval: 30000,
+  });
   const [pendingCancel, setPendingCancel] = useState(null);
   const [busy, setBusy] = useState(false);
   const navigate = useNavigate();

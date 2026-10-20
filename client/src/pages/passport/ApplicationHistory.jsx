@@ -19,7 +19,9 @@ const STATUS_VARIANT = {
 };
 
 function ApplicationHistory() {
-  const { data, loading, error } = useFetch(getStaffApplications, []);
+  const { data, loading, error } = useFetch(getStaffApplications, [], {
+    pollInterval: 30000,
+  });
   const [statusFilter, setStatusFilter] = useState('');
   const [dateFilter, setDateFilter] = useState('');
 

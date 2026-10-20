@@ -17,7 +17,10 @@ const STATUS_VARIANT = {
 function CaseDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { data: c, loading } = useFetch(() => getCaseByNumber(id), [id]);
+  const { data: c, loading } = useFetch(
+    () => (id ? getCaseByNumber(id) : Promise.resolve(null)),
+    [id]
+  );
 
   if (loading) {
     return (

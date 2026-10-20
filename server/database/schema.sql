@@ -414,6 +414,8 @@ CREATE INDEX idx_licences_citizen ON driver_licences(citizen_id);
 CREATE INDEX idx_licences_application ON driver_licences(application_id);
 CREATE INDEX idx_licences_status ON driver_licences(status);
 
+CREATE SEQUENCE driving_test_reference_seq START WITH 1;
+
 CREATE TABLE driving_tests (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   citizen_id UUID NOT NULL REFERENCES citizens(id) ON DELETE CASCADE,
@@ -426,6 +428,7 @@ CREATE TABLE driving_tests (
   application_id UUID REFERENCES applications(id) ON DELETE SET NULL,
   test_category VARCHAR(20) DEFAULT 'PRACTICAL',
   result VARCHAR(20),
+  test_reference VARCHAR(50) UNIQUE,
   score INTEGER,
   notes TEXT,
   created_at TIMESTAMP DEFAULT NOW()

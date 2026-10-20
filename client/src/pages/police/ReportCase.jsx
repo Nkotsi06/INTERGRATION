@@ -74,7 +74,7 @@ function ReportCase() {
               { value: 'THEFT', label: 'Theft' },
               { value: 'ASSAULT', label: 'Assault' },
               { value: 'FRAUD', label: 'Fraud' },
-              { value: 'MISSING', label: 'Missing person' },
+              { value: 'MISSING_PERSON', label: 'Missing person' },
               { value: 'OTHER', label: 'Other' },
             ]}
             required

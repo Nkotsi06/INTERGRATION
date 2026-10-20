@@ -46,6 +46,9 @@ function TrafficStaffDashboard() {
         <Button variant="secondary" onClick={() => navigate('/traffic/processing')}>
           Inspections &amp; permits
         </Button>
+        <Button variant="secondary" onClick={() => navigate('/traffic/tests')}>
+          Driving test results
+        </Button>
       </div>
     </PageWrapper>
   );

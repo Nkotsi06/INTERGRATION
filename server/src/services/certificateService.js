@@ -80,9 +80,19 @@ async function listForCitizen(citizenId) {
     certificateRepository.findByCitizen('MARRIAGE', citizenId),
     certificateRepository.findByCitizen('DIVORCE', citizenId),
     query(
-      `SELECT * FROM national_id_cards
-       WHERE citizen_id = $1
-       ORDER BY created_at DESC`,
+      `SELECT card.*,
+              signature.signature_data
+       FROM national_id_cards card
+       LEFT JOIN LATERAL (
+         SELECT signature_data
+         FROM signatures
+         WHERE citizen_id = card.citizen_id
+           AND document_type_code = 'NATIONAL_ID'
+         ORDER BY signed_at DESC
+         LIMIT 1
+       ) signature ON TRUE
+       WHERE card.citizen_id = $1
+       ORDER BY card.created_at DESC`,
       [citizenId]
     ).then((r) => r.rows),
     query(
@@ -98,6 +108,7 @@ async function listForCitizen(citizenId) {
               pa.collected_by_name,
               pa.collection_office,
               pa.signature_id,
+              signature.signature_data,
               pa.created_at,
               a.status,
               b.name AS collection_branch,
@@ -107,6 +118,14 @@ async function listForCitizen(citizenId) {
        FROM passport_applications pa
        JOIN applications a ON a.id = pa.application_id
        LEFT JOIN branches b ON b.id::text = pa.collection_office
+       LEFT JOIN LATERAL (
+         SELECT signature_data
+         FROM signatures
+         WHERE citizen_id = pa.citizen_id
+           AND document_type_code = 'PASSPORT_APPLICATION'
+         ORDER BY signed_at DESC
+         LIMIT 1
+       ) signature ON TRUE
        WHERE pa.citizen_id = $1
          AND pa.passport_number IS NOT NULL
          AND a.status IN ('READY_FOR_COLLECTION', 'COLLECTED', 'COMPLETED')
@@ -392,9 +411,40 @@ async function rejectNationalIdCard(id, reason, staffUser) {
 // ─── Download ───────────────────────────────────────────────────────
 async function downloadPdf(type, id, user) {
   if (type === 'ID_CARD') {
-    throw badRequest(
-      'National ID cards are rendered in the app. Use the View button in My Documents to open or print the card.'
+    const result = await query(
+      `SELECT card.*,
+              citizen.first_name,
+              citizen.last_name,
+              citizen.national_id,
+              citizen.date_of_birth,
+              citizen.gender,
+              signature.signature_data
+       FROM national_id_cards card
+       JOIN citizens citizen ON citizen.id = card.citizen_id
+       LEFT JOIN LATERAL (
+         SELECT signature_data
+         FROM signatures
+         WHERE citizen_id = card.citizen_id
+           AND document_type_code = 'NATIONAL_ID'
+         ORDER BY signed_at DESC
+         LIMIT 1
+       ) signature ON TRUE
+       WHERE card.id = $1`,
+      [id]
     );
+    const card = result.rows[0];
+    if (!card) throw notFound('National ID card not found');
+    if (card.status !== 'ISSUED') throw badRequest('National ID card has not been issued.');
+    if (user.role === 'CITIZEN') {
+      const owner = await userRepository.findByCitizenId(card.citizen_id);
+      if (!owner || owner.id !== user.userId) {
+        const e = new Error('You cannot download this National ID card.');
+        e.statusCode = 403;
+        throw e;
+      }
+    }
+    const buffer = await generateCertificateBuffer('ID_CARD', card);
+    return { buffer, fileName: `${card.card_number}.pdf` };
   }
 
   const cert = await certificateRepository.findById(type, id);

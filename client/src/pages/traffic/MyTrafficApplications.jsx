@@ -24,7 +24,9 @@ const SUB_TYPE_LABEL = {
 };
 
 function MyTrafficApplications() {
-  const { data, loading } = useFetch(getMyTrafficApplications, []);
+  const { data, loading } = useFetch(getMyTrafficApplications, [], {
+    pollInterval: 30000,
+  });
   const [statusFilter, setStatusFilter] = useState('');
 
   const filtered = useMemo(() => {

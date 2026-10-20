@@ -4,9 +4,11 @@ async function findByCitizen(citizenId) {
   const result = await query(
     `SELECT dl.*,
             c.first_name || ' ' || c.last_name AS full_name,
-            c.national_id
+            c.national_id,
+            signature.signature_data
      FROM driver_licences dl
      JOIN citizens c ON c.id = dl.citizen_id
+     LEFT JOIN signatures signature ON signature.id = dl.signature_id
      WHERE dl.citizen_id = $1
      ORDER BY dl.created_at DESC
      LIMIT 1`,

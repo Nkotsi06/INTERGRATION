@@ -1,13 +1,13 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import PageWrapper from '../../components/layout/PageWrapper';
 import Select from '../../components/common/Select';
-import Input from '../../components/common/Input';
 import DatePicker from '../../components/common/DatePicker';
 import FormActions from '../../components/common/FormActions';
 import Alert from '../../components/common/Alert';
 import useServiceFee from '../../hooks/useServiceFees';
 import { bookInspection } from '../../api/trafficApi';
+import { getPublicBranches } from '../../api/serviceApi';
 import { useNotification } from '../../context/NotificationContext';
 import { formatCurrency } from '../../utils/formatters';
 
@@ -23,13 +23,32 @@ function BookInspection() {
   });
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [branches, setBranches] = useState([]);
+  const [branchesLoading, setBranchesLoading] = useState(true);
   const navigate = useNavigate();
   const { success } = useNotification();
 
+  useEffect(() => {
+    let cancelled = false;
+    getPublicBranches('TRAFFIC')
+      .then((data) => {
+        if (!cancelled) setBranches(Array.isArray(data) ? data : []);
+      })
+      .catch((err) => {
+        if (!cancelled) setError(err.message || 'Could not load Traffic branches.');
+      })
+      .finally(() => {
+        if (!cancelled) setBranchesLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const handleSubmit = async () => {
     setError(null);
-    if (!form.inspectionType || !form.inspectionDate) {
-      setError('Inspection type and date are required.');
+    if (!form.inspectionType || !form.inspectionDate || !form.location) {
+      setError('Inspection type, date, and location are required.');
       return;
     }
     if (fee > 0 && form.method === 'MOBILE_MONEY' && !form.mobile.trim()) {
@@ -89,11 +108,20 @@ function BookInspection() {
         ]}
       />
 
-      <Input
+      <Select
         label="Location"
         value={form.location}
         onChange={(e) => setForm({ ...form, location: e.target.value })}
+        options={branches.map((branch) => ({
+          value: branch.id,
+          label: `${branch.name}${branch.district ? ` (${branch.district})` : ''}`,
+        }))}
+        disabled={branchesLoading || branches.length === 0}
+        required
       />
+      {!branchesLoading && branches.length === 0 && (
+        <Alert type="warning" message="No active Traffic branches are available." />
+      )}
 
       {fee > 0 && (
         <div className="form-section">

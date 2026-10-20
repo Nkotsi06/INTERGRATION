@@ -80,7 +80,13 @@ function NationalIdCardView({ data, photoUrl }) {
           <div style={{ width: '10mm', height: '12mm', background: '#eee', opacity: 0.5, border: '1px solid #ccc' }}></div>
           <div style={{ marginTop: 'auto', fontSize: '6px', textAlign: 'center' }}>
             <div style={{ borderBottom: '1px solid #000', width: '15mm', height: '5mm', fontFamily: 'cursive' }}>
-              {/* Signature goes here */}
+              {data.signatureData && (
+                <img
+                  src={data.signatureData}
+                  alt="Holder signature"
+                  style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+                />
+              )}
             </div>
             Signature of Holder
           </div>

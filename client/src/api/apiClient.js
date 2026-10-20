@@ -10,8 +10,6 @@ const apiClient = axios.create({
   timeout: 60000,
 });
 
-// ── Progress hooks ──────────────────────────────────────────────────────
-// App.jsx registers callbacks here once. Every request bumps the counter.
 let onRequestStart = () => {};
 let onRequestEnd = () => {};
 
@@ -19,45 +17,17 @@ export function registerProgressHandlers({ start, stop }) {
   onRequestStart = start || (() => {});
   onRequestEnd = stop || (() => {});
 }
-// ────────────────────────────────────────────────────────────────────────
-
-const NEVER_REDIRECT_ENDPOINTS = [
-  '/auth/session',
-  '/auth/login',
-  '/auth/register',
-  '/auth/staff/login',
-  '/auth/admin/login',
-  '/auth/logout',
-  '/auth/forgot-password',
-  '/settings/',
-  '/citizen/',
-  '/home-affairs/',
-  '/traffic/',
-  '/police/',
-  '/finance/',
-  '/pensions/',
-  '/passport/',
-  '/admin/',
-  '/documents/',
-  '/biometrics/',
-  '/signatures/',
-  '/verification/',
-  '/references/',
-  '/audit/',
-  '/notifications/',
-];
-
-function shouldNeverRedirect(url = '') {
-  return NEVER_REDIRECT_ENDPOINTS.some((endpoint) => url.includes(endpoint));
-}
 
 apiClient.interceptors.request.use((config) => {
   onRequestStart();
   try {
     const token = localStorage.getItem('token');
-    if (token) config.headers.Authorization = `Bearer ${token}`;
+    if (token) {
+      config.headers = config.headers || {};
+      config.headers.Authorization = `Bearer ${token}`;
+    }
   } catch {
-    // ignore
+    // Cookie authentication remains available when browser storage is disabled.
   }
   return config;
 });
@@ -70,9 +40,6 @@ apiClient.interceptors.response.use(
   (error) => {
     onRequestEnd();
 
-    const status = error.response?.status;
-    const url = error.config?.url || '';
-
     if (!error.response) {
       const friendly = new Error(
         'Cannot reach the server. It may be starting up. Wait a moment and try again.'
@@ -82,34 +49,13 @@ apiClient.interceptors.response.use(
       return Promise.reject(friendly);
     }
 
-    if (status === 401 && shouldNeverRedirect(url)) {
-      const wrapped = new Error(
-        error.response.data?.message ||
-        error.response.data?.error ||
-        'Your session is not valid for this action.'
-      );
-      wrapped.status = status;
-      wrapped.data = error.response.data;
-      return Promise.reject(wrapped);
-    }
-
-    if (status === 401) {
-      const now = Date.now();
-      const last = Number(sessionStorage.getItem('lastAuthRedirect') || 0);
-      if (now - last > 1500 && window.location.pathname !== '/login') {
-        sessionStorage.setItem('lastAuthRedirect', String(now));
-        window.location.replace('/login');
-      }
-    }
-
-    const serverMessage =
-      error.response.data?.message ||
-      error.response.data?.error ||
-      error.message;
-
-    const wrapped = new Error(serverMessage);
-    wrapped.status = status;
-    wrapped.data = error.response.data;
+    const responseData = error.response.data;
+    const wrapped = new Error(
+      responseData?.message || responseData?.error || error.message
+    );
+    wrapped.status = error.response.status;
+    wrapped.data = responseData;
+    wrapped.originalError = error;
     return Promise.reject(wrapped);
   }
 );

@@ -10,6 +10,7 @@ const notificationService = require('./notificationService');
 const signatureService = require('./signatureService');
 const paymentService = require('./paymentService');
 const userRepository = require('../repositories/userRepository');
+const branchRepository = require('../repositories/branchRepository');
 const { generateReference } = require('../utils/referenceGenerator');
 const auditService = require('./auditService');
 const { query } = require('../config/database');
@@ -73,6 +74,20 @@ async function getLicence(citizenId) {
 async function renewLicence(citizenId, user, data = {}) {
   const licence = await driverLicenceRepository.findByCitizen(citizenId);
   if (!licence) throw badRequest('You need an issued driving licence before you can renew it.');
+  if (typeof data.signature !== 'string' ||
+      !/^data:image\/png;base64,/.test(data.signature) ||
+      data.signature.length > 2_000_000) {
+    throw badRequest('A valid signature is required for the licence renewal.');
+  }
+  const signature = await signatureService.save(
+    {
+      citizenId,
+      documentTypeCode: 'DRIVERS_LICENCE',
+      signatureData: data.signature,
+    },
+    user
+  );
+  await driverLicenceRepository.attachSignature(licence.id, signature.id);
   const referenceNumber = await generateReference('TRAFFIC_RENEWAL');
   const application = await applicationRepository.create({
     referenceNumber, citizenId, service: 'TRAFFIC',
@@ -105,6 +120,10 @@ async function renewLicence(citizenId, user, data = {}) {
 }
 
 async function bookDrivingTest(citizenId, data, user) {
+  const branch = await branchRepository.findById(data.location);
+  if (!branch || !branch.is_active || branch.ministry_code !== 'TRAFFIC') {
+    throw badRequest('Choose an active Traffic testing branch.');
+  }
   const existing = await drivingTestRepository.findByCitizen(citizenId);
   const conflict = existing.find(
     (t) => t.test_date === data.date && t.time_slot === data.time && t.status === 'BOOKED'
@@ -135,6 +154,57 @@ async function bookDrivingTest(citizenId, data, user) {
 
 async function getAppointments(citizenId) {
   return drivingTestRepository.findByCitizen(citizenId);
+}
+
+async function getPassedDrivingTests(citizenId) {
+  return drivingTestRepository.findPassedByCitizen(citizenId);
+}
+
+async function getStaffDrivingTests() {
+  return drivingTestRepository.findForStaff();
+}
+
+async function processDrivingTest(id, data, staffUser) {
+  if (!['PASSED', 'FAILED'].includes(data.result)) {
+    throw badRequest('Choose PASSED or FAILED as the test result.');
+  }
+  const test = await drivingTestRepository.findById(id);
+  if (!test) throw notFound('Driving test not found.');
+  if (test.status !== 'BOOKED') {
+    throw badRequest('This driving test has already been processed.');
+  }
+  let testReference = null;
+  if (data.result === 'PASSED') {
+    const referenceResult = await query(
+      "SELECT nextval('driving_test_reference_seq') AS number"
+    );
+    const year = new Date().getFullYear();
+    testReference = `TEST-${year}-${String(referenceResult.rows[0].number).padStart(5, '0')}`;
+  }
+  const updated = await drivingTestRepository.recordResult(
+    id,
+    data.result,
+    testReference,
+    data.score,
+    data.notes
+  );
+  if (!updated) throw badRequest('This driving test could not be processed.');
+  await auditService.log({
+    userId: staffUser.userId,
+    username: staffUser.username,
+    action: `DRIVING_TEST_${data.result}`,
+    recordType: 'DRIVING_TEST',
+    recordId: id,
+    result: 'SUCCESS',
+  });
+  await notifyCitizen(
+    test.citizen_id,
+    'Driving test result',
+    data.result === 'PASSED'
+      ? `You passed your driving test. Reference: ${testReference}.`
+      : 'Your driving test result is recorded as failed.'
+  );
+  return updated;
 }
 
 async function cancelAppointment(id, citizenId) {
@@ -310,6 +380,10 @@ async function deleteVehicle(citizenId, id, user) {
 async function bookInspection(citizenId, data, user) {
   if (!data.inspectionType) throw badRequest('Inspection type is required.');
   if (!data.inspectionDate) throw badRequest('Inspection date is required.');
+  const branch = await branchRepository.findById(data.location);
+  if (!branch || !branch.is_active || branch.ministry_code !== 'TRAFFIC') {
+    throw badRequest('Choose an active Traffic inspection branch.');
+  }
   const referenceNumber = await generateReference('VEHICLE_INSPECTION');
   const created = await vehicleInspectionRepository.create({
     citizenId,
@@ -525,6 +599,13 @@ async function applyForLearnersLicence(citizenId, data, user) {
 async function applyForDrivingLicence(citizenId, data, user) {
   if (!data.licenceType) throw badRequest('Licence type is required.');
   if (!data.testReference) throw badRequest('Test reference number is required.');
+  const test = await drivingTestRepository.findByReference(
+    citizenId,
+    data.testReference
+  );
+  if (!test) {
+    throw badRequest('Choose a passed driving test reference on your record.');
+  }
   const referenceNumber = await generateReference('DRIVING_LICENCE');
   const app = await licenceApplicationRepository.create({
     referenceNumber, citizenId, subType: 'DRIVING_LICENCE',
@@ -596,6 +677,8 @@ async function getApplicationByReference(referenceNumber, citizenId) {
 module.exports = {
   getStaffStats,
   getLicence, renewLicence, bookDrivingTest, getAppointments, cancelAppointment,
+  getPassedDrivingTests, processDrivingTest,
+  getStaffDrivingTests,
   getStaffApplications, processApplication,
   getVehicles, registerVehicle, updateVehicle, deleteVehicle,
   bookInspection, getInspections, cancelInspection, getStaffInspections, processInspection,

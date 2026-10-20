@@ -10,16 +10,20 @@ function DocumentVerification() {
   const [number, setNumber] = useState('');
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
   const handleVerify = async () => {
     if (!number) return;
     setLoading(true);
     setResult(null);
+    setError(null);
     try {
-      const data = await apiClient.get(`/information/verify-document?number=${number}`);
+      const data = await apiClient.get(
+        `/information/verify-document?number=${encodeURIComponent(number.trim())}`
+      );
       setResult(data);
     } catch (err) {
-      setResult({ valid: false, error: 'Failed to verify.' });
+      setError(err.message || 'Could not verify the document.');
     } finally {
       setLoading(false);
     }
@@ -40,6 +44,7 @@ function DocumentVerification() {
         <Button variant="primary" onClick={handleVerify} loading={loading}>Verify</Button>
       </div>
 
+      {error && <Alert type="error" message={error} />}
       {result && result.valid && (
         <Card variant="bordered" style={{ borderColor: '#27ae60', maxWidth: 500 }}>
           <h3 style={{ color: '#27ae60', marginBottom: 10 }}>✓ Valid Document</h3>

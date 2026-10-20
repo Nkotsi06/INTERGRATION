@@ -15,7 +15,9 @@ const STATUS_VARIANT = {
 };
 
 function MyCriminalRecords() {
-  const { data, loading } = useFetch(getMyCriminalRecords, []);
+  const { data, loading } = useFetch(getMyCriminalRecords, [], {
+    pollInterval: 30000,
+  });
   const navigate = useNavigate();
 
   const columns = [

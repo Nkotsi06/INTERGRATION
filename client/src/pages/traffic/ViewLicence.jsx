@@ -38,6 +38,16 @@ function ViewLicence() {
               <ReadOnly label="Issue date" value={formatDate(licence.issueDate)} />
               <ReadOnly label="Expiry date" value={formatDate(licence.expiryDate)} />
             </div>
+            {licence.signature_data && (
+              <div style={{ marginTop: 16 }}>
+                <img
+                  src={licence.signature_data}
+                  alt="Licence holder signature"
+                  style={{ width: 180, height: 60, objectFit: 'contain' }}
+                />
+                <div>Signature of holder</div>
+              </div>
+            )}
           </div>
 
           <div className="form-actions">

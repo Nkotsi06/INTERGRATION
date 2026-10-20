@@ -5,15 +5,19 @@ import Button from '../../components/common/Button';
 import Checkbox from '../../components/common/Checkbox';
 import { useNotification } from '../../context/NotificationContext';
 import apiClient from '../../api/apiClient';
+import Alert from '../../components/common/Alert';
 
 function InformationManagement() {
   const [topics, setTopics] = useState([]);
   const [selected, setSelected] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState(null);
   const { success, error: showError } = useNotification();
 
   useEffect(() => {
-    apiClient.get('/information/topics').then(setTopics).catch(console.error);
+    apiClient.get('/information/topics')
+      .then((data) => setTopics(Array.isArray(data) ? data : []))
+      .catch((err) => setError(err.message || 'Could not load information topics.'));
   }, []);
 
   const handleSave = async () => {
@@ -33,6 +37,7 @@ function InformationManagement() {
     <PageWrapper title="Information Services" showBack backPath="/home-affairs/dashboard">
       <h1>Information Services</h1>
       <p className="text-muted">Manage the information shown to citizens for Immigration, Citizenship, Refugees, and Livestock.</p>
+      {error && <Alert type="error" message={error} />}
 
       {!selected ? (
         <div className="document-list">

@@ -49,6 +49,16 @@ function PassportView({ data, photoUrl }) {
           )}
         </dl>
       </div>
+      {data.signature_data && (
+        <div style={{ marginTop: 24 }}>
+          <img
+            src={data.signature_data}
+            alt="Passport holder signature"
+            style={{ width: 180, height: 60, objectFit: 'contain' }}
+          />
+          <div>Signature of holder</div>
+        </div>
+      )}
     </article>
   );
 }

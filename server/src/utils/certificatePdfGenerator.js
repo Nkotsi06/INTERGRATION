@@ -113,12 +113,34 @@ function buildDivorceCertificate(row) {
   return doc;
 }
 
+function buildNationalIdCard(row) {
+  const doc = new PDFDocument({ size: 'A4', margin: 50 });
+  buildHeader(doc, 'National Identity Card');
+  rows(doc, [
+    ['Card number', row.card_number],
+    ['Full name', `${row.first_name || ''} ${row.last_name || ''}`.trim()],
+    ['National ID', row.national_id],
+    ['Date of birth', fmtDate(row.date_of_birth)],
+    ['Gender', row.gender],
+    ['Issued on', fmtDate(row.issued_at)],
+  ]);
+  if (row.signature_data && /^data:image\/png;base64,/.test(row.signature_data)) {
+    const image = Buffer.from(row.signature_data.split(',')[1], 'base64');
+    doc.moveDown();
+    doc.image(image, { fit: [180, 70] });
+    doc.fontSize(9).fillColor('#7F8C8D').text('Signature of holder');
+  }
+  doc.end();
+  return doc;
+}
+
 function generateCertificatePdf(type, row) {
   switch (type) {
     case 'BIRTH': return buildBirthCertificate(row);
     case 'DEATH': return buildDeathCertificate(row);
     case 'MARRIAGE': return buildMarriageCertificate(row);
     case 'DIVORCE': return buildDivorceCertificate(row);
+    case 'ID_CARD': return buildNationalIdCard(row);
     default: throw new Error(`Unknown certificate type: ${type}`);
   }
 }

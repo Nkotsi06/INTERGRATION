@@ -7,12 +7,15 @@ import Alert from '../../components/common/Alert';
 import { StatsSkeleton } from '../../components/common/SkeletonLoader';
 import useFetch from '../../hooks/useFetch';
 import { getEligibility, verifyExistence } from '../../api/pensionsApi';
+import { getProfile } from '../../api/citizenApi';
 import { useNotification } from '../../context/NotificationContext';
 
 const SECURITY_QUESTION = 'What is your town of birth?';
 
 function ExistenceVerification() {
   const { data: eligibility, loading, error } = useFetch(getEligibility, []);
+  const { data: profile, loading: profileLoading, error: profileError } =
+    useFetch(getProfile, []);
   const [answer, setAnswer] = useState('');
   const [formError, setFormError] = useState(null);
   const [submitting, setSubmitting] = useState(false);
@@ -67,6 +70,25 @@ function ExistenceVerification() {
 
       {canProceed && (
         <>
+          <div className="card card-flat">
+            <h3>Your citizen details</h3>
+            {profileLoading ? (
+              <p className="text-muted">Loading your details…</p>
+            ) : profileError ? (
+              <Alert type="error" message={profileError} />
+            ) : (
+              <div className="form-grid">
+                <ReadOnly label="Full name" value={profile?.fullName} />
+                <ReadOnly label="National ID" value={profile?.nationalId} />
+                <ReadOnly
+                  label="Date of birth"
+                  value={profile?.dateOfBirth
+                    ? String(profile.dateOfBirth).slice(0, 10)
+                    : null}
+                />
+              </div>
+            )}
+          </div>
           <div className="form-field" style={{ marginTop: 16 }}>
             <label className="form-label" style={{ fontSize: '14pt' }}>
               Security question
@@ -99,6 +121,15 @@ function ExistenceVerification() {
         />
       )}
     </PageWrapper>
+  );
+}
+
+function ReadOnly({ label, value }) {
+  return (
+    <div className="form-field">
+      <label className="form-label">{label}</label>
+      <div className="form-input form-input-readonly">{value || '—'}</div>
+    </div>
   );
 }
 

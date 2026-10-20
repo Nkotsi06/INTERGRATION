@@ -7,6 +7,7 @@ import Input from '../../components/common/Input';
 import Select from '../../components/common/Select';
 import Alert from '../../components/common/Alert';
 import Button from '../../components/common/Button';
+import SignaturePad from '../../components/signature/SignaturePad';
 import useFetch from '../../hooks/useFetch';
 import useServiceFee from '../../hooks/useServiceFees';
 import { getLicence, renewLicence } from '../../api/trafficApi';
@@ -17,7 +18,11 @@ function RenewLicence() {
   const { data: licence, loading } = useFetch(getLicence, []);
   const { fee, currency } = useServiceFee('TRAFFIC', 'LICENCE_RENEWAL');
   const [step, setStep] = useState(1);
-  const [form, setForm] = useState({ method: 'MOBILE_MONEY', mobile: '' });
+  const [form, setForm] = useState({
+    method: 'MOBILE_MONEY',
+    mobile: '',
+    signature: null,
+  });
   const [error, setError] = useState(null);
   const [processing, setProcessing] = useState(false);
   const [confirmation, setConfirmation] = useState(null);
@@ -26,6 +31,10 @@ function RenewLicence() {
 
   const handlePay = async () => {
     setError(null);
+    if (!form.signature) {
+      setError('Please provide your signature before renewing your licence.');
+      return;
+    }
     if (form.method === 'MOBILE_MONEY' && !form.mobile.trim()) {
       setError('Please enter your mobile number for the payment prompt.');
       return;
@@ -130,6 +139,16 @@ function RenewLicence() {
                 required
               />
             )}
+            <div className="form-section">
+              <h3 className="form-section-title">Signature</h3>
+              <p className="text-muted">
+                Sign to authorise your driving licence renewal.
+              </p>
+              <SignaturePad
+                onSave={(signature) => setForm((previous) => ({ ...previous, signature }))}
+                onClear={() => setForm((previous) => ({ ...previous, signature: null }))}
+              />
+            </div>
           </div>
 
           <FormActions

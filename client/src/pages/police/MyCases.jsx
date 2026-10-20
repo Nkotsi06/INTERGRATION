@@ -18,7 +18,9 @@ const STATUS_VARIANT = {
 };
 
 function MyCases() {
-  const { data: cases, loading } = useFetch(getMyCases, []);
+  const { data: cases, loading } = useFetch(getMyCases, [], {
+    pollInterval: 30000,
+  });
   const [statusFilter, setStatusFilter] = useState('');
   const [dateFilter, setDateFilter] = useState('');
   const navigate = useNavigate();

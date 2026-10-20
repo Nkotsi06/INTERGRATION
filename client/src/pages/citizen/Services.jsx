@@ -131,14 +131,6 @@ function Services() {
         </div>
       )}
 
-      {/* Information services (if any) are read through Help. */}
-      {!loading && !error && (
-        <p className="text-muted" style={{ marginTop: 24 }}>
-          Need information on immigration, citizenship, refugee services,
-          livestock registration, or document verification?{' '}
-          <a href="/help">Visit Help and Support</a>.
-        </p>
-      )}
     </PageWrapper>
   );
 }

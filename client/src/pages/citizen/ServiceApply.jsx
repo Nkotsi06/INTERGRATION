@@ -13,6 +13,25 @@ import { getEligibility } from '../../api/pensionsApi';
 import { useNotification } from '../../context/NotificationContext';
 import { formatCurrency } from '../../utils/formatters';
 
+const POLICE_FORM_FIELDS = {
+  POLICE_LOST_PROPERTY: [
+    { key: 'propertyDescription', label: 'Property description', type: 'textarea', required: true },
+    { key: 'incidentDate', label: 'Date lost or stolen', type: 'date', required: true },
+    { key: 'location', label: 'Location', type: 'text', required: true },
+    { key: 'description', label: 'Additional details', type: 'textarea', required: true },
+  ],
+  POLICE_ACCIDENT: [
+    { key: 'incidentDate', label: 'Accident date', type: 'date', required: true },
+    { key: 'location', label: 'Accident location', type: 'text', required: true },
+    { key: 'vehiclesInvolved', label: 'Vehicles involved', type: 'text', required: true },
+    { key: 'statementDetails', label: 'Statement details', type: 'textarea', required: true },
+  ],
+  POLICE_STATEMENTS: [
+    { key: 'caseNumber', label: 'Case number (if known)', type: 'text', required: false },
+    { key: 'statementDetails', label: 'Statement details', type: 'textarea', required: true },
+  ],
+};
+
 function ServiceApply() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -169,7 +188,10 @@ function ServiceApply() {
     );
   }
 
-  const fields = Array.isArray(service.form_fields) ? service.form_fields : [];
+  const configuredFields = Array.isArray(service.form_fields) ? service.form_fields : [];
+  const fields = configuredFields.length > 0
+    ? configuredFields
+    : POLICE_FORM_FIELDS[service.code] || [];
   const docs = Array.isArray(service.required_documents) ? service.required_documents : [];
   const visibleDocs = service.ministry === 'HOME_AFFAIRS'
     ? docs.filter((code) => !['NATIONAL_ID', 'BIRTH_CERTIFICATE'].includes(code))
@@ -238,6 +260,42 @@ function ServiceApply() {
                   rows={4}
                   value={formData[f.key] || ''}
                   onChange={(e) => update(f.key, e.target.value)}
+                />
+              ) : f.type === 'select' ||
+                  (service.code === 'BIRTH_CERTIFICATE_APPLY' &&
+                    ['childGender', 'requestType'].includes(f.key)) ||
+                (service.ministry === 'PENSIONS' && f.key === 'pensionType') ||
+                (service.code === 'POLICE_REPORT' && f.key === 'caseType') ? (
+                <Select
+                  value={formData[f.key] || ''}
+                  onChange={(e) => update(f.key, e.target.value)}
+                  options={
+                    f.options ||
+                    (f.key === 'caseType'
+                      ? [
+                          { value: 'THEFT', label: 'Theft' },
+                          { value: 'ASSAULT', label: 'Assault' },
+                          { value: 'FRAUD', label: 'Fraud' },
+                          { value: 'MISSING_PERSON', label: 'Missing Person' },
+                          { value: 'OTHER', label: 'Other' },
+                        ]
+                      : f.key === 'childGender'
+                      ? [
+                          { value: 'MALE', label: 'Male' },
+                          { value: 'FEMALE', label: 'Female' },
+                          { value: 'OTHER', label: 'Other' },
+                        ]
+                      : f.key === 'requestType'
+                        ? [
+                            { value: 'NEW', label: 'New' },
+                            { value: 'REPLACEMENT', label: 'Replacement' },
+                          ]
+                        : [
+                            { value: 'OLD_AGE', label: 'Old Age Pension' },
+                            { value: 'CIVIL_SERVICE', label: 'Civil Service Pension' },
+                          ])
+                  }
+                  required={f.required}
                 />
               ) : (
                 <Input

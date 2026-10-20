@@ -1,18 +1,26 @@
+import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import PageWrapper from '../../components/layout/PageWrapper';
 import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
 import { StatsSkeleton } from '../../components/common/SkeletonLoader';
+import Alert from '../../components/common/Alert';
 import useFetch from '../../hooks/useFetch';
 import { getStaffStats } from '../../api/passportApi';
 
 function PassportStaffDashboard() {
-  const { data: stats, loading } = useFetch(getStaffStats, []);
+  const { data: stats, loading, error, refetch } = useFetch(getStaffStats, []);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const timer = window.setInterval(refetch, 30000);
+    return () => window.clearInterval(timer);
+  }, [refetch]);
 
   return (
     <PageWrapper title="Passport Staff Dashboard" accentColour="#17A2B8">
       <h1>Passport staff dashboard</h1>
+      {error && <Alert type="error" message={error} />}
 
       {loading ? (
         <StatsSkeleton count={3} />

@@ -25,7 +25,9 @@ function formatTypeLabel(certificate) {
 }
 
 function MyDocuments() {
-  const { data: certificates, loading, error } = useFetch(getMyCertificates, []);
+  const { data: certificates, loading, error } = useFetch(getMyCertificates, [], {
+    pollInterval: 30000,
+  });
   const {
     data: profile,
     loading: profileLoading,
@@ -124,7 +126,10 @@ function MyDocuments() {
           )}
           {selectedDoc.certificate_type === 'ID_CARD' && (
             profile ? (
-              <NationalIdCardView data={profile} photoUrl={photoUrl} />
+              <NationalIdCardView
+                data={{ ...profile, signatureData: selectedDoc.signature_data }}
+                photoUrl={photoUrl}
+              />
             ) : (
               <Alert
                 type="error"

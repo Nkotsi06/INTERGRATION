@@ -24,7 +24,9 @@ const STATUS_VARIANT = {
 };
 
 function NewRegistrations() {
-  const { data: registrations, loading } = useFetch(getRegistrations, []);
+  const { data: registrations, loading } = useFetch(getRegistrations, [], {
+    pollInterval: 30000,
+  });
   const navigate = useNavigate();
 
   const [status, setStatus] = useState('');

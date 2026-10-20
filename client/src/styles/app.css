@@ -13,6 +13,8 @@ html {
   font-size: 16px;
   -webkit-text-size-adjust: 100%;
   min-height: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
 }
 
 body {
@@ -21,6 +23,8 @@ body {
   line-height: 1.5;
   color: #2C3E50;
   min-height: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
 
   /* BACKGROUND IMAGE — file must be at client/public/background.jpg */
   background-color: #F8F9FA;
@@ -31,6 +35,11 @@ body {
   background-position: center center;
   background-repeat: no-repeat;
   background-attachment: fixed;
+}
+
+#root {
+  max-width: 100%;
+  overflow-x: hidden;
 }
 
 img {
@@ -3278,4 +3287,34 @@ textarea:focus-visible,
 
 .eligibility-banner {
   margin-bottom: var(--spacing-md);
+}
+
+@media (max-width: 768px) {
+  .page-content {
+    max-width: 100%;
+    padding: var(--spacing-md);
+  }
+
+  .form-grid,
+  .stats-grid,
+  .services-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .quick-actions,
+  .filter-controls,
+  .form-actions {
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 480px) {
+  .page-content {
+    padding: var(--spacing-sm);
+  }
+
+  .filter-bar,
+  .date-range-inputs {
+    flex-wrap: wrap;
+  }
 }

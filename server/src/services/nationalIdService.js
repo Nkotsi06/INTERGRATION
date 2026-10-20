@@ -36,6 +36,11 @@ async function getAutoFillData(citizenId) {
 }
 
 async function submitApplication(citizenId, data, user) {
+  if (typeof data.signature !== 'string' ||
+      !/^data:image\/png;base64,/.test(data.signature) ||
+      data.signature.length > 2_000_000) {
+    throw badRequest('A valid signature is required for the National ID application.');
+  }
   const { hasBirthCert, hasActiveApplication } = await getAutoFillData(citizenId);
 
   if (!hasBirthCert) throw badRequest('You need a birth certificate on record to apply.');

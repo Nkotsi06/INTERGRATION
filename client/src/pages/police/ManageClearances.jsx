@@ -17,7 +17,9 @@ const STATUS_VARIANT = {
 };
 
 function ManageClearances() {
-  const { data, loading, error, refetch } = useFetch(getStaffClearances, []);
+  const { data, loading, error, refetch } = useFetch(getStaffClearances, [], {
+    pollInterval: 30000,
+  });
   const [actionError, setActionError] = useState(null);
   const [processingId, setProcessingId] = useState(null);
 

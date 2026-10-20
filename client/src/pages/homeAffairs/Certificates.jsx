@@ -38,8 +38,8 @@ function HACertificates() {
   const [acting, setActing] = useState(false);
   const { success, error: showError } = useNotification();
 
-  const load = async () => {
-    setLoading(true);
+  const load = async (silent = false) => {
+    if (!silent) setLoading(true);
     setError(null);
     try {
       const data = await listCertificates({
@@ -52,12 +52,18 @@ function HACertificates() {
     } catch (err) {
       setError(err.message || 'Could not load certificates.');
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
   useEffect(() => {
     load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filters.type, filters.status, filters.from, filters.to]);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => load(true), 30000);
+    return () => window.clearInterval(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filters.type, filters.status, filters.from, filters.to]);
 

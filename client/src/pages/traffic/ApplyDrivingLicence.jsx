@@ -1,12 +1,11 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import PageWrapper from '../../components/layout/PageWrapper';
-import Input from '../../components/common/Input';
 import Select from '../../components/common/Select';
 import FormActions from '../../components/common/FormActions';
 import Alert from '../../components/common/Alert';
 import useServiceFee from '../../hooks/useServiceFees';
-import { applyForDrivingLicence } from '../../api/trafficApi';
+import { applyForDrivingLicence, getPassedDrivingTests } from '../../api/trafficApi';
 import { useNotification } from '../../context/NotificationContext';
 import { formatCurrency } from '../../utils/formatters';
 
@@ -20,8 +19,31 @@ function ApplyDrivingLicence() {
   });
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [testReferences, setTestReferences] = useState([]);
+  const [referencesLoading, setReferencesLoading] = useState(true);
   const navigate = useNavigate();
   const { success } = useNotification();
+
+  useEffect(() => {
+    let cancelled = false;
+    getPassedDrivingTests()
+      .then((tests) => {
+        if (!cancelled) {
+          setTestReferences(Array.isArray(tests) ? tests : []);
+        }
+      })
+      .catch((err) => {
+        if (!cancelled) {
+          setError(err.message || 'Could not load approved driving test references.');
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setReferencesLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const handleSubmit = async () => {
     setError(null);
@@ -67,13 +89,20 @@ function ApplyDrivingLicence() {
         required
       />
 
-      <Input
+      <Select
         label="Test reference number"
         value={form.testReference}
         onChange={(e) => setForm({ ...form, testReference: e.target.value })}
-        placeholder="e.g. TRF-2026-00012"
+        options={testReferences.map((test) => ({
+          value: test.test_reference,
+          label: `${test.test_reference} — ${test.test_type} (${test.test_date})`,
+        }))}
+        disabled={referencesLoading || testReferences.length === 0}
         required
       />
+      {!referencesLoading && testReferences.length === 0 && (
+        <Alert type="info" message="A passed driving test is required before applying for a licence." />
+      )}
 
       {fee > 0 && (
         <div className="form-section">

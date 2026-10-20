@@ -21,7 +21,9 @@ const STATUS_VARIANT = {
 };
 
 function ApplicationStatus() {
-  const { data: applications, loading } = useFetch(getApplications, []);
+  const { data: applications, loading } = useFetch(getApplications, [], {
+    pollInterval: 30000,
+  });
   const [filterValues, setFilterValues] = useState({ status: '', service: '' });
 
   const filtered = useMemo(() => {

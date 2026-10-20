@@ -14,7 +14,7 @@ function HAReports() {
 
   const { data: report, loading, refetch } = useFetch(
     () => getReports({ type, fromDate, toDate }),
-    []
+    [type, fromDate, toDate]
   );
 
   const handleGenerate = () => refetch();

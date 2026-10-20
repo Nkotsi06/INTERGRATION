@@ -50,6 +50,7 @@ async function getStaffStats() {
 function yearsBetween(dob, now = new Date()) {
   if (!dob) return null;
   const birth = new Date(dob);
+  if (Number.isNaN(birth.getTime())) return null;
   let age = now.getFullYear() - birth.getFullYear();
   const monthDiff = now.getMonth() - birth.getMonth();
   if (monthDiff < 0 || (monthDiff === 0 && now.getDate() < birth.getDate())) {
@@ -76,8 +77,9 @@ async function assessEligibility(citizenId) {
   }
 
   const currentAge = yearsBetween(citizen.date_of_birth);
-  const governmentServiceYears =
-    await employmentHistoryRepository.totalGovernmentServiceYears(citizenId);
+  const governmentServiceYears = Number(
+    await employmentHistoryRepository.totalGovernmentServiceYears(citizenId)
+  ) || 0;
   const hasGovernmentService = governmentServiceYears > 0;
 
   const rules = await pensionRepository.findRulesForCategory();
@@ -90,14 +92,16 @@ async function assessEligibility(citizenId) {
   }
 
   const evaluatedCategories = rules.map((rule) => {
-    const young = currentAge != null && currentAge >= rule.minimum_age;
+    const minimumAge = Number(rule.minimum_age) || 0;
+    const minimumServiceYears = Number(rule.minimum_service_years) || 0;
+    const young = currentAge != null && currentAge >= minimumAge;
     const serviceMet =
       !rule.requires_government_service ||
-      governmentServiceYears >= rule.minimum_service_years;
+      governmentServiceYears >= minimumServiceYears;
     return {
       category: rule.pension_type,
-      minimumAge: rule.minimum_age,
-      minimumServiceYears: rule.minimum_service_years,
+      minimumAge,
+      minimumServiceYears,
       requiresGovernmentService: rule.requires_government_service,
       monthlyAmount: Number(rule.monthly_amount),
       currency: rule.currency,

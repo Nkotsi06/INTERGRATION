@@ -9,7 +9,9 @@ import { getVerificationHistory } from '../../api/pensionsApi';
 import { formatDate } from '../../utils/formatters';
 
 function VerificationHistory() {
-  const { data, loading } = useFetch(getVerificationHistory, []);
+  const { data, loading } = useFetch(getVerificationHistory, [], {
+    pollInterval: 30000,
+  });
   const [statusFilter, setStatusFilter] = useState('');
   const [methodFilter, setMethodFilter] = useState('');
   const [dateFilter, setDateFilter] = useState('');

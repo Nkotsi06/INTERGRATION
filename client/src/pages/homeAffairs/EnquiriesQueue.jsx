@@ -5,6 +5,7 @@ import Button from '../../components/common/Button';
 import Modal from '../../components/common/Modal';
 import { useNotification } from '../../context/NotificationContext';
 import apiClient from '../../api/apiClient';
+import Alert from '../../components/common/Alert';
 import { formatDate } from '../../utils/formatters';
 
 function EnquiriesQueue() {
@@ -12,10 +13,17 @@ function EnquiriesQueue() {
   const [selected, setSelected] = useState(null);
   const [replyText, setReplyText] = useState('');
   const [sending, setSending] = useState(false);
+  const [error, setError] = useState(null);
   const { success, error: showError } = useNotification();
 
-  const load = () => {
-    apiClient.get('/information/admin/enquiries').then(setEnquiries).catch(console.error);
+  const load = async () => {
+    setError(null);
+    try {
+      const data = await apiClient.get('/information/admin/enquiries');
+      setEnquiries(Array.isArray(data) ? data : []);
+    } catch (err) {
+      setError(err.message || 'Could not load enquiries.');
+    }
   };
 
   useEffect(() => { load(); }, []);
@@ -67,6 +75,7 @@ function EnquiriesQueue() {
       <h1>Enquiries</h1>
       <p className="text-muted">Respond to questions and support requests from citizens.</p>
 
+      {error && <Alert type="error" message={error} />}
       <Table columns={columns} data={enquiries} />
 
       {selected && (

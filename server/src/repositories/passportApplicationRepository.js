@@ -222,6 +222,14 @@ async function findForStaff(filters = {}) {
     params.push(filters.status);
     conditions += ` AND a.status = $${params.length}`;
   }
+  if (filters.from) {
+    params.push(filters.from);
+    conditions += ` AND a.submitted_at >= $${params.length}::date`;
+  }
+  if (filters.to) {
+    params.push(filters.to);
+    conditions += ` AND a.submitted_at < ($${params.length}::date + INTERVAL '1 day')`;
+  }
   const result = await query(
     `SELECT a.id,
             a.reference_number AS "referenceNumber",
@@ -229,7 +237,7 @@ async function findForStaff(filters = {}) {
             a.submitted_at AS "dateSubmitted",
             a.updated_at AS "dateUpdated",
             a.data,
-            c.first_name || ' ' || c.last_name AS "citizenName",
+            COALESCE(c.first_name || ' ' || c.last_name, 'Unknown citizen') AS "citizenName",
             c.national_id AS "nationalId",
             pa.passport_type AS "passportType",
             pa.passport_number AS "passportNumber",

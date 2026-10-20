@@ -20,7 +20,9 @@ const SUB_TYPE_LABEL = {
 };
 
 function TrafficApplicationProcessing() {
-  const { data: applications, loading, refetch } = useFetch(getStaffApplications, []);
+  const { data: applications, loading, refetch } = useFetch(getStaffApplications, [], {
+    pollInterval: 30000,
+  });
   const [statusFilter, setStatusFilter] = useState('');
   const [dateFilter, setDateFilter] = useState('');
   const [issuing, setIssuing] = useState(null);

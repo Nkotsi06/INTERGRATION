@@ -18,22 +18,29 @@ function ApplicationQueue() {
   const [statusFilter, setStatusFilter] = useState('');
   const { error: showError } = useNotification();
 
-  const load = async () => {
-    setLoading(true);
+  const load = async (silent = false) => {
+    if (!silent) setLoading(true);
+    setError(null);
     try {
       const data = await listApplications({ search, status: statusFilter });
       setApps(data);
     } catch (err) {
-      setError('Could not load applications.');
+      setError(err.message || 'Could not load applications.');
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
   useEffect(() => {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [statusFilter]); // Only reload on filter change, search can be manual
+  }, [statusFilter]);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => load(true), 30000);
+    return () => window.clearInterval(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [statusFilter, search]);
 
   const columns = [
     { key: 'reference_number', label: 'Reference' },

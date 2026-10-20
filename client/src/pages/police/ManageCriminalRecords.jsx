@@ -17,7 +17,9 @@ const STATUS_VARIANT = {
 };
 
 function ManageCriminalRecords() {
-  const { data, loading, error, refetch } = useFetch(getStaffCriminalRecords, []);
+  const { data, loading, error, refetch } = useFetch(getStaffCriminalRecords, [], {
+    pollInterval: 30000,
+  });
   const [actionError, setActionError] = useState(null);
   const [processingId, setProcessingId] = useState(null);
 
