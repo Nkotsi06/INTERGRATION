@@ -504,7 +504,7 @@ small, .text-small { font-size: 0.875rem; color: var(--colour-text-secondary); }
 .empty-state-message { font-size: 1rem; color: var(--colour-text-secondary); max-width: 400px; margin-bottom: var(--spacing-md); }
 
 /* ============================================
-   20. WELCOME / AUTH PAGES
+   20. WELCOME / AUTH PAGES (Global)
    ============================================ */
 .welcome-page { min-height: 100vh; min-height: 100dvh; display: flex; flex-direction: column; background-color: transparent; }
 .welcome-header { height: var(--header-height); background-color: var(--colour-surface); display: flex; align-items: center; justify-content: space-between; padding: 0 var(--spacing-lg); border-bottom: 4px solid var(--colour-accent); }
@@ -1049,14 +1049,16 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .logo-circle {
   width: 45px;
   height: 45px;
-  background-color: #1A5276;
+  background-color: #ffffff; /* Changed to white so the logo background blends */
   color: white;
-  border-radius: 50%;
+  border-radius: 50%; /* Keeps it a perfect circle */
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: bold;
   font-size: 18px;
+  object-fit: cover; /* Ensures the image doesn't stretch */
+  border: 2px solid #1A5276; /* Adds a nice border around the image */
 }
 
 .lang-btn { padding: 5px 10px; border-radius: 4px; font-weight: bold; color: #666; border: none; background: transparent; cursor: pointer; }

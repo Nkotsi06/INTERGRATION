@@ -68,13 +68,22 @@ function Services() {
     MY_TRANSPORT_PERMITS: '/traffic/permits',
   };
 
-  // Only APPLICATION services appear as cards. Information services
-  // (immigration, citizenship, refugee, livestock, document verify)
-  // are read through the Help and Support section instead, per the
-  // master prompt: information is not on the citizen dashboard.
   const applicationServices = services.filter(
     (s) => s.service_type === 'APPLICATION'
   );
+
+  // Helper to get a color for the accent line based on ministry
+  const getAccentColor = () => {
+    const colors = {
+      HOME_AFFAIRS: 'var(--ministry-home-affairs)',
+      TRAFFIC: 'var(--ministry-traffic)',
+      POLICE: 'var(--ministry-police)',
+      FINANCE: 'var(--ministry-finance)',
+      PENSIONS: 'var(--ministry-pensions)',
+      PASSPORT: 'var(--ministry-passport)',
+    };
+    return colors[ministry] || 'var(--colour-accent)';
+  };
 
   return (
     <PageWrapper
@@ -83,7 +92,7 @@ function Services() {
       backPath="/citizen/dashboard"
     >
       <h1>{ministryLabel} services</h1>
-      <p className="text-muted">
+      <p className="text-muted" style={{ marginBottom: '24px' }}>
         Choose a service to apply for. Your application will be reviewed by{' '}
         {ministryLabel} staff.
       </p>
@@ -109,10 +118,18 @@ function Services() {
               variant="bordered"
               className="service-card"
             >
-              <div className="service-card-body">
+              {/* Added the colored accent line to match dashboard */}
+              <div
+                className="service-card-accent"
+                style={{ backgroundColor: getAccentColor() }}
+              />
+              
+              <div className="service-card-body" style={{ paddingTop: '12px' }}>
                 <span className="service-card-name">{service.name}</span>
                 {service.description && (
-                  <span className="text-muted">{service.description}</span>
+                  <span className="text-muted" style={{ marginBottom: '12px', display: 'block' }}>
+                    {service.description}
+                  </span>
                 )}
                 <Button
                   variant="primary"

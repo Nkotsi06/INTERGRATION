@@ -142,9 +142,17 @@ function CompleteCitizenRecord() {
     return Object.keys(next).length === 0;
   };
 
+  // --- Biometrics Logic Update ---
   const facialPresent = !!biometrics?.facialImage;
   const facialAccepted = facialMetaSatisfied(biometrics?.facialMeta);
-  const biometricsReady = isEditMode || (facialPresent && facialAccepted);
+  
+  // Check if all 4 fingerprints are captured
+  const fingerprintsPresent = 
+    biometrics?.fingerprints && 
+    Object.keys(biometrics.fingerprints).length === 4;
+
+  // Biometrics are ready if we are editing OR (Face is accepted AND Fingers are captured)
+  const biometricsReady = isEditMode || (facialPresent && facialAccepted && fingerprintsPresent);
 
   const handleSave = async () => {
     setServerError(null);
@@ -158,6 +166,10 @@ function CompleteCitizenRecord() {
       setServerError(
         'Confirm the three officer checks, or provide an override reason, before saving.'
       );
+      return;
+    }
+    if (!isEditMode && !fingerprintsPresent) {
+      setServerError('Capture all four fingerprints before saving.');
       return;
     }
 
@@ -559,19 +571,16 @@ function CompleteCitizenRecord() {
 
       {!isEditMode && (
         <>
-          {/* Documents section removed. The officer no longer uploads an
-              identity document, birth certificate, or passport photograph.
-              The citizen's photo is captured in the biometrics step below,
-              and the identity data is entered directly on this form. */}
-
           <div className="form-section">
             <h3 className="form-section-title">Biometric enrollment</h3>
             <p className="text-muted">
-              A facial photograph is required. Fingerprints are optional.
+              A facial photograph and all four fingerprints are required.
             </p>
+            
+            {/* Changed requireFingerprints to true */}
             <BiometricEnrollment
               onComplete={setBiometrics}
-              requireFingerprints={false}
+              requireFingerprints={true}
             />
           </div>
 
@@ -586,6 +595,13 @@ function CompleteCitizenRecord() {
             <Alert
               type="info"
               message="Capture a facial photo before saving."
+            />
+          )}
+          
+          {!fingerprintsPresent && (
+            <Alert
+              type="info"
+              message="Capture all four fingerprints before saving."
             />
           )}
         </>

@@ -15,7 +15,14 @@ export default function WelcomePage() {
     <div className="welcome-page-container">
       <header className="welcome-header">
         <div className="header-left">
-          <div className="logo-circle">LS</div>
+          
+          {/* Replaced the LS text with the actual Logo.jpeg */}
+          <img 
+            src="/Logo.jpeg" 
+            alt="Lesotho Coat of Arms" 
+            className="logo-circle" 
+          />
+          
           <div>
             <h2 style={{ margin: 0, color: '#1A5276', fontSize: '1.2rem' }}>Integrated Government Services</h2>
             <p style={{ margin: 0, fontSize: '0.8rem', color: '#666' }}>Government of Lesotho</p>
@@ -40,7 +47,7 @@ export default function WelcomePage() {
           </button>
         </div>
         <div className="hero-image">
-          <img src="/hero-image.jpg" alt="Citizen using laptop" />
+          <img src="/background.jpg" alt="national flag" />
         </div>
       </section>
 
