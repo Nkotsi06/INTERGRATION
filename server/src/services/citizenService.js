@@ -79,6 +79,11 @@ async function updateContact(userId, body) {
 async function changePassword(userId, { currentPassword, newPassword }) {
   const user = await userRepository.findById(userId);
   if (!user) throw new Error('Account not found');
+  if (typeof newPassword !== 'string' || newPassword.length < 8 || !/\d/.test(newPassword)) {
+    const error = new Error('New password must be at least 8 characters and contain a number.');
+    error.statusCode = 400;
+    throw error;
+  }
 
   const ok = await verifyPassword(currentPassword, user.password_hash);
   if (!ok) {

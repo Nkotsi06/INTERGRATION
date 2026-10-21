@@ -72,11 +72,6 @@ function MinistryDashboardShell({
     PASSPORT_URGENT: '/passport/apply?type=urgent',
     PASSPORT_MINOR: '/passport/apply?type=minor',
     PASSPORT_STATUS: '/passport/status',
-    // Finance
-    TAX_REGISTER: '/finance/tax/register',
-    TAX_PROFILE: '/finance/tax/profile',
-    TAX_PAYMENT: '/finance/payment',
-    TAX_CLEARANCE: '/finance/tax/clearance',
   };
 
   const handleServiceClick = (service) => {

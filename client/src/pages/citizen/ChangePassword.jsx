@@ -6,6 +6,8 @@ import FormActions from '../../components/common/FormActions';
 import Alert from '../../components/common/Alert';
 import { changePassword } from '../../api/citizenApi';
 import { useNotification } from '../../context/NotificationContext';
+import { useAuth } from '../../context/AuthContext';
+import { getDashboardPath } from '../../utils/permissions';
 
 function ChangePassword() {
   const [currentPassword, setCurrentPassword] = useState('');
@@ -16,6 +18,8 @@ function ChangePassword() {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { success } = useNotification();
+  const { user, setUser } = useAuth();
+  const firstLoginChange = user?.mustChangePassword === true;
 
   const validate = () => {
     const next = {};
@@ -39,8 +43,9 @@ function ChangePassword() {
     setLoading(true);
     try {
       await changePassword({ currentPassword, newPassword });
+      setUser((current) => ({ ...current, mustChangePassword: false }));
       success('Password changed successfully');
-      navigate('/citizen/profile');
+      navigate(firstLoginChange ? getDashboardPath(user.role) : '/citizen/profile');
     } catch (err) {
       setServerError(
         err.message || 'Could not change your password. Please try again.'
@@ -53,12 +58,14 @@ function ChangePassword() {
   return (
     <PageWrapper
       title="Change password"
-      showBack
-      backPath="/citizen/profile"
+      showBack={!firstLoginChange}
+      backPath={firstLoginChange ? undefined : '/citizen/profile'}
     >
-      <h1>Change password</h1>
+      <h1>{firstLoginChange ? 'Set a new password' : 'Change password'}</h1>
       <p className="text-muted">
-        Choose a password you have not used before.
+        {firstLoginChange
+          ? 'For your security, set a new password before continuing.'
+          : 'Choose a password you have not used before.'}
       </p>
 
       {serverError && <Alert type="error" message={serverError} />}
@@ -94,7 +101,7 @@ function ChangePassword() {
           primaryLabel="Save password"
           onPrimary={handleSubmit}
           primaryLoading={loading}
-          onSecondary={() => navigate('/citizen/profile')}
+          onSecondary={firstLoginChange ? undefined : () => navigate('/citizen/profile')}
         />
       </form>
     </PageWrapper>

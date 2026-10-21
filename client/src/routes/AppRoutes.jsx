@@ -5,7 +5,6 @@ import RoleRoute from '../components/layout/RoleRoute';
 // Auth
 import Welcome from '../pages/auth/Welcome';
 import Register from '../pages/auth/Register';
-import RegistrationReceived from '../pages/auth/RegistrationReceived';
 import Login from '../pages/auth/Login';
 import StaffLogin from '../pages/auth/StaffLogin';
 import AdminLogin from '../pages/auth/AdminLogin';
@@ -24,6 +23,7 @@ import MyDocuments from '../pages/citizen/MyDocuments';
 import MyBiometrics from '../pages/citizen/MyBiometrics';
 import MyCertificates from '../pages/citizen/MyCertificates';
 import ApplyNationalId from '../pages/citizen/ApplyNationalId'; // ← NEW
+import ApplyBirthCertificate from '../pages/citizen/ApplyBirthCertificate';
 
 // Notifications
 import Notifications from '../pages/common/Notifications';
@@ -45,6 +45,7 @@ import HAIssueCertificate from '../pages/homeAffairs/IssueCertificate';
 import HAEditCertificate from '../pages/homeAffairs/EditCertificate';
 import HAApplicationQueue from '../pages/homeAffairs/ApplicationQueue';
 import HAApplicationDetail from '../pages/homeAffairs/ApplicationDetail';
+import BirthApplicationQueue from '../pages/homeAffairs/BirthApplicationQueue';
 import HAEnquiriesQueue from '../pages/homeAffairs/EnquiriesQueue';
 import HADocumentVerification from '../pages/homeAffairs/DocumentVerification';
 import HAInformationManagement from '../pages/homeAffairs/InformationManagement';
@@ -86,32 +87,12 @@ import ManageClearances from '../pages/police/ManageClearances';
 import ManageCriminalRecords from '../pages/police/ManageCriminalRecords';
 
 import FinanceDashboard from '../pages/finance/FinanceDashboard';
-import TaxRegistration from '../pages/finance/TaxRegistration';
-import TaxProfile from '../pages/finance/TaxProfile';
-import MakePayment from '../pages/finance/MakePayment';
-import PaymentConfirmation from '../pages/finance/PaymentConfirmation';
-import TaxClearanceCertificate from '../pages/finance/TaxClearanceCertificate';
-import ApplyVat from '../pages/finance/ApplyVat';
-import MyVat from '../pages/finance/MyVat';
-import SubmitTaxReturn from '../pages/finance/SubmitTaxReturn';
-import MyTaxReturns from '../pages/finance/MyTaxReturns';
-import MyPaymentPlans from '../pages/finance/MyPaymentPlans';
-import RequestPaymentPlan from '../pages/finance/RequestPaymentPlan';
-import RegisterBusiness from '../pages/finance/RegisterBusiness';
-import MyBusinesses from '../pages/finance/MyBusinesses';
-
 import FinanceStaffDashboard from '../pages/finance/StaffDashboard';
 import TreasuryView from '../pages/finance/TreasuryView';
 import BudgetView from '../pages/finance/BudgetView';
 import DebtView from '../pages/finance/DebtView';
 import ProcurementView from '../pages/finance/ProcurementView';
-import TaxPolicyView from '../pages/finance/TaxPolicyView';
 import AuditFindingsView from '../pages/finance/AuditFindingsView';
-import StaffVat from '../pages/finance/StaffVat';
-import StaffReturns from '../pages/finance/StaffReturns';
-import StaffPaymentPlans from '../pages/finance/StaffPaymentPlans';
-import StaffBusinesses from '../pages/finance/StaffBusinesses';
-import ProcessTaxRegistration from '../pages/finance/ProcessTaxRegistration';
 import PaymentsReceived from '../pages/finance/PaymentsReceived';
 import FeeSchedule from '../pages/finance/FeeSchedule';
 
@@ -160,7 +141,7 @@ function AppRoutes() {
       {/* Public */}
       <Route path="/" element={<Welcome />} />
       <Route path="/register" element={<Register />} />
-      <Route path="/registration-received" element={<RegistrationReceived />} />
+      <Route path="/birth-certificate/apply" element={<ApplyBirthCertificate />} />
       <Route path="/login" element={<Login />} />
       <Route path="/staff/login" element={<StaffLogin />} />
       <Route path="/admin/login" element={<AdminLogin />} />
@@ -208,6 +189,7 @@ function AppRoutes() {
       // ... inside the Home Affairs routes ...
       <Route path="/home-affairs/applications" element={<RoleRoute roles={['HOME_AFFAIRS']}><HAApplicationQueue /></RoleRoute>} />
       <Route path="/home-affairs/applications/:id" element={<RoleRoute roles={['HOME_AFFAIRS']}><HAApplicationDetail /></RoleRoute>} />
+      <Route path="/home-affairs/birth-applications" element={<RoleRoute roles={['HOME_AFFAIRS']}><BirthApplicationQueue /></RoleRoute>} />
 
       {/* ... (Keep Traffic, Police, Finance, Pensions, Passport, Admin, Help routes exactly as they are) ... */}
       {/* Traffic — citizen */}
@@ -254,33 +236,14 @@ function AppRoutes() {
 
       {/* Finance — citizen */}
       <Route path="/finance/dashboard" element={<ProtectedRoute><FinanceDashboard /></ProtectedRoute>} />
-      <Route path="/finance/tax/register" element={<ProtectedRoute><TaxRegistration /></ProtectedRoute>} />
-      <Route path="/finance/tax/profile" element={<ProtectedRoute><TaxProfile /></ProtectedRoute>} />
-      <Route path="/finance/payment" element={<ProtectedRoute><MakePayment /></ProtectedRoute>} />
-      <Route path="/finance/payment/success" element={<ProtectedRoute><PaymentConfirmation /></ProtectedRoute>} />
-      <Route path="/finance/tax/clearance" element={<ProtectedRoute><TaxClearanceCertificate /></ProtectedRoute>} />
-      <Route path="/finance/vat" element={<ProtectedRoute><MyVat /></ProtectedRoute>} />
-      <Route path="/finance/vat/new" element={<ProtectedRoute><ApplyVat /></ProtectedRoute>} />
-      <Route path="/finance/returns" element={<ProtectedRoute><MyTaxReturns /></ProtectedRoute>} />
-      <Route path="/finance/returns/new" element={<ProtectedRoute><SubmitTaxReturn /></ProtectedRoute>} />
-      <Route path="/finance/payment-plans" element={<ProtectedRoute><MyPaymentPlans /></ProtectedRoute>} />
-      <Route path="/finance/payment-plans/new" element={<ProtectedRoute><RequestPaymentPlan /></ProtectedRoute>} />
-      <Route path="/finance/businesses" element={<ProtectedRoute><MyBusinesses /></ProtectedRoute>} />
-      <Route path="/finance/businesses/new" element={<ProtectedRoute><RegisterBusiness /></ProtectedRoute>} />
 
       {/* Finance — staff */}
       <Route path="/finance/staff" element={<RoleRoute roles={['FINANCE']}><FinanceStaffDashboard /></RoleRoute>} />
-      <Route path="/finance/processing" element={<RoleRoute roles={['FINANCE']}><ProcessTaxRegistration /></RoleRoute>} />
       <Route path="/finance/treasury" element={<RoleRoute roles={['FINANCE']}><TreasuryView /></RoleRoute>} />
       <Route path="/finance/budget" element={<RoleRoute roles={['FINANCE']}><BudgetView /></RoleRoute>} />
       <Route path="/finance/debt" element={<RoleRoute roles={['FINANCE']}><DebtView /></RoleRoute>} />
       <Route path="/finance/procurement" element={<RoleRoute roles={['FINANCE']}><ProcurementView /></RoleRoute>} />
-      <Route path="/finance/tax-policy" element={<RoleRoute roles={['FINANCE']}><TaxPolicyView /></RoleRoute>} />
       <Route path="/finance/audit" element={<RoleRoute roles={['FINANCE']}><AuditFindingsView /></RoleRoute>} />
-      <Route path="/finance/staff/vat" element={<RoleRoute roles={['FINANCE']}><StaffVat /></RoleRoute>} />
-      <Route path="/finance/staff/returns" element={<RoleRoute roles={['FINANCE']}><StaffReturns /></RoleRoute>} />
-      <Route path="/finance/staff/plans" element={<RoleRoute roles={['FINANCE']}><StaffPaymentPlans /></RoleRoute>} />
-      <Route path="/finance/staff/businesses" element={<RoleRoute roles={['FINANCE']}><StaffBusinesses /></RoleRoute>} />
       <Route path="/finance/payments" element={<RoleRoute roles={['FINANCE']}><PaymentsReceived /></RoleRoute>} />
       <Route path="/finance/fee-schedule" element={<RoleRoute roles={['FINANCE']}><FeeSchedule /></RoleRoute>} />
 

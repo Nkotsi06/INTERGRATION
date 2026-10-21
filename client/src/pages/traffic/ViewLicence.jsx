@@ -4,10 +4,13 @@ import StatusBadge from '../../components/common/StatusBadge';
 import useFetch from '../../hooks/useFetch';
 import { getLicence } from '../../api/trafficApi';
 import { useNavigate } from 'react-router-dom';
-import { formatDate } from '../../utils/formatters';
+import { getPhotoBlob } from '../../api/citizenApi';
+import useBlobUrl from '../../hooks/useBlobUrl';
+import DrivingLicenceView from '../../components/documents/DrivingLicenceView';
 
 function ViewLicence() {
   const { data: licence, loading } = useFetch(getLicence, []);
+  const photoUrl = useBlobUrl(licence ? getPhotoBlob : null, [Boolean(licence)]);
   const navigate = useNavigate();
 
   return (
@@ -29,26 +32,7 @@ function ViewLicence() {
             variant={licence.isValid ? 'verified' : 'rejected'}
             label={licence.isValid ? 'Valid' : 'Expired'}
           />
-
-          <div className="card card-flat" style={{ marginTop: 16 }}>
-            <div className="form-grid">
-              <ReadOnly label="Licence number" value={licence.licenceNumber} />
-              <ReadOnly label="Full name" value={licence.fullName} />
-              <ReadOnly label="Licence type" value={licence.licenceType} />
-              <ReadOnly label="Issue date" value={formatDate(licence.issueDate)} />
-              <ReadOnly label="Expiry date" value={formatDate(licence.expiryDate)} />
-            </div>
-            {licence.signature_data && (
-              <div style={{ marginTop: 16 }}>
-                <img
-                  src={licence.signature_data}
-                  alt="Licence holder signature"
-                  style={{ width: 180, height: 60, objectFit: 'contain' }}
-                />
-                <div>Signature of holder</div>
-              </div>
-            )}
-          </div>
+          <DrivingLicenceView data={licence} photoUrl={photoUrl} />
 
           <div className="form-actions">
             <div className="form-actions-primary-group">
@@ -69,15 +53,6 @@ function ViewLicence() {
         </>
       )}
     </PageWrapper>
-  );
-}
-
-function ReadOnly({ label, value }) {
-  return (
-    <div className="form-field">
-      <label className="form-label">{label}</label>
-      <div className="form-input form-input-readonly">{value || '—'}</div>
-    </div>
   );
 }
 

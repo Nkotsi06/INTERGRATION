@@ -9,7 +9,7 @@ import Button from '../../components/common/Button';
 import Alert from '../../components/common/Alert';
 
 function Login() {
-  const [username, setUsername] = useState('');
+  const [nationalId, setNationalId] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -21,8 +21,8 @@ function Login() {
     e.preventDefault();
     setError(null);
 
-    if (!username.trim()) {
-      setError('Please enter your username.');
+    if (!nationalId.trim()) {
+      setError('Please enter your National ID number.');
       return;
     }
     if (!password) {
@@ -32,13 +32,17 @@ function Login() {
 
     setLoading(true);
     try {
-      const result = await login({ username: username.trim(), password }, ROLES.CITIZEN);
+      const result = await login({ nationalId: nationalId.trim(), password }, ROLES.CITIZEN);
       success('Login successful');
-      navigate(getDashboardPath(result.user.role));
+      navigate(
+        result.user.mustChangePassword
+          ? '/citizen/change-password'
+          : getDashboardPath(result.user.role)
+      );
     } catch (err) {
       setError(
         err.message ||
-          'Username or password is incorrect. Check them and try again.'
+          '          National ID or password is incorrect. Check them and try again.'
       );
     } finally {
       setLoading(false);
@@ -57,9 +61,10 @@ function Login() {
 
         <form onSubmit={handleSubmit} noValidate>
           <Input
-            label="Username"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
+            label="National ID number"
+            value={nationalId}
+            onChange={(e) => setNationalId(e.target.value.replace(/\D/g, '').slice(0, 13))}
+            inputMode="numeric"
             autoComplete="username"
             required
           />
@@ -84,7 +89,7 @@ function Login() {
 
         <div className="auth-links">
           <Link to="/forgot-password">Forgot password?</Link>
-          <Link to="/register">Don't have an account? Register</Link>
+          <Link to="/register">Register with an existing National ID</Link>
         </div>
 
         <div className="auth-links-secondary">

@@ -3,6 +3,8 @@ const applicationRepository = require('../repositories/applicationRepository');
 const documentService = require('../services/documentService');
 const notificationService = require('../services/notificationService');
 const { query } = require('../config/database');
+const { signToken } = require('../utils/jwt');
+const { authCookieOptions } = require('../utils/authCookies');
 const fs = require('fs');
 
 // The verification state lives in the JWT (req.user.verifiedCitizenId),
@@ -33,6 +35,16 @@ async function updateContact(req, res, next) {
 async function changePassword(req, res, next) {
   try {
     const result = await citizenService.changePassword(req.user.userId, req.body);
+    const token = signToken({
+      userId: req.user.userId,
+      username: req.user.username,
+      role: req.user.role,
+      citizenId: req.user.citizenId,
+      mustChangePassword: false,
+      identityVerified: req.session?.identityVerified || false,
+      verifiedCitizenId: req.session?.verifiedCitizenId || null,
+    });
+    res.cookie('token', token, authCookieOptions);
     res.json(result);
   } catch (err) {
     next(err);

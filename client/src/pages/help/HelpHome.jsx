@@ -15,7 +15,7 @@ const TOPICS = [
   },
   {
     title: 'Services and applications',
-    description: 'How to apply for a passport, licence, tax, pension and more.',
+    description: 'How to apply for a birth certificate, passport, licence, pension and more.',
     to: '/help/services',
   },
   {

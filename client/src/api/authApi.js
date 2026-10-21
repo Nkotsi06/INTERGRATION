@@ -1,6 +1,7 @@
 import apiClient from './apiClient';
 
-export const register = (data) => apiClient.post('/auth/register', data);
+export const registerWithNationalId = (data) =>
+  apiClient.post('/auth/register-national-id', data);
 export const login = (data, role) => apiClient.post(`/auth/login`, { ...data, role });
 export const staffLogin = (data) => apiClient.post('/auth/staff/login', data);
 export const adminLogin = (data) => apiClient.post('/auth/admin/login', data);

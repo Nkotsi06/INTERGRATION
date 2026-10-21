@@ -11,6 +11,7 @@ const rateLimitMiddleware = require('./middleware/rateLimitMiddleware');
 
 // Routes
 const authRoutes = require('./routes/authRoutes');
+const birthApplicationRoutes = require('./routes/birthApplicationRoutes');
 const citizenRoutes = require('./routes/citizenRoutes');
 const homeAffairsRoutes = require('./routes/homeAffairsRoutes');
 const trafficRoutes = require('./routes/trafficRoutes');
@@ -75,6 +76,7 @@ app.get('/api/health', (req, res) => {
 });
 
 app.use('/api/auth', authRoutes);
+app.use('/api/birth-applications', birthApplicationRoutes);
 app.use('/api/citizen', citizenRoutes);
 app.use('/api/home-affairs', homeAffairsRoutes);
 app.use('/api/traffic', trafficRoutes);

@@ -1,73 +1,84 @@
-import StatusBadge from '../common/StatusBadge';
 import { formatDate } from '../../utils/formatters';
 
-function DrivingLicenceView({ data }) {
+function DrivingLicenceView({ data, photoUrl }) {
   const isValid = data.isValid ?? data.is_valid;
   const licenceNumber = data.licenceNumber || data.licence_number;
-  const fullName = data.fullName || data.full_name;
-  const licenceType = data.licenceType || data.licence_type;
+  const fullName = data.fullName || data.full_name ||
+    [data.first_name, data.last_name].filter(Boolean).join(' ');
   const issueDate = data.issueDate || data.issue_date;
   const expiryDate = data.expiryDate || data.expiry_date;
+  const firstIssueDate = data.firstIssueDate || data.first_issue_date || issueDate;
+  const nationalId = data.nationalId || data.national_id;
+  const surname = data.lastName || data.last_name || fullName.split(' ').slice(-1)[0];
+  const givenNames = data.firstName || data.first_name ||
+    fullName.split(' ').slice(0, -1).join(' ');
 
   return (
-    <article className="card card-flat print-container" style={{ maxWidth: 760, margin: '0 auto', padding: 24 }}>
-      
-      {/* Header with Coat of Arms and Flag */}
-      <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24, borderBottom: '2px solid #1A5276', paddingBottom: 16 }}>
-        {/* Uses the document-logo class */}
-        <img 
-          src="/Logo.jpeg" 
-          alt="Lesotho Coat of Arms" 
-          className="document-logo" 
-        />
-        
-        <div style={{ textAlign: 'center' }}>
-          <h2 style={{ margin: 0, color: '#1A5276' }}>Kingdom of Lesotho</h2>
-          <h3 style={{ margin: 0, color: '#555' }}>Driving Licence</h3>
+    <article className="driving-licence-card print-container" aria-label="Lesotho driving licence">
+      <div className="licence-card-security-pattern" aria-hidden="true" />
+      <header className="licence-card-header">
+        <img className="licence-card-crest" src="/Logo.jpeg" alt="Lesotho coat of arms" />
+        <div className="licence-card-heading">
+          <div className="licence-card-country">KINGDOM OF LESOTHO</div>
+          <div className="licence-card-title">DRIVING LICENCE</div>
+          <div className="licence-card-translations">CARTA DE CONDUÇÃO · PERMIS DE CONDUIRE</div>
         </div>
-        
-        <img 
-          src="/background.jpg" 
-          alt="Lesotho Flag" 
-          style={{ width: 60, height: 40, objectFit: 'cover', border: '1px solid #ccc' }} 
-        />
+        <div className="licence-card-country-mark" aria-label="Lesotho">LS</div>
       </header>
 
-      <div style={{ marginBottom: 16 }}>
-        <StatusBadge
-          variant={isValid ? 'verified' : 'rejected'}
-          label={isValid ? 'Valid' : 'Expired'}
-        />
-      </div>
-
-      <div className="form-grid" style={{ marginTop: 16 }}>
-        <ReadOnly label="Licence number" value={licenceNumber} />
-        <ReadOnly label="Full name" value={fullName} />
-        <ReadOnly label="National ID" value={data.nationalId || data.national_id} />
-        <ReadOnly label="Licence type" value={licenceType} />
-        <ReadOnly label="Issue date" value={formatDate(issueDate)} />
-        <ReadOnly label="Expiry date" value={formatDate(expiryDate)} />
-      </div>
-
-      {data.signature_data && (
-        <div style={{ marginTop: 24 }}>
-          <img
-            src={data.signature_data}
-            alt="Licence holder signature"
-            style={{ width: 180, height: 60, objectFit: 'contain' }}
-          />
-          <div style={{ fontSize: '0.875rem', color: '#666', marginTop: 4 }}>Signature of holder</div>
+      <div className="licence-card-body">
+        <div className="licence-card-photo-column">
+          <div className="licence-card-category">SADC</div>
+          <div className="licence-card-photo">
+            {photoUrl ? (
+              <img src={photoUrl} alt={`Licence holder ${fullName}`} />
+            ) : (
+              <span>{fullName.split(/\s+/).map((part) => part[0]).slice(0, 2).join('').toUpperCase()}</span>
+            )}
+          </div>
+          <div className="licence-card-signature">
+            {data.signature_data || data.signatureData ? (
+              <img src={data.signature_data || data.signatureData} alt="Licence holder signature" />
+            ) : (
+              <span>{givenNames}</span>
+            )}
+            <small>Signature</small>
+          </div>
         </div>
-      )}
+
+        <div className="licence-card-details">
+          <strong className="licence-card-surname">{surname}</strong>
+          <strong className="licence-card-given-names">{givenNames}</strong>
+          <LicenceField label="I.D. No:" value={nationalId} />
+          <LicenceField label="Birth Date:" value={formatDate(data.dateOfBirth || data.date_of_birth)} />
+          <LicenceField label="License No:" value={licenceNumber} />
+          <LicenceField
+            label="Validity Period:"
+            value={`${formatDate(issueDate)} / ${formatDate(expiryDate)}`}
+          />
+          <LicenceField label="Issuing Centre:" value={data.issuingCentre || data.issuing_centre || 'Maseru'} />
+          <LicenceField label="Code:" value={data.code || data.licenceType || data.licence_type} />
+          <LicenceField label="Vehicle Restriction:" value={data.vehicleRestriction || data.vehicle_restriction || '0'} />
+          <LicenceField label="First Issue:" value={formatDate(firstIssueDate)} />
+        </div>
+
+        <div className={`licence-card-validity ${isValid ? 'is-valid' : 'is-expired'}`}>
+          {isValid ? 'VALID' : 'EXPIRED'}
+        </div>
+      </div>
+      <footer className="licence-card-footer">
+        <span>Issued by the Traffic Department · Lesotho</span>
+        <span>{data.status || (isValid ? 'ACTIVE' : 'EXPIRED')}</span>
+      </footer>
     </article>
   );
 }
 
-function ReadOnly({ label, value }) {
+function LicenceField({ label, value }) {
   return (
-    <div className="form-field">
-      <label className="form-label">{label}</label>
-      <div className="form-input form-input-readonly">{value || '—'}</div>
+    <div className="licence-card-field">
+      <span>{label}</span>
+      <strong>{value || '—'}</strong>
     </div>
   );
 }

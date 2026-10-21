@@ -56,6 +56,9 @@ function HAStaffDashboard() {
       )}
 
       <div className="quick-actions" style={{ flexWrap: 'wrap', gap: 10 }}>
+        <Button variant="primary" onClick={() => navigate('/home-affairs/birth-applications')}>
+          Birth Certificate Applications
+        </Button>
         <Button variant="primary" onClick={() => navigate('/home-affairs/applications')}>
           Process Applications
         </Button>

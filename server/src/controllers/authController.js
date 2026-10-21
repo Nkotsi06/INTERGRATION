@@ -1,10 +1,10 @@
 const authService = require('../services/authService');
 const { authCookieOptions } = require('../utils/authCookies');
 
-async function register(req, res, next) {
+async function registerWithNationalId(req, res, next) {
   try {
-    const user = await authService.register(req.body);
-    res.status(201).json(user);
+    const result = await authService.registerWithNationalId(req.body);
+    res.status(201).json(result);
   } catch (err) {
     next(err);
   }
@@ -12,9 +12,10 @@ async function register(req, res, next) {
 
 async function login(req, res, next) {
   try {
-    const { username, password, role } = req.body;
+    const { username, nationalId, password, role } = req.body;
     const result = await authService.login({
       username,
+      nationalId,
       password,
       expectedRoleGroup: role,
     });
@@ -71,7 +72,7 @@ async function forgotPassword(req, res, next) {
 }
 
 module.exports = {
-  register,
+  registerWithNationalId,
   login,
   staffLogin,
   adminLogin,

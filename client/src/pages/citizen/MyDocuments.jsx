@@ -12,6 +12,9 @@ import PassportView from '../../components/documents/PassportView';
 import Button from '../../components/common/Button';
 import Alert from '../../components/common/Alert';
 import { getLicence } from '../../api/trafficApi';
+import { getPhotoBlob } from '../../api/citizenApi';
+import useBlobUrl from '../../hooks/useBlobUrl';
+import { getBirthCertificatePdfUrl } from '../../api/birthApplicationApi';
 
 function formatTypeLabel(certificate) {
   if (certificate.certificate_type === 'ID_CARD') {
@@ -44,6 +47,7 @@ function MyDocuments() {
   const [showLicence, setShowLicence] = useState(false);
   const [photoUrl, setPhotoUrl] = useState(null);
   const [photoError, setPhotoError] = useState(null);
+  const licencePhotoUrl = useBlobUrl(showLicence ? getPhotoBlob : null, [showLicence]);
 
   useEffect(() => () => {
     if (photoUrl?.startsWith('blob:')) URL.revokeObjectURL(photoUrl);
@@ -158,7 +162,16 @@ function MyDocuments() {
           </div>
 
           {selectedDoc?.certificate_type === 'BIRTH' && (
-            <BirthCertificateView data={selectedDoc} />
+            <>
+              <a
+                className="btn btn-secondary no-print"
+                href={getBirthCertificatePdfUrl(selectedDoc.certificate_number)}
+                style={{ display: 'inline-block', marginBottom: 16 }}
+              >
+                Download signed PDF certificate
+              </a>
+              <BirthCertificateView data={selectedDoc} />
+            </>
           )}
           {selectedDoc?.certificate_type === 'DEATH' && (
             <DeathCertificateView data={selectedDoc} />
@@ -184,7 +197,9 @@ function MyDocuments() {
               <PassportView data={selectedDoc} photoUrl={photoUrl} />
             </>
           )}
-          {showLicence && licence && <DrivingLicenceView data={licence} />}
+          {showLicence && licence && (
+            <DrivingLicenceView data={licence} photoUrl={licencePhotoUrl} />
+          )}
         </div>
       )}
     </PageWrapper>

@@ -24,11 +24,22 @@ function authMiddleware(req, res, next) {
       username: decoded.username,
       role: (decoded.role || '').trim(),
       citizenId: decoded.citizenId ?? null,
+      mustChangePassword: decoded.mustChangePassword === true,
     };
     req.session = {
       identityVerified: decoded.identityVerified || false,
       verifiedCitizenId: decoded.verifiedCitizenId || null,
     };
+    const requestPath = req.originalUrl.split('?')[0];
+    const isSessionRequest = req.method === 'GET' && requestPath === '/api/auth/session';
+    const isPasswordChange = req.method === 'PUT' &&
+      requestPath === '/api/citizen/change-password';
+    if (req.user.mustChangePassword && !isSessionRequest && !isPasswordChange) {
+      return res.status(403).json({
+        code: 'PASSWORD_CHANGE_REQUIRED',
+        message: 'Change your temporary password before accessing government services.',
+      });
+    }
     next();
   } catch (err) {
     logger.warn('Invalid token:', err.message);

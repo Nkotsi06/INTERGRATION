@@ -6,7 +6,7 @@ function FinanceDashboard() {
       ministryCode="FINANCE"
       title="Finance Services"
       accentColour="#117864"
-      intro="Manage your tax, payments, and clearances."
+      intro="View the government finance services currently available."
     />
   );
 }

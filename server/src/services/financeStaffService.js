@@ -2,7 +2,6 @@ const treasuryRepository = require('../repositories/treasuryRepository');
 const budgetRepository = require('../repositories/budgetRepository');
 const debtRepository = require('../repositories/debtRepository');
 const procurementRepository = require('../repositories/procurementRepository');
-const taxPolicyRepository = require('../repositories/taxPolicyRepository');
 const auditFindingRepository = require('../repositories/auditFindingRepository');
 
 async function getTreasury(filters) { return treasuryRepository.findAll(filters); }
@@ -17,8 +16,6 @@ async function getDebtStats()   { return debtRepository.getStats(); }
 async function getProcurement(filters) { return procurementRepository.findAll(filters); }
 async function getProcurementStats()   { return procurementRepository.getStats(); }
 
-async function getTaxPolicy() { return taxPolicyRepository.findAll(); }
-
 async function getAuditFindings(filters) { return auditFindingRepository.findAll(filters); }
 async function getAuditStats()           { return auditFindingRepository.getStats(); }
 
@@ -27,6 +24,5 @@ module.exports = {
   getBudget, getBudgetStats,
   getDebt, getDebtStats,
   getProcurement, getProcurementStats,
-  getTaxPolicy,
   getAuditFindings, getAuditStats,
 };

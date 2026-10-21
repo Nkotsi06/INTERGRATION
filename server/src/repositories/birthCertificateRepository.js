@@ -32,7 +32,11 @@ async function create(data) {
 
 async function findByCitizen(citizenId) {
   const result = await query(
-    'SELECT * FROM birth_certificates WHERE citizen_id = $1 ORDER BY created_at DESC',
+    `SELECT id, application_id, citizen_id, certificate_number, child_full_name,
+            child_date_of_birth, child_gender, child_national_id, place_of_birth,
+            mother_full_name, mother_national_id, father_full_name, father_national_id,
+            request_type, issued_by, issued_at, status, rejection_reason, created_at, updated_at
+     FROM birth_certificates WHERE citizen_id = $1 ORDER BY created_at DESC`,
     [citizenId]
   );
   return result.rows;
@@ -40,7 +44,11 @@ async function findByCitizen(citizenId) {
 
 async function findAll() {
   const result = await query(
-    'SELECT * FROM birth_certificates ORDER BY created_at DESC'
+    `SELECT id, application_id, citizen_id, certificate_number, child_full_name,
+            child_date_of_birth, child_gender, child_national_id, place_of_birth,
+            mother_full_name, mother_national_id, father_full_name, father_national_id,
+            request_type, issued_by, issued_at, status, rejection_reason, created_at, updated_at
+     FROM birth_certificates ORDER BY created_at DESC`
   );
   return result.rows;
 }

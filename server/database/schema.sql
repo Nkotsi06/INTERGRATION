@@ -50,19 +50,15 @@ DROP VIEW  IF EXISTS finance_payment_summary CASCADE;
 
 DROP TABLE IF EXISTS divorce_certificates CASCADE;
 DROP TABLE IF EXISTS death_certificates_new CASCADE;
+DROP TABLE IF EXISTS birth_certificate_applications CASCADE;
 DROP TABLE IF EXISTS birth_certificates CASCADE;
 DROP TABLE IF EXISTS marriage_certificates CASCADE;
 
 DROP TABLE IF EXISTS audit_findings CASCADE;
-DROP TABLE IF EXISTS tax_policy_notes CASCADE;
 DROP TABLE IF EXISTS procurement_records CASCADE;
 DROP TABLE IF EXISTS debt_records CASCADE;
 DROP TABLE IF EXISTS budget_allocations CASCADE;
 DROP TABLE IF EXISTS treasury_payments CASCADE;
-DROP TABLE IF EXISTS business_registrations CASCADE;
-DROP TABLE IF EXISTS payment_plans CASCADE;
-DROP TABLE IF EXISTS tax_returns CASCADE;
-DROP TABLE IF EXISTS vat_registrations CASCADE;
 
 DROP TABLE IF EXISTS transport_permits CASCADE;
 DROP TABLE IF EXISTS vehicle_licences CASCADE;
@@ -81,9 +77,6 @@ DROP TABLE IF EXISTS appointments CASCADE;
 DROP TABLE IF EXISTS passport_applications CASCADE;
 DROP TABLE IF EXISTS pension_verifications CASCADE;
 DROP TABLE IF EXISTS pension_records CASCADE;
-DROP TABLE IF EXISTS tax_clearances CASCADE;
-DROP TABLE IF EXISTS tax_payments CASCADE;
-DROP TABLE IF EXISTS tax_records CASCADE;
 DROP TABLE IF EXISTS police_case_updates CASCADE;
 DROP TABLE IF EXISTS police_cases CASCADE;
 DROP TABLE IF EXISTS vehicles CASCADE;
@@ -104,6 +97,8 @@ DROP TABLE IF EXISTS users CASCADE;
 DROP TABLE IF EXISTS services CASCADE;
 DROP TABLE IF EXISTS fee_schedule CASCADE;
 DROP TABLE IF EXISTS payments CASCADE;
+DROP SEQUENCE IF EXISTS citizen_national_id_serial_seq;
+DROP SEQUENCE IF EXISTS birth_certificate_number_seq;
 
 -- Migration-only tables. Drop them if they exist, so a fresh schema
 -- run also cleans up any tables the migrations created.
@@ -118,6 +113,9 @@ DROP TABLE IF EXISTS document_enquiries CASCADE;
 -- SECTION 1: CORE TABLES
 -- ================================================================
 
+CREATE SEQUENCE citizen_national_id_serial_seq START 1;
+CREATE SEQUENCE birth_certificate_number_seq START 1;
+
 CREATE TABLE users (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   username VARCHAR(50) UNIQUE NOT NULL,
@@ -130,6 +128,7 @@ CREATE TABLE users (
   ministry VARCHAR(30),
   citizen_id UUID,
   status VARCHAR(20) NOT NULL DEFAULT 'ACTIVE' CHECK (status IN ('ACTIVE','INACTIVE')),
+  must_change_password BOOLEAN NOT NULL DEFAULT FALSE,
   is_active BOOLEAN DEFAULT TRUE,
   created_at TIMESTAMP DEFAULT NOW(),
   updated_at TIMESTAMP DEFAULT NOW()
@@ -314,12 +313,31 @@ CREATE TABLE birth_certificates (
   status VARCHAR(20) NOT NULL DEFAULT 'PENDING'
     CHECK (status IN ('PENDING','ISSUED','REJECTED','CANCELLED')),
   rejection_reason TEXT,
+  certificate_pdf BYTEA,
   created_at TIMESTAMP NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
 CREATE INDEX idx_birth_certs_citizen ON birth_certificates(citizen_id);
 CREATE INDEX idx_birth_certs_application ON birth_certificates(application_id);
 CREATE INDEX idx_birth_certs_status ON birth_certificates(status);
+
+CREATE TABLE birth_certificate_applications (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  reference_number VARCHAR(40) UNIQUE NOT NULL,
+  form_data JSONB NOT NULL,
+  documents JSONB NOT NULL,
+  status VARCHAR(20) NOT NULL DEFAULT 'SUBMITTED'
+    CHECK (status IN ('SUBMITTED','UNDER_REVIEW','APPROVED','REJECTED')),
+  rejection_reason TEXT,
+  citizen_id UUID REFERENCES citizens(id) ON DELETE SET NULL,
+  certificate_number VARCHAR(50),
+  reviewed_by UUID REFERENCES users(id) ON DELETE SET NULL,
+  reviewed_at TIMESTAMP,
+  submitted_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+CREATE INDEX idx_birth_application_status
+  ON birth_certificate_applications(status, submitted_at);
 
 CREATE TABLE death_certificates_new (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -563,129 +581,6 @@ CREATE INDEX idx_criminal_records_citizen ON criminal_records(citizen_id);
 CREATE INDEX idx_criminal_records_status ON criminal_records(status);
 CREATE INDEX idx_criminal_records_reference ON criminal_records(reference_number);
 
-CREATE TABLE tax_records (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  citizen_id UUID NOT NULL REFERENCES citizens(id) ON DELETE CASCADE,
-  tax_id VARCHAR(50) UNIQUE NOT NULL,
-  employment_status VARCHAR(50),
-  income_source VARCHAR(100),
-  tax_year VARCHAR(10),
-  status VARCHAR(20) DEFAULT 'PENDING',
-  outstanding_balance NUMERIC(12,2) DEFAULT 0,
-  created_at TIMESTAMP DEFAULT NOW(),
-  updated_at TIMESTAMP DEFAULT NOW()
-);
-CREATE INDEX idx_tax_records_citizen ON tax_records(citizen_id);
-
-CREATE TABLE tax_payments (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  citizen_id UUID NOT NULL REFERENCES citizens(id) ON DELETE CASCADE,
-  tax_record_id UUID REFERENCES tax_records(id),
-  reference_number VARCHAR(50) UNIQUE NOT NULL,
-  amount NUMERIC(12,2) NOT NULL,
-  payment_method VARCHAR(30),
-  paid_at TIMESTAMP DEFAULT NOW()
-);
-CREATE INDEX idx_tax_payments_citizen ON tax_payments(citizen_id);
-
-CREATE TABLE tax_clearances (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  citizen_id UUID NOT NULL REFERENCES citizens(id) ON DELETE CASCADE,
-  certificate_id VARCHAR(50) UNIQUE NOT NULL,
-  tin VARCHAR(50),
-  legal_name VARCHAR(200),
-  trading_name VARCHAR(200),
-  nature_of_business VARCHAR(100),
-  address TEXT,
-  date_issued TIMESTAMP DEFAULT NOW(),
-  valid_until DATE,
-  verification_url VARCHAR(500)
-);
-CREATE INDEX idx_tax_clearances_citizen ON tax_clearances(citizen_id);
-
-CREATE TABLE vat_registrations (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  citizen_id UUID NOT NULL REFERENCES citizens(id) ON DELETE CASCADE,
-  reference_number VARCHAR(50) UNIQUE NOT NULL,
-  business_name VARCHAR(200) NOT NULL,
-  trading_name VARCHAR(200),
-  business_address TEXT,
-  nature_of_business VARCHAR(200),
-  annual_turnover NUMERIC(14, 2),
-  tin VARCHAR(50),
-  status VARCHAR(20) DEFAULT 'SUBMITTED',
-  issued_by UUID REFERENCES users(id),
-  issued_at TIMESTAMP,
-  certificate_id VARCHAR(50),
-  notes TEXT,
-  created_at TIMESTAMP DEFAULT NOW(),
-  updated_at TIMESTAMP DEFAULT NOW()
-);
-CREATE INDEX idx_vat_reg_citizen ON vat_registrations(citizen_id);
-CREATE INDEX idx_vat_reg_status ON vat_registrations(status);
-
-CREATE TABLE tax_returns (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  citizen_id UUID NOT NULL REFERENCES citizens(id) ON DELETE CASCADE,
-  reference_number VARCHAR(50) UNIQUE NOT NULL,
-  tax_year VARCHAR(10) NOT NULL,
-  income_declared NUMERIC(14, 2),
-  deductions NUMERIC(14, 2),
-  taxable_income NUMERIC(14, 2),
-  tax_due NUMERIC(14, 2),
-  tax_paid NUMERIC(14, 2),
-  status VARCHAR(20) DEFAULT 'SUBMITTED',
-  submitted_by UUID REFERENCES users(id),
-  submitted_at TIMESTAMP DEFAULT NOW(),
-  reviewed_by UUID REFERENCES users(id),
-  reviewed_at TIMESTAMP,
-  notes TEXT,
-  updated_at TIMESTAMP DEFAULT NOW()
-);
-CREATE INDEX idx_tax_returns_citizen ON tax_returns(citizen_id);
-CREATE INDEX idx_tax_returns_year ON tax_returns(tax_year);
-
-CREATE TABLE payment_plans (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  citizen_id UUID NOT NULL REFERENCES citizens(id) ON DELETE CASCADE,
-  reference_number VARCHAR(50) UNIQUE NOT NULL,
-  total_amount NUMERIC(14, 2) NOT NULL,
-  instalment_amount NUMERIC(14, 2) NOT NULL,
-  number_of_instalments INTEGER NOT NULL,
-  start_date DATE NOT NULL,
-  frequency VARCHAR(20) DEFAULT 'MONTHLY',
-  status VARCHAR(20) DEFAULT 'SUBMITTED',
-  approved_by UUID REFERENCES users(id),
-  approved_at TIMESTAMP,
-  notes TEXT,
-  created_at TIMESTAMP DEFAULT NOW(),
-  updated_at TIMESTAMP DEFAULT NOW()
-);
-CREATE INDEX idx_payment_plans_citizen ON payment_plans(citizen_id);
-CREATE INDEX idx_payment_plans_status ON payment_plans(status);
-
-CREATE TABLE business_registrations (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  citizen_id UUID NOT NULL REFERENCES citizens(id) ON DELETE CASCADE,
-  reference_number VARCHAR(50) UNIQUE NOT NULL,
-  business_name VARCHAR(200) NOT NULL,
-  trading_name VARCHAR(200),
-  business_type VARCHAR(50),
-  registration_number VARCHAR(50),
-  address TEXT,
-  phone VARCHAR(30),
-  email VARCHAR(150),
-  tin VARCHAR(50),
-  status VARCHAR(20) DEFAULT 'SUBMITTED',
-  approved_by UUID REFERENCES users(id),
-  approved_at TIMESTAMP,
-  notes TEXT,
-  created_at TIMESTAMP DEFAULT NOW(),
-  updated_at TIMESTAMP DEFAULT NOW()
-);
-CREATE INDEX idx_business_reg_citizen ON business_registrations(citizen_id);
-CREATE INDEX idx_business_reg_status ON business_registrations(status);
-
 CREATE TABLE treasury_payments (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   payment_reference VARCHAR(50) UNIQUE NOT NULL,
@@ -753,20 +648,6 @@ CREATE TABLE procurement_records (
   updated_at TIMESTAMP DEFAULT NOW()
 );
 CREATE INDEX idx_procurement_status ON procurement_records(status);
-
-CREATE TABLE tax_policy_notes (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  title VARCHAR(200) NOT NULL,
-  category VARCHAR(50),
-  summary TEXT,
-  full_text TEXT,
-  effective_from DATE,
-  effective_until DATE,
-  is_active BOOLEAN DEFAULT TRUE,
-  created_by UUID REFERENCES users(id),
-  created_at TIMESTAMP DEFAULT NOW(),
-  updated_at TIMESTAMP DEFAULT NOW()
-);
 
 CREATE TABLE audit_findings (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -947,7 +828,6 @@ INSERT INTO document_types (code, name, accepted_formats, max_size_mb, is_requir
 ('DEATH_CERTIFICATE', 'Death Certificate', 'pdf,jpg,jpeg,png', 5, false, 2),
 ('NATIONAL_ID', 'National ID Card', 'pdf,jpg,jpeg,png', 5, true, 3),
 ('DRIVERS_LICENCE', 'Driver''s Licence', 'pdf,jpg,jpeg,png', 5, false, 4),
-('TAX_CLEARANCE', 'Tax Clearance Certificate', 'pdf,jpg,jpeg,png', 5, false, 5),
 ('PASSPORT', 'Passport', 'pdf,jpg,jpeg,png', 5, false, 6),
 ('PASSPORT_PHOTO', 'Passport Photo', 'jpg,jpeg,png', 5, true, 7),
 ('POLICE_EVIDENCE', 'Police Evidence', 'pdf,jpg,jpeg,png', 5, false, 8);
@@ -980,7 +860,6 @@ INSERT INTO reference_formats (name, prefix, year_format, sequence_length, examp
 ('APPLICATION',           'REF', 'YYYY', 5, 'REF-2026-00001'),
 ('PASSPORT_APPLICATION',  'PPT', 'YYYY', 5, 'PPT-2026-00001'),
 ('TRAFFIC_RENEWAL',       'TRF', 'YYYY', 5, 'TRF-2026-00001'),
-('TAX_PAYMENT',           'TAX', 'YYYY', 5, 'TAX-2026-00001'),
 ('POLICE_CASE',           'POL', 'YYYY', 5, 'POL-2026-00001'),
 ('BIRTH_CERTIFICATE',     'BC',  'YYYY', 6, 'BC-2026-000001'),
 ('DEATH_CERTIFICATE',     'DC',  'YYYY', 6, 'DC-2026-000001'),
@@ -994,11 +873,7 @@ INSERT INTO reference_formats (name, prefix, year_format, sequence_length, examp
 ('LEARNERS_LICENCE',      'LL',  'YYYY', 5, 'LL-2026-00001'),
 ('DRIVING_LICENCE',       'DL',  'YYYY', 5, 'DL-2026-00001'),
 ('PUBLIC_DRIVING_PERMIT', 'PDP', 'YYYY', 5, 'PDP-2026-00001'),
-('DRIVERS_LICENCE_NUMBER','DLN', 'YYYY', 6, 'DLN-2026-000001'),
-('VAT_REGISTRATION',      'VAT', 'YYYY', 5, 'VAT-2026-00001'),
-('TAX_RETURN',            'TR',  'YYYY', 5, 'TR-2026-00001'),
-('PAYMENT_PLAN',          'PP',  'YYYY', 5, 'PP-2026-00001'),
-('BUSINESS_REGISTRATION', 'BUS', 'YYYY', 5, 'BUS-2026-00001');
+('DRIVERS_LICENCE_NUMBER','DLN', 'YYYY', 6, 'DLN-2026-000001');
 
 INSERT INTO status_types (code, name, colour_hex, applies_to, display_order) VALUES
 ('DRAFT',               'Draft',               '#7F8C8D', 'application',  1),
@@ -1350,32 +1225,6 @@ INSERT INTO services (ministry, code, name, description, service_type, is_enable
 
 ('TRAFFIC', 'MY_TRAFFIC_APPLICATIONS', 'My traffic applications',
  'Track your traffic licence and permit applications.', 'INFORMATION', TRUE, '[]'::jsonb, '[]'::jsonb, 0, 90);
-
--- FINANCE services
-INSERT INTO services (ministry, code, name, description, service_type, is_enabled, form_fields, required_documents, fee, display_order) VALUES
-('FINANCE', 'TAX_REGISTER', 'Register for tax',
- 'Register for a tax identification number.', 'APPLICATION', TRUE, '[]'::jsonb, '[]'::jsonb, 0, 10),
-
-('FINANCE', 'TAX_PROFILE', 'View tax profile',
- 'See your tax ID, balance, and payment history.', 'INFORMATION', TRUE, '[]'::jsonb, '[]'::jsonb, 0, 20),
-
-('FINANCE', 'TAX_PAYMENT', 'Make a payment',
- 'Pay tax or other amounts due.', 'APPLICATION', TRUE, '[]'::jsonb, '[]'::jsonb, 0, 30),
-
-('FINANCE', 'TAX_CLEARANCE', 'Tax clearance certificate',
- 'Request a tax clearance certificate.', 'APPLICATION', TRUE, '[]'::jsonb, '[]'::jsonb, 0, 40),
-
-('FINANCE', 'VAT_REGISTRATION', 'VAT registration',
- 'Register a business for VAT.', 'APPLICATION', TRUE, '[]'::jsonb, '[]'::jsonb, 0, 50),
-
-('FINANCE', 'TAX_RETURN', 'Submit a tax return',
- 'File your annual tax return.', 'APPLICATION', TRUE, '[]'::jsonb, '[]'::jsonb, 0, 60),
-
-('FINANCE', 'PAYMENT_PLAN', 'Payment plan',
- 'Request to pay an outstanding amount in instalments.', 'APPLICATION', TRUE, '[]'::jsonb, '[]'::jsonb, 0, 70),
-
-('FINANCE', 'BUSINESS_REGISTRATION', 'Business registration',
- 'Register a business with Finance.', 'APPLICATION', TRUE, '[]'::jsonb, '[]'::jsonb, 0, 80);
 
 -- Seed fee_schedule from services.fee
 INSERT INTO fee_schedule (ministry, service_code, service_name, amount, is_active)

@@ -41,15 +41,16 @@ The Integrated Government Services System is a full-stack application that allow
 
 ### Citizen Features
 
-- Register and log in with a system account
+- Apply for a birth certificate without an account; upload the required supporting documents for Home Affairs review
+- Receive a generated National ID and temporary account when a birth application is approved
+- Register an existing National ID against the simulated national registry and change the generated password on first sign-in
 - Session-based identity verification using National ID
 - View and update personal profile
-- Apply for services online (passport, driver's licence, tax, etc.)
+- Apply for services online (birth certificates, passports, and driver's licences)
 - Track application status by reference number
 - View, download, and manage documents
 - Renew driver's licences and book driving tests
 - Report police cases and track case status
-- Register for tax and make payments online
 - Verify pension existence digitally
 - Apply for and track passports
 
@@ -80,6 +81,12 @@ The Integrated Government Services System is a full-stack application that allow
 - File uploads (documents, signatures, biometrics, photos, logos)
 - Unique reference number generation
 - Status history tracking (never overwritten)
+
+### Birth certificate processing
+
+The public birth application accepts PDF/JPG uploads for parent or guardian National ID(s), a religious confirmation letter, a chief's letter, and a medical certificate or health booklet. Files are stored outside the public uploads directory. Home Affairs staff review applications in the Birth Certificate Applications queue; approval creates the citizen record, unique National ID, temporary account, and QR-verifiable PDF certificate. The reviewing officer receives the temporary credentials for secure handoff to the applicant; automatic email delivery is not configured in this project.
+
+Apply database migrations `015_birth_certificate_registration.sql` and `016_remove_tax_business_vat_and_plans.sql` after the existing migrations. The second migration removes the retired tax, VAT, business registration, and payment-plan data structures and catalogue entries.
 
 ---
 

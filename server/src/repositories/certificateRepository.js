@@ -49,6 +49,17 @@ const FIELD_MAP = {
   },
 };
 
+const BIRTH_CERTIFICATE_COLUMNS = `
+  id, application_id, citizen_id, certificate_number, child_full_name,
+  child_date_of_birth, child_gender, place_of_birth, mother_full_name,
+  mother_national_id, father_full_name, father_national_id, request_type,
+  issued_by, issued_at, status, rejection_reason, created_at, updated_at
+`;
+
+function selectColumns(type) {
+  return type === 'BIRTH' ? BIRTH_CERTIFICATE_COLUMNS : '*';
+}
+
 function shapeRow(type, data) {
   const mapping = FIELD_MAP[type];
   const out = {};
@@ -95,7 +106,7 @@ async function updateFields(type, id, data) {
   });
 
   if (fields.length === 0) {
-    const result = await query(`SELECT * FROM ${table} WHERE id = $1`, [id]);
+    const result = await query(`SELECT ${selectColumns(type)} FROM ${table} WHERE id = $1`, [id]);
     return result.rows[0];
   }
 
@@ -111,7 +122,7 @@ async function updateFields(type, id, data) {
 async function findByApplication(type, applicationId) {
   const table = TABLE_BY_TYPE[type];
   const result = await query(
-    `SELECT * FROM ${table} WHERE application_id = $1`,
+    `SELECT ${selectColumns(type)} FROM ${table} WHERE application_id = $1`,
     [applicationId]
   );
   return result.rows[0];
@@ -119,14 +130,14 @@ async function findByApplication(type, applicationId) {
 
 async function findById(type, id) {
   const table = TABLE_BY_TYPE[type];
-  const result = await query(`SELECT * FROM ${table} WHERE id = $1`, [id]);
+  const result = await query(`SELECT ${selectColumns(type)} FROM ${table} WHERE id = $1`, [id]);
   return result.rows[0];
 }
 
 async function findByCitizen(type, citizenId) {
   const table = TABLE_BY_TYPE[type];
   const result = await query(
-    `SELECT * FROM ${table} WHERE citizen_id = $1 ORDER BY created_at DESC`,
+    `SELECT ${selectColumns(type)} FROM ${table} WHERE citizen_id = $1 ORDER BY created_at DESC`,
     [citizenId]
   );
   return result.rows;
@@ -156,7 +167,7 @@ async function findAll(type, filters = {}) {
 
   const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
   const result = await query(
-    `SELECT * FROM ${table} ${where} ORDER BY created_at DESC`,
+    `SELECT ${selectColumns(type)} FROM ${table} ${where} ORDER BY created_at DESC`,
     params
   );
   return result.rows;
@@ -167,7 +178,7 @@ async function markIssued(type, id, issuedBy) {
   const result = await query(
     `UPDATE ${table}
      SET status = 'ISSUED', issued_by = $2, issued_at = NOW(), updated_at = NOW()
-     WHERE id = $1 RETURNING *`,
+     WHERE id = $1 RETURNING ${selectColumns(type)}`,
     [id, issuedBy]
   );
   return result.rows[0];
@@ -178,7 +189,7 @@ async function markRejected(type, id, reason, issuedBy) {
   const result = await query(
     `UPDATE ${table}
      SET status = 'REJECTED', rejection_reason = $2, issued_by = $3, updated_at = NOW()
-     WHERE id = $1 RETURNING *`,
+     WHERE id = $1 RETURNING ${selectColumns(type)}`,
     [id, reason, issuedBy]
   );
   return result.rows[0];

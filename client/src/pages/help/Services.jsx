@@ -14,10 +14,6 @@ const MINISTRIES = [
     items: ['Report a case', 'Track your cases', 'Request clearance'],
   },
   {
-    name: 'Finance',
-    items: ['Register for tax', 'Make a payment', 'Tax clearance certificate'],
-  },
-  {
     name: 'Pensions',
     items: ['View pension info', 'Existence verification', 'Verification history'],
   },

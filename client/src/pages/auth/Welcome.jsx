@@ -1,14 +1,24 @@
-import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 export default function WelcomePage() {
   const navigate = useNavigate();
 
-  const services = [
-    { title: 'Home Affairs', desc: 'Passports, identity documents, civil registration and more.', link: '/login' },
-    { title: 'Traffic & Transport', desc: 'Driving licences, vehicle registration and transport permits.', link: '/login' },
-    { title: 'Police Services', desc: 'Police clearance, reports and public safety information.', link: '/login' },
-    { title: 'Finance & Pensions', desc: 'Government payments, funding and pension services.', link: '/login' },
+  const entryOptions = [
+    {
+      title: 'Apply for Birth Certificate',
+      description: 'For a child aged 0–16, or an adult applying late for themselves. No account is needed to start.',
+      path: '/birth-certificate/apply',
+    },
+    {
+      title: 'Sign In',
+      description: 'Already have a National ID number? Sign in to continue to your services.',
+      path: '/login',
+    },
+    {
+      title: 'Register with existing ID number',
+      description: 'Verify your National ID in the registry, choose a username, and receive a temporary password.',
+      path: '/register',
+    },
   ];
 
   return (
@@ -37,7 +47,7 @@ export default function WelcomePage() {
           </p>
           <p className="hero-tags">Simple &nbsp;|&nbsp; Secure &nbsp;|&nbsp; Convenient</p>
           <button className="btn-primary-hero" onClick={() => navigate('/login')}>
-            Explore Services &rarr;
+            Sign In &rarr;
           </button>
         </div>
         <div className="hero-image">
@@ -46,21 +56,26 @@ export default function WelcomePage() {
       </section>
 
       <section className="services-section">
-        <h2 className="services-title">Services at Your Fingertips</h2>
-        <p className="services-subtitle">Choose from a wide range of government services provided by different ministries and departments.</p>
-        
+        <h2 className="services-title">Choose how to continue</h2>
+        <p className="services-subtitle">
+          Start a birth registration, sign in with your National ID, or register an existing ID.
+        </p>
         <div className="services-grid-welcome">
-          {services.map((s, idx) => (
-            <div key={idx} className="service-card-welcome" onClick={() => navigate(s.link)}>
+          {entryOptions.map((option) => (
+            <Link
+              key={option.path}
+              className="service-card-welcome"
+              to={option.path}
+            >
               <div className="service-img-placeholder">
-                <span>{s.title}</span>
+                <span>{option.title}</span>
               </div>
               <div className="service-body">
-                <h3>{s.title}</h3>
-                <p>{s.desc}</p>
-                <span className="learn-more">Learn more &rarr;</span>
+                <h3>{option.title}</h3>
+                <p>{option.description}</p>
+                <span className="learn-more">Continue &rarr;</span>
               </div>
-            </div>
+            </Link>
           ))}
         </div>
       </section>

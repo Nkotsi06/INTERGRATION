@@ -115,12 +115,6 @@ function FinanceStaffDashboard() {
             >
               View all payments
             </Button>
-            <Button
-              variant="secondary"
-              onClick={() => navigate('/finance/processing')}
-            >
-              Process tax registrations
-            </Button>
           </div>
         </>
       )}

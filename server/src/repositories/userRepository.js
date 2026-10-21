@@ -79,8 +79,10 @@ async function findAll({ username, role, status, page = 1, pageSize = 10 } = {})
 // -------------------------------------------------------------
 async function create(user) {
   const result = await query(
-    `INSERT INTO users (username, email, password_hash, full_name, role, ministry, status)
-     VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+    `INSERT INTO users
+       (username, email, password_hash, full_name, role, ministry, status,
+        must_change_password, citizen_id)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
     [
       user.username,
       user.email,
@@ -89,6 +91,8 @@ async function create(user) {
       user.role,
       user.ministry || null,
       user.status || 'ACTIVE',
+      user.mustChangePassword === true,
+      user.citizenId || null,
     ]
   );
   return result.rows[0];
@@ -122,7 +126,7 @@ async function update(id, data) {
 
 async function updatePassword(id, passwordHash) {
   const result = await query(
-    `UPDATE users SET password_hash = $1, updated_at = NOW()
+    `UPDATE users SET password_hash = $1, must_change_password = FALSE, updated_at = NOW()
      WHERE id = $2 RETURNING id, username`,
     [passwordHash, id]
   );
