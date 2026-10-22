@@ -35,14 +35,14 @@ async function create(data) {
      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
      RETURNING *`,
     [
-      data.citizenId,
-      data.employerName,
-      data.employerType,
-      data.positionTitle || null,
-      data.startDate,
-      data.endDate || null,
-      data.isCurrent === true,
-      data.recordedBy || null,
+      data.citizenId || data.citizen_id,
+      data.employerName || data.employer_name,
+      data.employerType || data.employer_type || 'PRIVATE',
+      data.positionTitle || data.position_title || null,
+      data.startDate || data.start_date || data.employmentStartDate,
+      data.endDate || data.end_date || data.employmentEndDate || null,
+      data.isCurrent === true || data.is_current === true,
+      data.recordedBy || data.recorded_by || null,
       data.notes || null,
     ]
   );

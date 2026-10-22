@@ -91,7 +91,7 @@ function FeeSchedule() {
   ];
 
   return (
-    <PageWrapper title="Fee Schedule" showBack backPath="/finance/staff" accentColour="#117864">
+    <PageWrapper title="Fee Schedule" showBack backPath="/finance/dashboard" accentColour="#117864">
       <h1>Fee schedule</h1>
       <p className="text-muted">
         Every fee charged by every ministry. Editing here changes the amount

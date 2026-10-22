@@ -1,4 +1,4 @@
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useSettings } from '../../context/SettingsContext';
 import LanguageToggle from '../header/LanguageToggle';
@@ -46,10 +46,6 @@ function Header({ title, showBack = false, backPath = -1, accentColour }) {
 
         {user && (
           <>
-            <Link to="/help" className="header-icon-btn" aria-label="Help and support">
-              Help
-            </Link>
-
             <span className="header-user">
               {user.fullName || user.username}
             </span>

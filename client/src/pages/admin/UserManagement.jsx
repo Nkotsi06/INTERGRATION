@@ -158,7 +158,7 @@ function UserManagement() {
     setActionLoading(true);
     try {
       await deleteUser(deleteTarget.id);
-      success(`User ${deleteTarget.username} deleted. Audit records were kept.`);
+      success(`User ${deleteTarget.username} permanently deleted.`);
       setDeleteTarget(null);
       load();
     } catch (err) {
@@ -174,8 +174,15 @@ function UserManagement() {
 
   return (
     <AdminLayout title="User Management">
-      <h1>User Management</h1>
-      <p className="text-muted">Manage user roles, ministry assignments, and account access.</p>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+        <div>
+          <h1 style={{ margin: 0 }}>User Management</h1>
+          <p className="text-muted" style={{ margin: '4px 0 0 0' }}>Manage user roles, ministry assignments, and account access.</p>
+        </div>
+        <Button variant="primary" onClick={() => navigate('/admin/users/add')}>
+          Add New User
+        </Button>
+      </div>
 
       <div className="filter-bar">
         <div className="filter-controls">
@@ -242,10 +249,6 @@ function UserManagement() {
             Clear filters
           </button>
         )}
-
-        <Button variant="primary" onClick={() => navigate('/admin/users/add')}>
-          Add New User
-        </Button>
       </div>
 
       {loadError && <Alert type="error" message={loadError} />}

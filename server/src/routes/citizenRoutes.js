@@ -12,9 +12,7 @@ router.get('/photo', citizenController.getPhoto);
 
 router.get('/applications', citizenController.getApplications);
 router.get('/applications/:ref', citizenController.getApplicationByRef);
+router.delete('/applications/:id', citizenController.deleteApplication);
 router.get('/documents', citizenController.getDocuments);
-
-// Note: Notifications are now handled globally in /api/notifications (notificationRoutes.js)
-// and the frontend points to /pages/common/Notifications.jsx
 
 module.exports = router;

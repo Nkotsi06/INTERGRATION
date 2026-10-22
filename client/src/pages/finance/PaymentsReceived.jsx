@@ -103,7 +103,7 @@ function PaymentsReceived() {
     <PageWrapper
       title="Payments received"
       showBack
-      backPath="/finance/staff"
+      backPath="/finance/dashboard"
       accentColour="#117864"
     >
       <h1>Payments received</h1>

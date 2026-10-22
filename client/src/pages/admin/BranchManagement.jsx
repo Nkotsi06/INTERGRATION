@@ -20,6 +20,8 @@ import {
   deleteBranch,
 } from '../../api/adminApi';
 
+const PAGE_SIZE = 4; // Exactly 4 branches per page
+
 const emptyForm = {
   ministryCode: '',
   name: '',
@@ -40,6 +42,7 @@ function BranchManagement() {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [page, setPage] = useState(1);
 
   const [editing, setEditing] = useState(null);
   const [deleting, setDeleting] = useState(null);
@@ -56,7 +59,8 @@ function BranchManagement() {
       if (filterMinistry) params.ministryCode = filterMinistry;
       if (filterDistrict) params.district = filterDistrict;
       if (filterActive) params.activeOnly = 'true';
-      setRows(await getBranches(params));
+      const data = await getBranches(params);
+      setRows(Array.isArray(data) ? data : []);
     } catch (err) {
       setLoadError('Could not load branches.');
     } finally {
@@ -64,7 +68,10 @@ function BranchManagement() {
     }
   }
 
-  useEffect(() => { load(); }, [filterMinistry, filterDistrict, filterActive]);
+  useEffect(() => {
+    load();
+    setPage(1);
+  }, [filterMinistry, filterDistrict, filterActive]);
 
   const ministries = settings.ministries || [];
 
@@ -151,12 +158,27 @@ function BranchManagement() {
     },
   ];
 
+  const totalPages = Math.max(1, Math.ceil(rows.length / PAGE_SIZE));
+  const paginatedRows = useMemo(() => {
+    const start = (page - 1) * PAGE_SIZE;
+    return rows.slice(start, start + PAGE_SIZE);
+  }, [rows, page]);
+  const startRow = rows.length === 0 ? 0 : (page - 1) * PAGE_SIZE + 1;
+  const endRow = Math.min(page * PAGE_SIZE, rows.length);
+
   return (
     <AdminLayout title="Branch Management" showBack backPath="/admin/dashboard">
-      <h1>Branch management</h1>
-      <p className="text-muted">
-        Create and manage the branches where each ministry offers services.
-      </p>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+        <div>
+          <h1 style={{ margin: 0 }}>Branch management</h1>
+          <p className="text-muted" style={{ margin: '4px 0 0 0' }}>
+            Create and manage the branches where each ministry offers services.
+          </p>
+        </div>
+        <Button variant="primary" onClick={handleNew}>
+          Add branch
+        </Button>
+      </div>
 
       <div className="filter-bar">
         <div className="filter-controls">
@@ -196,10 +218,6 @@ function BranchManagement() {
             />
           </div>
         </div>
-
-        <Button variant="primary" onClick={handleNew}>
-          Add branch
-        </Button>
       </div>
 
       {loadError && <Alert type="error" message={loadError} />}
@@ -212,7 +230,32 @@ function BranchManagement() {
           message="Click 'Add branch' to create the first one."
         />
       ) : (
-        <Table columns={columns} data={rows} />
+        <>
+          <Table columns={columns} data={paginatedRows} />
+          <div className="pagination">
+            <span className="pagination-summary">
+              Showing {startRow} to {endRow} of {rows.length}
+            </span>
+            <div className="pagination-controls">
+              <button
+                type="button"
+                className="btn btn-secondary btn-small"
+                disabled={page <= 1}
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+              >
+                Previous
+              </button>
+              <button
+                type="button"
+                className="btn btn-secondary btn-small"
+                disabled={page >= totalPages}
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              >
+                Next
+              </button>
+            </div>
+          </div>
+        </>
       )}
 
       {editing && (

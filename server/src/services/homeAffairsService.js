@@ -3,6 +3,7 @@ const userRepository = require('../repositories/userRepository');
 const auditService = require('./auditService');
 const biometricService = require('./biometricService');
 const documentService = require('./documentService');
+const emailService = require('./emailService');
 const employmentHistoryRepository = require('../repositories/employmentHistoryRepository');
 const birthCertificateRepository = require('../repositories/birthCertificateRepository');
 const deathCertificateRepository = require('../repositories/deathCertificateRepository');
@@ -50,8 +51,6 @@ async function getById(id) {
     try {
       employment = await employmentHistoryRepository.findByCitizen(citizen.id);
     } catch (err) {
-      // If migration 002 has not been applied the table is missing. Do not
-      // crash the whole profile page because of a missing optional table.
       logger.warn(
         `[homeAffairsService.getById] employment history load failed for citizen ${citizen.id}: ${err.message}`
       );
@@ -64,7 +63,6 @@ async function getById(id) {
       employmentHistory: employment,
     };
   } catch (err) {
-    // A malformed id reaches Postgres as an invalid-uuid error.
     if (err.code === '22P02' || /invalid input syntax for type uuid/i.test(err.message || '')) {
       return null;
     }
@@ -307,6 +305,7 @@ async function issueBirthCertificate(citizenId, data, staffUser) {
     status: 'ISSUED',
     issuedBy: staffUser.userId,
   });
+
   await auditService.log({
     userId: staffUser.userId,
     username: staffUser.username,
@@ -315,6 +314,23 @@ async function issueBirthCertificate(citizenId, data, staffUser) {
     recordId: created.id,
     result: 'SUCCESS',
   });
+
+  // Call emailService.sendBirthCertificate with the generated ID and certificate URL
+  if (citizen.email) {
+    const baseUrl = process.env.PUBLIC_BASE_URL || 'https://intergration-62ze.onrender.com';
+    const certificateUrl = `${baseUrl}/api/certificates/birth/${created.id}/download`;
+    try {
+      await emailService.sendBirthCertificate(citizen.email, {
+        certificateNumber,
+        childFullName: created.child_full_name,
+        childNationalId: citizen.national_id,
+        certificateUrl,
+      });
+    } catch (emailErr) {
+      logger.error(`Could not send birth certificate email to ${citizen.email}: ${emailErr.message}`);
+    }
+  }
+
   return created;
 }
 

@@ -11,12 +11,13 @@ router.get('/cases/:caseNumber', authMiddleware, verificationMiddleware, policeC
 
 // Citizen — clearance certificate
 router.post('/clearance', authMiddleware, verificationMiddleware, policeController.requestClearance);
+router.get('/clearance/:id/pdf', authMiddleware, policeController.downloadClearancePdf);
 
 // Citizen — criminal record
 router.post('/criminal-records', authMiddleware, verificationMiddleware, policeController.requestCriminalRecord);
 router.get('/criminal-records', authMiddleware, policeController.getMyCriminalRecords);
 
-// Staff — dashboard stats  ← NEW
+// Staff — dashboard stats
 router.get('/staff/stats', authMiddleware, roleMiddleware(['POLICE']), policeController.getStaffStats);
 
 // Staff
@@ -26,6 +27,8 @@ router.post('/staff/cases/:id/updates', authMiddleware, roleMiddleware(['POLICE'
 
 router.get('/staff/clearances', authMiddleware, roleMiddleware(['POLICE']), policeController.getStaffClearances);
 router.put('/staff/clearances/:id', authMiddleware, roleMiddleware(['POLICE']), policeController.processClearance);
+router.get('/staff/clearances/:id/pdf', authMiddleware, roleMiddleware(['POLICE']), policeController.downloadClearancePdf);
+
 router.get('/staff/criminal-records', authMiddleware, roleMiddleware(['POLICE']), policeController.getStaffCriminalRecords);
 router.put('/staff/criminal-records/:id', authMiddleware, roleMiddleware(['POLICE']), policeController.processCriminalRecord);
 

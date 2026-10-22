@@ -40,18 +40,19 @@ function normaliseFingerprints(input) {
 }
 
 // -------------------------------------------------------------
-// Enrol fingerprints
+// Enrol fingerprints - saves full Base64 strings to TEXT columns
 // -------------------------------------------------------------
 async function enrollFingerprints(citizenId, rawFingerprints, user) {
   const fp = normaliseFingerprints(rawFingerprints || {});
   const existing = await biometricRepository.findByCitizen(citizenId);
 
+  // Store Base64 strings directly in TEXT columns (not VARCHAR)
   const payload = {
     citizenId,
-    fingerprint_left_thumb:  fp.left_thumb  || existing?.fingerprint_left_thumb  || null,
-    fingerprint_left_index:  fp.left_index  || existing?.fingerprint_left_index  || null,
-    fingerprint_right_thumb: fp.right_thumb || existing?.fingerprint_right_thumb || null,
-    fingerprint_right_index: fp.right_index || existing?.fingerprint_right_index || null,
+    fingerprint_left_thumb:  fp.left_thumb  ? String(fp.left_thumb)  : (existing?.fingerprint_left_thumb  || null),
+    fingerprint_left_index:  fp.left_index  ? String(fp.left_index)  : (existing?.fingerprint_left_index  || null),
+    fingerprint_right_thumb: fp.right_thumb ? String(fp.right_thumb) : (existing?.fingerprint_right_thumb || null),
+    fingerprint_right_index: fp.right_index ? String(fp.right_index) : (existing?.fingerprint_right_index || null),
     facial_image: existing?.facial_image || null,
     enrolledBy: user.userId,
   };
@@ -71,12 +72,12 @@ async function enrollFingerprints(citizenId, rawFingerprints, user) {
     .filter((k) => payload[`fingerprint_${k}`])
     .length;
 
-  logger.info(`Fingerprints enrolled for citizen ${citizenId} (${enrolledCount} prints)`);
+  logger.info(`Fingerprints enrolled for citizen ${citizenId} (${enrolledCount} prints saved as TEXT Base64)`);
   return result;
 }
 
 // -------------------------------------------------------------
-// Enrol facial photo
+// Enrol facial photo - saves full Base64 strings to TEXT columns
 // -------------------------------------------------------------
 async function enrollFacial(citizenId, image, user) {
   const existing = await biometricRepository.findByCitizen(citizenId);
@@ -87,7 +88,7 @@ async function enrollFacial(citizenId, image, user) {
     fingerprint_left_index:  existing?.fingerprint_left_index  || null,
     fingerprint_right_thumb: existing?.fingerprint_right_thumb || null,
     fingerprint_right_index: existing?.fingerprint_right_index || null,
-    facial_image: image,
+    facial_image: image ? String(image) : (existing?.facial_image || null),
     enrolledBy: user.userId,
   };
 

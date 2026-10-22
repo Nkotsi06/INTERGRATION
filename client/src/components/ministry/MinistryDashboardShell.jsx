@@ -13,6 +13,8 @@ function MinistryDashboardShell({
   title,
   accentColour,
   intro,
+  showBack = false,
+  backPath,
 }) {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -93,7 +95,12 @@ function MinistryDashboardShell({
   const information = services.filter((s) => s.service_type === 'INFORMATION');
 
   return (
-    <PageWrapper title={title} accentColour={accentColour}>
+    <PageWrapper
+      title={title}
+      accentColour={accentColour}
+      showBack={showBack}
+      backPath={backPath}
+    >
       <h1>{title}</h1>
       {intro && <p className="text-muted">{intro}</p>}
 

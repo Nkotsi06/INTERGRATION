@@ -134,6 +134,31 @@ function buildNationalIdCard(row) {
   return doc;
 }
 
+function buildClearanceCertificate(row) {
+  const doc = new PDFDocument({ size: 'A4', margin: 50 });
+  buildHeader(doc, 'Police Clearance Certificate');
+  doc.moveDown(0.5);
+  doc.fontSize(12).fillColor('#922B21').text('Lesotho Mounted Police Service — Criminal Records Bureau', { align: 'center' });
+  doc.moveDown(1.5);
+  rows(doc, [
+    ['Clearance reference', row.reference_number || row.referenceNumber || '—'],
+    ['Subject name', row.citizen_name || `${row.first_name || ''} ${row.last_name || ''}`.trim() || '—'],
+    ['National ID', row.national_id || row.nationalId || '—'],
+    ['Purpose of clearance', row.purpose || row.form_data?.purpose || 'Official Government & Employment Clearance'],
+    ['Collection station', row.station || row.form_data?.station || 'Maseru Central Police Station'],
+    ['Clearance record status', 'RECORD CLEAN — NO CRIMINAL CONVICTIONS FOUND'],
+    ['Date issued', fmtDate(row.updated_at || row.submitted_at || new Date())],
+  ]);
+  doc.moveDown(2);
+  doc.fontSize(12).fillColor('#27AE60')
+    .text('STATUS: APPROVED AND VERIFIED VALID', { align: 'center' });
+  doc.moveDown(0.8);
+  doc.fontSize(9).fillColor('#7F8C8D')
+    .text('This official certificate confirms that the fingerprints and biometric records of the named individual have been verified against the LMPS national database and no criminal records are on file.', { align: 'center' });
+  doc.end();
+  return doc;
+}
+
 function generateCertificatePdf(type, row) {
   switch (type) {
     case 'BIRTH': return buildBirthCertificate(row);
@@ -141,6 +166,7 @@ function generateCertificatePdf(type, row) {
     case 'MARRIAGE': return buildMarriageCertificate(row);
     case 'DIVORCE': return buildDivorceCertificate(row);
     case 'ID_CARD': return buildNationalIdCard(row);
+    case 'CLEARANCE': return buildClearanceCertificate(row);
     default: throw new Error(`Unknown certificate type: ${type}`);
   }
 }

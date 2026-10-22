@@ -7,6 +7,8 @@ function FinanceDashboard() {
       title="Finance Services"
       accentColour="#117864"
       intro="View the government finance services currently available."
+      showBack
+      backPath="/finance/dashboard"
     />
   );
 }

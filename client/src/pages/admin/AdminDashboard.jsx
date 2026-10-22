@@ -11,17 +11,26 @@ import { formatDate } from '../../utils/formatters';
 function AdminDashboard() {
   const { data: stats, loading } = useFetch(getDashboardStats, []);
   const { data: health } = useFetch(getHealth, []);
-  const { data: activity } = useFetch(() => getRecentActivity(5), []);
+  const { data: activity } = useFetch(() => getRecentActivity(10), []);
   const navigate = useNavigate();
 
   const today = formatDate(new Date().toISOString());
 
   return (
     <AdminLayout title="Admin Dashboard">
-      <h1>Admin Dashboard</h1>
-      <p className="text-muted">
-        Integrated Government Services · System overview · {today}
-      </p>
+      <div className="admin-page-header">
+        <div>
+          <h1>Admin Dashboard</h1>
+          <p className="text-muted">
+            Integrated Government Services · System overview · {today}
+          </p>
+        </div>
+        <div className="admin-header-actions">
+          <Button variant="secondary" onClick={() => navigate('/admin/audit-logs')}>
+            View Audit Logs
+          </Button>
+        </div>
+      </div>
 
       {loading ? (
         <StatsSkeleton count={4} />
@@ -77,22 +86,13 @@ function AdminDashboard() {
         </div>
       )}
 
-      <div className="quick-actions">
-        <Button variant="primary" onClick={() => navigate('/admin/users/add')}>
-          Add New User
-        </Button>
-        <Button variant="secondary" onClick={() => navigate('/admin/audit-logs')}>
-          View Audit Logs
-        </Button>
-      </div>
-
       <h2>Recent activity</h2>
 
       {!activity || activity.length === 0 ? (
         <Alert type="info" message="No activity to show yet." />
       ) : (
         <ul className="admin-activity-list">
-          {activity.map((entry) => (
+          {activity.slice(0, 4).map((entry) => (
             <li key={entry.id} className="admin-activity-item">
               <span className="admin-activity-time">{entry.time}</span>
               <span className="admin-activity-user">{entry.username}</span>

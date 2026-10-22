@@ -1,12 +1,25 @@
 const userRepository = require('../repositories/userRepository');
 const citizenRepository = require('../repositories/citizenRepository');
+const employmentHistoryRepository = require('../repositories/employmentHistoryRepository');
 const auditService = require('./auditService');
 const { hashPassword, verifyPassword } = require('../utils/passwordHash');
 const { signToken } = require('../utils/jwt');
 const logger = require('../utils/logger');
 const crypto = require('crypto');
 
-async function registerWithNationalId({ nationalId, username }) {
+async function registerWithNationalId(payload = {}) {
+  const {
+    nationalId,
+    username,
+    employerName,
+    employerType,
+    positionTitle,
+    employmentStartDate,
+    employmentEndDate,
+    isCurrent,
+    notes,
+  } = payload;
+
   const normalizedNationalId = String(nationalId || '').trim();
   const normalizedUsername = String(username || '').trim();
   if (!/^\d{13}$/.test(normalizedNationalId)) {
@@ -51,6 +64,27 @@ async function registerWithNationalId({ nationalId, username }) {
     mustChangePassword: true,
     citizenId: citizen.id,
   });
+
+  // Map camelCase employment fields to employmentHistoryRepository.create()
+  const hasEmploymentData = employerName || employmentStartDate || payload.employer_name || payload.startDate || payload.start_date;
+  if (hasEmploymentData) {
+    try {
+      await employmentHistoryRepository.create({
+        citizenId: citizen.id,
+        employerName: employerName || payload.employer_name,
+        employerType: employerType || payload.employer_type || 'PRIVATE',
+        positionTitle: positionTitle || payload.position_title || null,
+        startDate: employmentStartDate || payload.startDate || payload.start_date,
+        endDate: employmentEndDate || payload.endDate || payload.end_date || null,
+        isCurrent: isCurrent !== undefined ? isCurrent : (payload.is_current !== undefined ? payload.is_current : true),
+        recordedBy: user.id,
+        notes: notes || null,
+      });
+      logger.info(`Employment record created for citizen ${citizen.id} during registration`);
+    } catch (empErr) {
+      logger.error(`Failed to record employment history during registration: ${empErr.message}`);
+    }
+  }
 
   logger.info(`National ID account registered: ${normalizedNationalId}`);
   return {

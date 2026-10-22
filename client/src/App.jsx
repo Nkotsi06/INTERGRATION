@@ -1,5 +1,8 @@
 import { useEffect } from 'react';
 import { BrowserRouter } from 'react-router-dom';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+
 import { AuthProvider } from './context/AuthContext';
 import { SessionProvider } from './context/SessionContext';
 import { LanguageProvider } from './context/LanguageContext';
@@ -26,6 +29,7 @@ function App() {
       <ProgressProvider>
         <ProgressBridge />
         <TopProgressBar />
+        <ToastContainer position="top-right" autoClose={3000} />
         <SettingsProvider>
           <LanguageProvider>
             <NotificationProvider>

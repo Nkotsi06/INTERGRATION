@@ -100,6 +100,15 @@ async function getApplicationByRef(req, res, next) {
   }
 }
 
+async function deleteApplication(req, res, next) {
+  try {
+    const result = await citizenService.deleteApplication(req.params.id, req.user?.userId);
+    res.json(result);
+  } catch (err) {
+    next(err);
+  }
+}
+
 async function getDocuments(req, res, next) {
   try {
     const citizenId = citizenIdFrom(req);
@@ -173,6 +182,7 @@ module.exports = {
   changePassword,
   getApplications,
   getApplicationByRef,
+  deleteApplication,
   getDocuments,
   getPhoto,
   getNotifications,

@@ -1,6 +1,30 @@
 const { query } = require('../config/database');
 
+let columnsAltered = false;
+async function ensureTextColumns() {
+  if (columnsAltered) return;
+  columnsAltered = true;
+  try {
+    await query(`
+      DO $$
+      BEGIN
+        IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'biometrics') THEN
+          ALTER TABLE biometrics 
+            ALTER COLUMN fingerprint_left_thumb TYPE TEXT,
+            ALTER COLUMN fingerprint_left_index TYPE TEXT,
+            ALTER COLUMN fingerprint_right_thumb TYPE TEXT,
+            ALTER COLUMN fingerprint_right_index TYPE TEXT,
+            ALTER COLUMN facial_image TYPE TEXT;
+        END IF;
+      END $$;
+    `);
+  } catch (err) {
+    // If table doesn't exist yet or already altered, proceed safely
+  }
+}
+
 async function upsert(data) {
+  await ensureTextColumns();
   const result = await query(
     `INSERT INTO biometrics (
         citizen_id,
@@ -23,11 +47,11 @@ async function upsert(data) {
      RETURNING *`,
     [
       data.citizenId,
-      data.fingerprint_left_thumb,
-      data.fingerprint_left_index,
-      data.fingerprint_right_thumb,
-      data.fingerprint_right_index,
-      data.facial_image,
+      data.fingerprint_left_thumb ? String(data.fingerprint_left_thumb) : null,
+      data.fingerprint_left_index ? String(data.fingerprint_left_index) : null,
+      data.fingerprint_right_thumb ? String(data.fingerprint_right_thumb) : null,
+      data.fingerprint_right_index ? String(data.fingerprint_right_index) : null,
+      data.facial_image ? String(data.facial_image) : null,
       data.enrolledBy,
     ]
   );

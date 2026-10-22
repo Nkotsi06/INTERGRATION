@@ -6,6 +6,8 @@ export const updateContact = (data) => apiClient.put('/citizen/contact', data);
 export const getApplications = () => apiClient.get('/citizen/applications');
 export const getApplicationByRef = (ref) =>
   apiClient.get(`/citizen/applications/${ref}`);
+export const deleteApplication = (id) =>
+  apiClient.delete(`/citizen/applications/${id}`);
 
 export const getDocuments = () => apiClient.get('/citizen/documents');
 export const getBiometrics = () => apiClient.get('/citizen/biometrics');

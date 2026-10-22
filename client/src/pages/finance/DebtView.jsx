@@ -21,22 +21,37 @@ function DebtView() {
 
   const columns = [
     { key: 'reference_number', label: 'Reference' },
-    { key: 'record_type', label: 'Type',
-      render: (r) => TYPE_LABEL[r.record_type] || r.record_type },
+    {
+      key: 'record_type',
+      label: 'Type',
+      render: (r) => TYPE_LABEL[r.record_type] || r.record_type,
+    },
     { key: 'lender_name', label: 'Lender / Donor' },
-    { key: 'principal_amount', label: 'Principal',
-      render: (r) => formatCurrency(r.principal_amount) },
-    { key: 'outstanding_amount', label: 'Outstanding',
-      render: (r) => formatCurrency(r.outstanding_amount) },
-    { key: 'start_date', label: 'Start',
-      render: (r) => (r.start_date ? formatDate(r.start_date) : '—') },
-    { key: 'maturity_date', label: 'Maturity',
-      render: (r) => (r.maturity_date ? formatDate(r.maturity_date) : '—') },
+    {
+      key: 'principal_amount',
+      label: 'Principal',
+      render: (r) => formatCurrency(r.principal_amount),
+    },
+    {
+      key: 'outstanding_amount',
+      label: 'Outstanding',
+      render: (r) => formatCurrency(r.outstanding_amount),
+    },
+    {
+      key: 'start_date',
+      label: 'Start',
+      render: (r) => (r.start_date ? formatDate(r.start_date) : '—'),
+    },
+    {
+      key: 'maturity_date',
+      label: 'Maturity',
+      render: (r) => (r.maturity_date ? formatDate(r.maturity_date) : '—'),
+    },
     { key: 'status', label: 'Status' },
   ];
 
   return (
-    <PageWrapper title="Debt & Aid" showBack backPath="/finance/staff" accentColour="#117864">
+    <PageWrapper title="Debt & Aid" showBack backPath="/finance/dashboard" accentColour="#117864">
       <h1>Debt and aid</h1>
 
       <div className="stats-grid">
@@ -70,8 +85,11 @@ function DebtView() {
         <div className="filter-controls">
           <div className="filter-dropdown">
             <label className="filter-label">Type</label>
-            <select className="filter-select" value={typeFilter}
-              onChange={(e) => setTypeFilter(e.target.value)}>
+            <select
+              className="filter-select"
+              value={typeFilter}
+              onChange={(e) => setTypeFilter(e.target.value)}
+            >
               <option value="">All</option>
               <option value="LOAN">Loans</option>
               <option value="AID">Aid</option>
@@ -81,10 +99,13 @@ function DebtView() {
         </div>
       </div>
 
-      {loading ? <p className="text-muted">Loading…</p>
-        : filtered.length === 0
-          ? <EmptyState title="No debt or aid records" message="Nothing to show." />
-          : <Table columns={columns} data={filtered} />}
+      {loading ? (
+        <p className="text-muted">Loading…</p>
+      ) : filtered.length === 0 ? (
+        <EmptyState title="No debt or aid records" message="Nothing to show." />
+      ) : (
+        <Table columns={columns} data={filtered} />
+      )}
     </PageWrapper>
   );
 }

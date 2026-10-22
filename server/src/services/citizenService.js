@@ -2,6 +2,7 @@ const citizenRepository = require('../repositories/citizenRepository');
 const userRepository = require('../repositories/userRepository');
 const documentRepository = require('../repositories/documentRepository');
 const auditService = require('./auditService');
+const { query } = require('../config/database');
 const { hashPassword, verifyPassword } = require('../utils/passwordHash');
 
 // ─────────────────────────────────────────────────────────────────────
@@ -108,6 +109,67 @@ async function changePassword(userId, { currentPassword, newPassword }) {
 }
 
 // ─────────────────────────────────────────────────────────────────────
+// deleteApplication — deletes completely from documents & applications
+// ─────────────────────────────────────────────────────────────────────
+async function deleteApplication(applicationId, userId) {
+  if (!applicationId) {
+    const error = new Error('Application ID is required');
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const appResult = await query('SELECT * FROM applications WHERE id = $1', [applicationId]);
+  const application = appResult.rows[0];
+  if (!application) {
+    const error = new Error('Application not found');
+    error.statusCode = 404;
+    throw error;
+  }
+
+  // Delete from documents and citizen_documents tables
+  try {
+    await query('DELETE FROM citizen_documents WHERE application_id = $1', [applicationId]);
+  } catch (err) {}
+
+  try {
+    await query('DELETE FROM documents WHERE application_id = $1', [applicationId]);
+  } catch (err) {}
+
+  if (application.data?.documentIds && Array.isArray(application.data.documentIds)) {
+    try {
+      await query('DELETE FROM citizen_documents WHERE id = ANY($1)', [application.data.documentIds]);
+      await query('DELETE FROM documents WHERE id = ANY($1)', [application.data.documentIds]);
+    } catch (err) {}
+  }
+
+  // Delete from status history and national id cards references
+  try {
+    await query('DELETE FROM application_status_history WHERE application_id = $1', [applicationId]);
+  } catch (err) {}
+
+  try {
+    await query('DELETE FROM national_id_cards WHERE application_id = $1', [applicationId]);
+  } catch (err) {}
+
+  // Delete from applications table completely
+  await query('DELETE FROM applications WHERE id = $1', [applicationId]);
+
+  if (userId) {
+    try {
+      await auditService.log({
+        userId,
+        action: 'APPLICATION_DELETED',
+        recordType: 'APPLICATION',
+        recordId: applicationId,
+        result: 'SUCCESS',
+      });
+    } catch (auditErr) {}
+  }
+
+  return { success: true, message: 'Application deleted successfully', id: applicationId };
+}
+
+// ─────────────────────────────────────────────────────────────────────
 // Locate a photo for a citizen. Prefers PASSPORT_PHOTO document, falls
 // back to the biometrics facial image.
 // ─────────────────────────────────────────────────────────────────────
@@ -163,6 +225,7 @@ module.exports = {
   getProfile,
   updateContact,
   changePassword,
+  deleteApplication,
   formatCitizen,
   findPhotoForCitizen,
 };

@@ -8,7 +8,7 @@ import { TableSkeleton } from '../../components/common/SkeletonLoader';
 import { getAuditLogs, exportAuditLogs } from '../../api/auditApi';
 import { formatDate } from '../../utils/formatters';
 
-const PAGE_SIZE = 20;
+const PAGE_SIZE = 5;
 
 function AuditLogs() {
   const [filters, setFilters] = useState({
@@ -36,6 +36,8 @@ function AuditLogs() {
     setLoading(true);
     setLoadError(null);
     try {
+      const limit = PAGE_SIZE;
+      const offset = (page - 1) * PAGE_SIZE;
       const result = await getAuditLogs({
         user: filters.user || undefined,
         action: filters.action || undefined,
@@ -43,6 +45,8 @@ function AuditLogs() {
         to: filters.to || undefined,
         page,
         pageSize: PAGE_SIZE,
+        limit,
+        offset,
       });
       setData({ rows: result.rows || [], total: result.total || 0 });
     } catch (err) {
@@ -189,7 +193,7 @@ function AuditLogs() {
 
       {loadError && <Alert type="error" message={loadError} />}
 
-      {loading && <TableSkeleton rows={8} columns={5} />}
+      {loading && <TableSkeleton rows={5} columns={5} />}
 
       {!loading && data.rows.length === 0 && (
         <EmptyState

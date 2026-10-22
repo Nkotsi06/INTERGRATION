@@ -10,8 +10,10 @@ import { getTreasury, getTreasuryStats } from '../../api/financeApi';
 import { formatCurrency, formatDate } from '../../utils/formatters';
 
 const STATUS_VARIANT = {
-  PENDING: 'captured', APPROVED: 'verified',
-  PAID: 'verified', CANCELLED: 'rejected',
+  PENDING: 'pending',
+  APPROVED: 'approved',
+  PAID: 'approved',
+  CANCELLED: 'rejected',
 };
 
 function TreasuryView() {
@@ -38,16 +40,25 @@ function TreasuryView() {
     { key: 'payment_reference', label: 'Reference' },
     { key: 'paying_ministry', label: 'Ministry' },
     { key: 'payee_name', label: 'Payee' },
-    { key: 'amount', label: 'Amount',
-      render: (r) => formatCurrency(r.amount) },
-    { key: 'payment_date', label: 'Date',
-      render: (r) => (r.payment_date ? formatDate(r.payment_date) : '—') },
-    { key: 'status', label: 'Status',
-      render: (r) => <StatusBadge variant={STATUS_VARIANT[r.status] || 'pending'} label={r.status} /> },
+    {
+      key: 'amount',
+      label: 'Amount',
+      render: (r) => formatCurrency(r.amount),
+    },
+    {
+      key: 'payment_date',
+      label: 'Date',
+      render: (r) => (r.payment_date ? formatDate(r.payment_date) : '—'),
+    },
+    {
+      key: 'status',
+      label: 'Status',
+      render: (r) => <StatusBadge variant={STATUS_VARIANT[r.status] || 'pending'} label={r.status} />,
+    },
   ];
 
   return (
-    <PageWrapper title="Treasury Payments" showBack backPath="/finance/staff" accentColour="#117864">
+    <PageWrapper title="Treasury Payments" showBack backPath="/finance/dashboard" accentColour="#117864">
       <h1>Treasury payments</h1>
 
       {statsLoading ? (
@@ -79,8 +90,11 @@ function TreasuryView() {
         <div className="filter-controls">
           <div className="filter-dropdown">
             <label className="filter-label">Status</label>
-            <select className="filter-select" value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}>
+            <select
+              className="filter-select"
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+            >
               <option value="">All</option>
               <option value="PENDING">Pending</option>
               <option value="APPROVED">Approved</option>
@@ -90,10 +104,15 @@ function TreasuryView() {
           </div>
           <div className="filter-dropdown">
             <label className="filter-label">Ministry</label>
-            <select className="filter-select" value={ministryFilter}
-              onChange={(e) => setMinistryFilter(e.target.value)}>
+            <select
+              className="filter-select"
+              value={ministryFilter}
+              onChange={(e) => setMinistryFilter(e.target.value)}
+            >
               <option value="">All</option>
-              {ministries.map((m) => <option key={m} value={m}>{m}</option>)}
+              {ministries.map((m) => (
+                <option key={m} value={m}>{m}</option>
+              ))}
             </select>
           </div>
         </div>

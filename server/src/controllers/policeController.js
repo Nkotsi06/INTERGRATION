@@ -1,4 +1,6 @@
 const policeService = require('../services/policeService');
+const { generateCertificateBuffer } = require('../utils/certificatePdfGenerator');
+const { query } = require('../config/database');
 
 function citizenIdFrom(req) {
   return req.user?.citizenId || req.session?.verifiedCitizenId || null;
@@ -35,15 +37,15 @@ async function getStaffCases(req, res, next) {
 
 async function updateCase(req, res, next) {
   try {
-    await policeService.updateCase(req.params.id, req.body, req.user);
-    res.json({ message: 'Case updated' });
+    const updated = await policeService.updateCase(req.params.id, req.body, req.user);
+    res.json(updated);
   } catch (err) { next(err); }
 }
 
 async function addCaseUpdate(req, res, next) {
   try {
-    const u = await policeService.addCaseUpdate(req.params.id, req.body.notes, req.user);
-    res.status(201).json(u);
+    const created = await policeService.addCaseUpdate(req.params.id, req.body, req.user);
+    res.status(201).json(created);
   } catch (err) { next(err); }
 }
 
@@ -68,6 +70,31 @@ async function processClearance(req, res, next) {
     );
     res.json(updated);
   } catch (err) { next(err); }
+}
+
+async function downloadClearancePdf(req, res, next) {
+  try {
+    const { id } = req.params;
+    const result = await query(
+      `SELECT a.*, c.first_name, c.last_name, c.national_id,
+              (c.first_name || ' ' || c.last_name) AS citizen_name,
+              a.data->'formData' AS form_data
+       FROM applications a
+       LEFT JOIN citizens c ON c.id = a.citizen_id
+       WHERE a.id = $1`,
+      [id]
+    );
+    const row = result.rows[0];
+    if (!row) {
+      return res.status(404).json({ message: 'Clearance application not found' });
+    }
+    const pdfBuffer = await generateCertificateBuffer('CLEARANCE', row);
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="Clearance-${row.reference_number || id}.pdf"`);
+    res.send(pdfBuffer);
+  } catch (err) {
+    next(err);
+  }
 }
 
 async function requestCriminalRecord(req, res, next) {
@@ -102,6 +129,6 @@ module.exports = {
   getStaffStats,
   reportCase, getMyCases, getCaseByNumber, getStaffCases, updateCase, addCaseUpdate,
   requestClearance,
-  getStaffClearances, processClearance,
+  getStaffClearances, processClearance, downloadClearancePdf,
   requestCriminalRecord, getMyCriminalRecords, getStaffCriminalRecords, processCriminalRecord,
 };

@@ -20,21 +20,36 @@ function BudgetView() {
 
   const columns = [
     { key: 'ministry_code', label: 'Ministry' },
-    { key: 'recurrent_budget', label: 'Recurrent budget',
-      render: (row) => formatCurrency(row.recurrent_budget) },
-    { key: 'capital_budget', label: 'Capital budget',
-      render: (row) => formatCurrency(row.capital_budget) },
-    { key: 'total_budget', label: 'Total budget',
-      render: (row) => formatCurrency(row.total_budget) },
-    { key: 'expenditure_to_date', label: 'Spent to date',
-      render: (row) => formatCurrency(row.expenditure_to_date) },
-    { key: 'remaining', label: 'Remaining',
-      render: (row) => formatCurrency(Number(row.total_budget) - Number(row.expenditure_to_date)) },
+    {
+      key: 'recurrent_budget',
+      label: 'Recurrent budget',
+      render: (row) => formatCurrency(row.recurrent_budget),
+    },
+    {
+      key: 'capital_budget',
+      label: 'Capital budget',
+      render: (row) => formatCurrency(row.capital_budget),
+    },
+    {
+      key: 'total_budget',
+      label: 'Total budget',
+      render: (row) => formatCurrency(row.total_budget),
+    },
+    {
+      key: 'expenditure_to_date',
+      label: 'Spent to date',
+      render: (row) => formatCurrency(row.expenditure_to_date),
+    },
+    {
+      key: 'remaining',
+      label: 'Remaining',
+      render: (row) => formatCurrency(Number(row.total_budget) - Number(row.expenditure_to_date)),
+    },
     { key: 'status', label: 'Status' },
   ];
 
   return (
-    <PageWrapper title="Budget Allocations" showBack backPath="/finance/staff" accentColour="#117864">
+    <PageWrapper title="Budget Allocations" showBack backPath="/finance/dashboard" accentColour="#117864">
       <h1>Budget allocations</h1>
 
       <div className="filter-bar">

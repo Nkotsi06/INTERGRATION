@@ -9,7 +9,10 @@ import { getProcurement, getProcurementStats } from '../../api/financeApi';
 import { formatCurrency, formatDate } from '../../utils/formatters';
 
 const STATUS_VARIANT = {
-  OPEN: 'captured', CLOSED: 'rejected', AWARDED: 'verified', CANCELLED: 'rejected',
+  OPEN: 'pending',
+  CLOSED: 'rejected',
+  AWARDED: 'approved',
+  CANCELLED: 'rejected',
 };
 
 function ProcurementView() {
@@ -26,19 +29,31 @@ function ProcurementView() {
     { key: 'tender_number', label: 'Tender #' },
     { key: 'title', label: 'Title' },
     { key: 'ministry_code', label: 'Ministry' },
-    { key: 'estimated_value', label: 'Estimated',
-      render: (r) => formatCurrency(r.estimated_value) },
+    {
+      key: 'estimated_value',
+      label: 'Estimated',
+      render: (r) => formatCurrency(r.estimated_value),
+    },
     { key: 'awarded_to', label: 'Awarded to', render: (r) => r.awarded_to || '—' },
-    { key: 'awarded_value', label: 'Award value',
-      render: (r) => (r.awarded_value ? formatCurrency(r.awarded_value) : '—') },
-    { key: 'closing_date', label: 'Closing',
-      render: (r) => (r.closing_date ? formatDate(r.closing_date) : '—') },
-    { key: 'status', label: 'Status',
-      render: (r) => <StatusBadge variant={STATUS_VARIANT[r.status] || 'pending'} label={r.status} /> },
+    {
+      key: 'awarded_value',
+      label: 'Award value',
+      render: (r) => (r.awarded_value ? formatCurrency(r.awarded_value) : '—'),
+    },
+    {
+      key: 'closing_date',
+      label: 'Closing',
+      render: (r) => (r.closing_date ? formatDate(r.closing_date) : '—'),
+    },
+    {
+      key: 'status',
+      label: 'Status',
+      render: (r) => <StatusBadge variant={STATUS_VARIANT[r.status] || 'pending'} label={r.status} />,
+    },
   ];
 
   return (
-    <PageWrapper title="Procurement" showBack backPath="/finance/staff" accentColour="#117864">
+    <PageWrapper title="Procurement" showBack backPath="/finance/dashboard" accentColour="#117864">
       <h1>Procurement & tenders</h1>
 
       <div className="stats-grid">
@@ -66,8 +81,11 @@ function ProcurementView() {
         <div className="filter-controls">
           <div className="filter-dropdown">
             <label className="filter-label">Status</label>
-            <select className="filter-select" value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}>
+            <select
+              className="filter-select"
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+            >
               <option value="">All</option>
               <option value="OPEN">Open</option>
               <option value="CLOSED">Closed</option>
@@ -78,10 +96,13 @@ function ProcurementView() {
         </div>
       </div>
 
-      {loading ? <p className="text-muted">Loading…</p>
-        : filtered.length === 0
-          ? <EmptyState title="No procurement records" message="Nothing to show." />
-          : <Table columns={columns} data={filtered} />}
+      {loading ? (
+        <p className="text-muted">Loading…</p>
+      ) : filtered.length === 0 ? (
+        <EmptyState title="No procurement records" message="Nothing to show." />
+      ) : (
+        <Table columns={columns} data={filtered} />
+      )}
     </PageWrapper>
   );
 }

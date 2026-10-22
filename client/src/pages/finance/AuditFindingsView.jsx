@@ -9,11 +9,16 @@ import { getAuditFindings, getAuditStats } from '../../api/financeApi';
 import { formatDate } from '../../utils/formatters';
 
 const STATUS_VARIANT = {
-  OPEN: 'captured', IN_PROGRESS: 'captured', RESOLVED: 'verified',
+  OPEN: 'pending',
+  IN_PROGRESS: 'inReview',
+  RESOLVED: 'approved',
 };
 
 const SEVERITY_VARIANT = {
-  LOW: 'default', MEDIUM: 'warning', HIGH: 'error', CRITICAL: 'error',
+  LOW: 'default',
+  MEDIUM: 'warning',
+  HIGH: 'error',
+  CRITICAL: 'error',
 };
 
 function AuditFindingsView() {
@@ -35,18 +40,30 @@ function AuditFindingsView() {
     { key: 'finding_number', label: 'Finding #' },
     { key: 'title', label: 'Title' },
     { key: 'ministry_code', label: 'Ministry' },
-    { key: 'severity', label: 'Severity',
-      render: (r) => <StatusBadge variant={SEVERITY_VARIANT[r.severity] || 'pending'} label={r.severity} /> },
-    { key: 'status', label: 'Status',
-      render: (r) => <StatusBadge variant={STATUS_VARIANT[r.status] || 'pending'} label={r.status} /> },
-    { key: 'due_date', label: 'Due',
-      render: (r) => (r.due_date ? formatDate(r.due_date) : '—') },
-    { key: 'created_at', label: 'Opened',
-      render: (r) => formatDate(r.created_at) },
+    {
+      key: 'severity',
+      label: 'Severity',
+      render: (r) => <StatusBadge variant={SEVERITY_VARIANT[r.severity] || 'pending'} label={r.severity} />,
+    },
+    {
+      key: 'status',
+      label: 'Status',
+      render: (r) => <StatusBadge variant={STATUS_VARIANT[r.status] || 'pending'} label={r.status} />,
+    },
+    {
+      key: 'due_date',
+      label: 'Due',
+      render: (r) => (r.due_date ? formatDate(r.due_date) : '—'),
+    },
+    {
+      key: 'created_at',
+      label: 'Opened',
+      render: (r) => formatDate(r.created_at),
+    },
   ];
 
   return (
-    <PageWrapper title="Internal Audit" showBack backPath="/finance/staff" accentColour="#117864">
+    <PageWrapper title="Internal Audit" showBack backPath="/finance/dashboard" accentColour="#117864">
       <h1>Internal audit findings</h1>
 
       <div className="stats-grid">
@@ -80,8 +97,11 @@ function AuditFindingsView() {
         <div className="filter-controls">
           <div className="filter-dropdown">
             <label className="filter-label">Status</label>
-            <select className="filter-select" value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}>
+            <select
+              className="filter-select"
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+            >
               <option value="">All</option>
               <option value="OPEN">Open</option>
               <option value="IN_PROGRESS">In progress</option>
@@ -90,8 +110,11 @@ function AuditFindingsView() {
           </div>
           <div className="filter-dropdown">
             <label className="filter-label">Severity</label>
-            <select className="filter-select" value={severityFilter}
-              onChange={(e) => setSeverityFilter(e.target.value)}>
+            <select
+              className="filter-select"
+              value={severityFilter}
+              onChange={(e) => setSeverityFilter(e.target.value)}
+            >
               <option value="">All</option>
               <option value="LOW">Low</option>
               <option value="MEDIUM">Medium</option>
@@ -102,10 +125,13 @@ function AuditFindingsView() {
         </div>
       </div>
 
-      {loading ? <p className="text-muted">Loading…</p>
-        : filtered.length === 0
-          ? <EmptyState title="No audit findings" message="Nothing to show." />
-          : <Table columns={columns} data={filtered} />}
+      {loading ? (
+        <p className="text-muted">Loading…</p>
+      ) : filtered.length === 0 ? (
+        <EmptyState title="No audit findings" message="Nothing to show." />
+      ) : (
+        <Table columns={columns} data={filtered} />
+      )}
     </PageWrapper>
   );
 }

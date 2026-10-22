@@ -15,7 +15,12 @@ function FinanceStaffDashboard() {
   const byMinistry = data?.byMinistry || [];
 
   return (
-    <PageWrapper title="Finance Staff Dashboard" accentColour="#117864">
+    <PageWrapper
+      title="Finance Staff Dashboard"
+      showBack
+      backPath="/finance/dashboard"
+      accentColour="#117864"
+    >
       <h1>Finance staff dashboard</h1>
 
       {loading && <StatsSkeleton count={3} />}
