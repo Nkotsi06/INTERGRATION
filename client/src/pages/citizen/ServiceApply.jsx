@@ -103,7 +103,7 @@ function ServiceApply() {
   const update = (key, value) => setFormData((prev) => ({ ...prev, [key]: value }));
 
   const fee = service?.fee ? Number(service.fee) : 0;
-  const needsPayment = fee > 0 && service?.fee_active !== false;
+  const needsPayment = fee > 0 && service?.feeActive !== false;
 
   const handleSubmit = async () => {
     setError(null);
@@ -153,12 +153,12 @@ function ServiceApply() {
     );
   }
 
-  if (!service.is_enabled) {
+  if (!service.isEnabled) {
     return (
       <PageWrapper title={service.name} showBack backPath="/citizen/dashboard">
         <Alert
           type="info"
-          message={service.unavailable_message || 'This service is currently unavailable.'}
+          message={service.unavailableMessage || 'This service is currently unavailable.'}
         />
       </PageWrapper>
     );
@@ -188,11 +188,11 @@ function ServiceApply() {
     );
   }
 
-  const configuredFields = Array.isArray(service.form_fields) ? service.form_fields : [];
+  const configuredFields = Array.isArray(service.formFields) ? service.formFields : [];
   const fields = configuredFields.length > 0
     ? configuredFields
     : POLICE_FORM_FIELDS[service.code] || [];
-  const docs = Array.isArray(service.required_documents) ? service.required_documents : [];
+  const docs = Array.isArray(service.requiredDocuments) ? service.requiredDocuments : [];
   const visibleDocs = service.ministry === 'HOME_AFFAIRS'
     ? docs.filter((code) => !['NATIONAL_ID', 'BIRTH_CERTIFICATE'].includes(code))
     : docs;

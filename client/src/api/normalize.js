@@ -4,9 +4,9 @@
  * The backend returns raw PostgreSQL rows (snake_case) from most
  * repositories, and camelCase from a couple of custom-queried ones
  * (e.g. passportApplicationRepository.findForStaff). The frontend
- * was written assuming camelCase everywhere. This helper is the
- * single, central place that normalises the response so pages
- * never need to guess.
+ * Most pages use camelCase. Snake_case aliases remain available during
+ * the transition because existing tables and older pages still consume
+ * database-shaped response keys.
  *
  * Excluded on purpose:
  *   - Blobs (downloads) — returned unchanged.
@@ -44,7 +44,14 @@ export function normalize(value) {
 
   const out = {};
   for (const key of Object.keys(value)) {
-    out[camelCaseKey(key)] = normalize(value[key]);
+    const normalizedValue = normalize(value[key]);
+    const normalizedKey = camelCaseKey(key);
+    if (normalizedKey === key || !Object.prototype.hasOwnProperty.call(value, normalizedKey)) {
+      out[normalizedKey] = normalizedValue;
+    }
+    if (normalizedKey !== key && !Object.prototype.hasOwnProperty.call(value, normalizedKey)) {
+      out[key] = normalizedValue;
+    }
   }
   return out;
 }

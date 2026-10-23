@@ -52,10 +52,10 @@ function ServiceCatalogue() {
       await updateService(editing.id, {
         name: editing.name,
         description: editing.description,
-        is_enabled: editing.is_enabled,
+        is_enabled: editing.isEnabled,
         fee: editing.fee,
-        display_order: editing.display_order,
-        unavailable_message: editing.unavailable_message,
+        display_order: editing.displayOrder,
+        unavailable_message: editing.unavailableMessage,
       });
       success('Service updated');
       setEditing(null);
@@ -71,11 +71,11 @@ function ServiceCatalogue() {
     { key: 'ministry', label: 'Ministry' },
     { key: 'code', label: 'Code' },
     { key: 'name', label: 'Name' },
-    { key: 'service_type', label: 'Type' },
+    { key: 'serviceType', label: 'Type' },
     {
-      key: 'is_enabled',
+      key: 'isEnabled',
       label: 'Enabled',
-      render: (r) => (r.is_enabled ? 'Yes' : 'No'),
+      render: (r) => (r.isEnabled ? 'Yes' : 'No'),
     },
     {
       key: 'fee',
@@ -156,13 +156,13 @@ function ServiceCatalogue() {
           <Input
             label="Display order"
             type="number"
-            value={editing.display_order}
-            onChange={(e) => setEditing({ ...editing, display_order: e.target.value })}
+            value={editing.displayOrder}
+            onChange={(e) => setEditing({ ...editing, displayOrder: e.target.value })}
           />
           <Select
             label="Enabled"
-            value={editing.is_enabled ? 'true' : 'false'}
-            onChange={(e) => setEditing({ ...editing, is_enabled: e.target.value === 'true' })}
+            value={editing.isEnabled ? 'true' : 'false'}
+            onChange={(e) => setEditing({ ...editing, isEnabled: e.target.value === 'true' })}
             options={[
               { value: 'true', label: 'Enabled' },
               { value: 'false', label: 'Disabled' },
@@ -170,8 +170,8 @@ function ServiceCatalogue() {
           />
           <Input
             label="Unavailable message (shown when disabled)"
-            value={editing.unavailable_message || ''}
-            onChange={(e) => setEditing({ ...editing, unavailable_message: e.target.value })}
+            value={editing.unavailableMessage || ''}
+            onChange={(e) => setEditing({ ...editing, unavailableMessage: e.target.value })}
           />
           <FormActions
             primaryLabel="Save"

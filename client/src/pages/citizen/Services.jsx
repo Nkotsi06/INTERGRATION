@@ -25,6 +25,7 @@ function Services() {
   const [services, setServices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -34,7 +35,10 @@ function Services() {
       try {
         const data = await getPublicServices(ministry);
         if (!cancelled) {
-          setServices(Array.isArray(data) ? data : []);
+          if (!Array.isArray(data)) {
+            throw new Error('The services response was not in the expected format.');
+          }
+          setServices(data);
         }
       } catch (err) {
         if (!cancelled) {
@@ -51,7 +55,7 @@ function Services() {
     return () => {
       cancelled = true;
     };
-  }, [ministry]);
+  }, [ministry, reloadKey]);
 
   const ministryLabel = MINISTRY_LABELS[ministry] || ministry;
   const legacyRoutes = {
@@ -69,7 +73,10 @@ function Services() {
   };
 
   const applicationServices = services.filter(
-    (s) => s.service_type === 'APPLICATION'
+    (s) => s.serviceType === 'APPLICATION'
+  );
+  const informationServices = services.filter(
+    (s) => s.serviceType !== 'APPLICATION'
   );
 
   // Helper to get a color for the accent line based on ministry
@@ -93,15 +100,22 @@ function Services() {
     >
       <h1>{ministryLabel} services</h1>
       <p className="text-muted" style={{ marginBottom: '24px' }}>
-        Choose a service to apply for. Your application will be reviewed by{' '}
-        {ministryLabel} staff.
+        Explore services provided by {ministryLabel}. Applications are reviewed
+        by ministry staff.
       </p>
 
       {loading && <LoadingSpinner message="Loading services…" />}
 
-      {!loading && error && <Alert type="error" message={error} />}
+      {!loading && error && (
+        <>
+          <Alert type="error" message={error} />
+          <Button variant="secondary" onClick={() => setReloadKey((key) => key + 1)}>
+            Retry loading services
+          </Button>
+        </>
+      )}
 
-      {!loading && !error && applicationServices.length === 0 && (
+      {!loading && !error && services.length === 0 && (
         <EmptyState
           title={`No services available from ${ministryLabel}`}
           message="This ministry has no services enabled at the moment. Please check back later, or choose a different ministry from your dashboard."
@@ -130,6 +144,34 @@ function Services() {
                   <span className="text-muted" style={{ marginBottom: '12px', display: 'block' }}>
                     {service.description}
                   </span>
+                )}
+
+                {!loading && !error && informationServices.length > 0 && (
+                  <section className="dashboard-section">
+                    <h2>Information and other services</h2>
+                    <div className="services-grid">
+                      {informationServices.map((service) => (
+                        <Card
+                          key={service.id}
+                          variant="bordered"
+                          className="service-card"
+                        >
+                          <div
+                            className="service-card-accent"
+                            style={{ backgroundColor: getAccentColor() }}
+                          />
+                          <div className="service-card-body" style={{ paddingTop: '12px' }}>
+                            <span className="service-card-name">{service.name}</span>
+                            {service.description && (
+                              <span className="text-muted" style={{ display: 'block' }}>
+                                {service.description}
+                              </span>
+                            )}
+                          </div>
+                        </Card>
+                      ))}
+                    </div>
+                  </section>
                 )}
                 <Button
                   variant="primary"

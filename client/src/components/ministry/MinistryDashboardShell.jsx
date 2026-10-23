@@ -23,6 +23,7 @@ function MinistryDashboardShell({
   const [services, setServices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -31,7 +32,10 @@ function MinistryDashboardShell({
       setError(null);
       try {
         const data = await getPublicServices(ministryCode);
-        if (!cancelled) setServices(Array.isArray(data) ? data : []);
+        if (!Array.isArray(data)) {
+          throw new Error('The services response was not in the expected format.');
+        }
+        if (!cancelled) setServices(data);
       } catch (err) {
         if (!cancelled) setError(err.message || 'Could not load services.');
       } finally {
@@ -40,7 +44,7 @@ function MinistryDashboardShell({
     }
     load();
     return () => { cancelled = true; };
-  }, [ministryCode]);
+  }, [ministryCode, reloadKey]);
 
   // Route to the right page. If a service has a `legacyRoute`
   // (a service code we still serve via a dedicated page), use it.
@@ -91,8 +95,8 @@ function MinistryDashboardShell({
     }
   };
 
-  const applications = services.filter((s) => s.service_type === 'APPLICATION');
-  const information = services.filter((s) => s.service_type === 'INFORMATION');
+  const applications = services.filter((s) => s.serviceType === 'APPLICATION');
+  const information = services.filter((s) => s.serviceType === 'INFORMATION');
 
   return (
     <PageWrapper
@@ -106,7 +110,18 @@ function MinistryDashboardShell({
 
       {loading && <StatsSkeleton count={4} />}
 
-      {!loading && error && <Alert type="error" message={error} />}
+      {!loading && error && (
+        <>
+          <Alert type="error" message={error} />
+          <button
+            type="button"
+            className="btn btn-secondary"
+            onClick={() => setReloadKey((key) => key + 1)}
+          >
+            Retry loading services
+          </button>
+        </>
+      )}
 
       {!loading && !error && services.length === 0 && (
         <p className="text-muted">
