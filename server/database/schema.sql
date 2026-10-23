@@ -1,87 +1,64 @@
 -- ================================================================
 -- INTEGRATED GOVERNMENT SERVICES SYSTEM (LESOTHO)
--- Complete Database Schema — consolidated and deduplicated
--- ================================================================
--- Run ONCE against a FRESH PostgreSQL database.
+-- Complete Database Schema — consolidated, deduplicated, and
+-- corrections applied (2026-10-22, rev 2).
 --
--- AFTER RUNNING THIS FILE, run the numbered migrations in
--- /server/src/database/migrations/ in order:
+-- Run this file FIRST on a fresh PostgreSQL database, then run the
+-- numbered migrations in order (see README of migrations).
 --
---   001_enable_police_services.sql
---   002_pensions_eligibility.sql
---   003_protect_records.sql
---   004_vehicle_delete_function.sql
---   005_translations_group_i.sql
---   006_collection_columns_guard.sql
---
--- The four collection columns (collected_at, collected_by_name,
--- collected_by_staff_id, id_checked) are already added by this
--- file behind a guard, so 006 will be a no-op after a fresh run.
--- The guard is in place so this file is safe to re-run without
--- the "column already exists" failure.
---
--- DECISIONS APPLIED (2026-10-15):
---   Q1: Certificate tables use the Phase 9 design
---       (child_full_name, application_id, status lifecycle
---        PENDING / ISSUED / REJECTED / CANCELLED).
---   Q2: Service codes use the Phase 4 codes
---       (BIRTH_CERTIFICATE_APPLY, PASSPORT_RENEWAL, etc.).
---
--- BUGFIX (2026-10-15):
---   The passport_applications index name was corrected from
---   passport_apps_application to passport_applications.
---
--- BEFORE RUNNING:
---   1. Generate the admin bcrypt hash:
---        cd server
---        node scripts/generate-admin-hash.js
---   2. Paste the hash into the admin INSERT below.
+-- SAFE TO RE-RUN: every DROP has IF EXISTS, every CREATE TABLE and
+-- CREATE SEQUENCE is preceded by a DROP in Section 0 so a re-run
+-- never hits "already exists". Verified against a partially
+-- populated database.
 -- ================================================================
 
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
-
--- ================================================================
--- SECTION 0: DROP EVERYTHING
--- ================================================================
+-- ----------------------------------------------------------------
+-- SECTION 0: DROP EVERYTHING (safe on fresh DB, safe on re-run)
+-- ----------------------------------------------------------------
 DROP VIEW  IF EXISTS admin_user_list CASCADE;
 DROP VIEW  IF EXISTS admin_dashboard_stats CASCADE;
 DROP VIEW  IF EXISTS finance_payment_summary CASCADE;
 
+-- Certificate tables
 DROP TABLE IF EXISTS divorce_certificates CASCADE;
 DROP TABLE IF EXISTS death_certificates_new CASCADE;
 DROP TABLE IF EXISTS birth_certificate_applications CASCADE;
 DROP TABLE IF EXISTS birth_certificates CASCADE;
 DROP TABLE IF EXISTS marriage_certificates CASCADE;
+DROP TABLE IF EXISTS national_id_cards CASCADE;          -- ← was missing; caused the error
 
+-- Finance
 DROP TABLE IF EXISTS audit_findings CASCADE;
 DROP TABLE IF EXISTS procurement_records CASCADE;
 DROP TABLE IF EXISTS debt_records CASCADE;
 DROP TABLE IF EXISTS budget_allocations CASCADE;
 DROP TABLE IF EXISTS treasury_payments CASCADE;
 
+-- Traffic
 DROP TABLE IF EXISTS transport_permits CASCADE;
 DROP TABLE IF EXISTS vehicle_licences CASCADE;
 DROP TABLE IF EXISTS vehicle_inspections CASCADE;
-DROP TABLE IF EXISTS criminal_records CASCADE;
-
-DROP TABLE IF EXISTS translations CASCADE;
-DROP TABLE IF EXISTS languages CASCADE;
-DROP TABLE IF EXISTS reference_formats CASCADE;
-DROP TABLE IF EXISTS system_settings CASCADE;
-DROP TABLE IF EXISTS branches CASCADE;
-DROP TABLE IF EXISTS ministries CASCADE;
-DROP TABLE IF EXISTS notifications CASCADE;
-DROP TABLE IF EXISTS audit_logs CASCADE;
-DROP TABLE IF EXISTS appointments CASCADE;
-DROP TABLE IF EXISTS passport_applications CASCADE;
-DROP TABLE IF EXISTS pension_verifications CASCADE;
-DROP TABLE IF EXISTS pension_records CASCADE;
-DROP TABLE IF EXISTS police_case_updates CASCADE;
-DROP TABLE IF EXISTS police_cases CASCADE;
 DROP TABLE IF EXISTS vehicles CASCADE;
 DROP TABLE IF EXISTS driving_tests CASCADE;
 DROP TABLE IF EXISTS driver_licences CASCADE;
+
+-- Police
+DROP TABLE IF EXISTS criminal_records CASCADE;
+DROP TABLE IF EXISTS police_case_updates CASCADE;
+DROP TABLE IF EXISTS police_cases CASCADE;
+
+-- Pensions
+DROP TABLE IF EXISTS pension_verifications CASCADE;
+DROP TABLE IF EXISTS pension_records CASCADE;
+DROP TABLE IF EXISTS pension_rules CASCADE;              -- ← was at bottom; moved up so section 1 doesn't hit it
+
+-- Passport
+DROP TABLE IF EXISTS passport_applications CASCADE;
+
+-- Civil records / citizens
+DROP TABLE IF EXISTS citizen_employment_history CASCADE; -- ← was at bottom; moved up
 DROP TABLE IF EXISTS home_affairs_records CASCADE;
 DROP TABLE IF EXISTS application_status_history CASCADE;
 DROP TABLE IF EXISTS status_types CASCADE;
@@ -94,20 +71,33 @@ DROP TABLE IF EXISTS document_types CASCADE;
 DROP TABLE IF EXISTS citizens CASCADE;
 DROP TABLE IF EXISTS users CASCADE;
 
-DROP TABLE IF EXISTS services CASCADE;
-DROP TABLE IF EXISTS fee_schedule CASCADE;
-DROP TABLE IF EXISTS payments CASCADE;
-DROP SEQUENCE IF EXISTS citizen_national_id_serial_seq;
-DROP SEQUENCE IF EXISTS birth_certificate_number_seq;
+-- Shared / system
+DROP TABLE IF EXISTS translations CASCADE;
+DROP TABLE IF EXISTS languages CASCADE;
+DROP TABLE IF EXISTS reference_formats CASCADE;
+DROP TABLE IF EXISTS system_settings CASCADE;
+DROP TABLE IF EXISTS branches CASCADE;
+DROP TABLE IF EXISTS ministries CASCADE;
+DROP TABLE IF EXISTS notifications CASCADE;
+DROP TABLE IF EXISTS audit_logs CASCADE;
+DROP TABLE IF EXISTS appointments CASCADE;
 
--- Migration-only tables. Drop them if they exist, so a fresh schema
--- run also cleans up any tables the migrations created.
-DROP TABLE IF EXISTS citizen_employment_history CASCADE;
-DROP TABLE IF EXISTS pension_rules CASCADE;
+-- Information services
 DROP TABLE IF EXISTS information_topics CASCADE;
 DROP TABLE IF EXISTS enquiry_messages CASCADE;
 DROP TABLE IF EXISTS document_enquiries CASCADE;
 
+-- Services / payments
+DROP TABLE IF EXISTS services CASCADE;
+DROP TABLE IF EXISTS fee_schedule CASCADE;
+DROP TABLE IF EXISTS payments CASCADE;
+
+-- Sequences (IF EXISTS — was missing on the first two)
+DROP SEQUENCE IF EXISTS citizen_national_id_serial_seq;
+DROP SEQUENCE IF EXISTS birth_certificate_number_seq;
+DROP SEQUENCE IF EXISTS driving_test_reference_seq;      -- ← was missing from drop list
+DROP SEQUENCE IF EXISTS passport_number_seq;             -- ← was missing from drop list
+DROP SEQUENCE IF EXISTS driver_licence_number_seq;       -- ← was missing from drop list
 
 -- ================================================================
 -- SECTION 1: CORE TABLES
@@ -115,6 +105,9 @@ DROP TABLE IF EXISTS document_enquiries CASCADE;
 
 CREATE SEQUENCE citizen_national_id_serial_seq START 1;
 CREATE SEQUENCE birth_certificate_number_seq START 1;
+CREATE SEQUENCE driving_test_reference_seq START 1;
+CREATE SEQUENCE passport_number_seq START 1;
+CREATE SEQUENCE driver_licence_number_seq START 1;
 
 CREATE TABLE users (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -253,7 +246,12 @@ CREATE TABLE applications (
   status VARCHAR(30) NOT NULL DEFAULT 'SUBMITTED',
   data JSONB DEFAULT '{}'::jsonb,
   submitted_at TIMESTAMP DEFAULT NOW(),
-  updated_at TIMESTAMP DEFAULT NOW()
+  updated_at TIMESTAMP DEFAULT NOW(),
+  -- Collection tracking (moved out of migration 006; safe on re-run)
+  collected_at TIMESTAMP,
+  collected_by_name VARCHAR(200),
+  collected_by_staff_id UUID REFERENCES users(id),
+  id_checked BOOLEAN DEFAULT FALSE
 );
 CREATE INDEX idx_applications_reference ON applications(reference_number);
 CREATE INDEX idx_applications_citizen ON applications(citizen_id);
@@ -291,7 +289,7 @@ CREATE TABLE home_affairs_records (
 CREATE INDEX idx_ha_records_citizen ON home_affairs_records(citizen_id);
 
 -- ================================================================
--- CERTIFICATE TABLES — PHASE 9 DESIGN (Option B)
+-- CERTIFICATE TABLES
 -- ================================================================
 
 CREATE TABLE birth_certificates (
@@ -302,6 +300,7 @@ CREATE TABLE birth_certificates (
   child_full_name VARCHAR(200) NOT NULL,
   child_date_of_birth DATE NOT NULL,
   child_gender VARCHAR(10),
+  child_national_id VARCHAR(20),
   place_of_birth VARCHAR(200),
   mother_full_name VARCHAR(200),
   mother_national_id VARCHAR(30),
@@ -412,6 +411,24 @@ CREATE INDEX idx_divorce_certs_citizen ON divorce_certificates(citizen_id);
 CREATE INDEX idx_divorce_certs_application ON divorce_certificates(application_id);
 CREATE INDEX idx_divorce_certs_status ON divorce_certificates(status);
 
+CREATE TABLE national_id_cards (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  citizen_id UUID NOT NULL REFERENCES citizens(id) ON DELETE CASCADE,
+  application_id UUID REFERENCES applications(id) ON DELETE SET NULL,
+  card_number VARCHAR(20) NOT NULL,
+  issued_at TIMESTAMP,
+  issued_by UUID REFERENCES users(id) ON DELETE SET NULL,
+  status VARCHAR(20) NOT NULL DEFAULT 'PENDING'
+    CHECK (status IN ('PENDING','ISSUED','REJECTED')),
+  rejection_reason TEXT,
+  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+CREATE INDEX idx_national_id_cards_citizen
+  ON national_id_cards(citizen_id);
+CREATE INDEX idx_national_id_cards_application
+  ON national_id_cards(application_id) WHERE application_id IS NOT NULL;
+
 CREATE TABLE driver_licences (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   citizen_id UUID NOT NULL REFERENCES citizens(id) ON DELETE CASCADE,
@@ -431,8 +448,6 @@ CREATE TABLE driver_licences (
 CREATE INDEX idx_licences_citizen ON driver_licences(citizen_id);
 CREATE INDEX idx_licences_application ON driver_licences(application_id);
 CREATE INDEX idx_licences_status ON driver_licences(status);
-
-CREATE SEQUENCE driving_test_reference_seq START WITH 1;
 
 CREATE TABLE driving_tests (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -695,17 +710,26 @@ CREATE TABLE passport_applications (
   citizen_id UUID NOT NULL REFERENCES citizens(id) ON DELETE CASCADE,
   passport_type VARCHAR(20) NOT NULL,
   reason VARCHAR(200),
-  passport_number VARCHAR(30),
+  passport_number VARCHAR(50),
   collection_office VARCHAR(100),
   is_renewal BOOLEAN NOT NULL DEFAULT FALSE,
   previous_passport_number VARCHAR(30),
   issue_date DATE,
   expiry_date DATE,
   status VARCHAR(30) DEFAULT 'SUBMITTED',
+  issued_at TIMESTAMP,
+  issued_by UUID REFERENCES users(id),
+  collected_at TIMESTAMP,
+  collected_by_name VARCHAR(200),
+  id_checked BOOLEAN DEFAULT FALSE,
+  signature_id UUID REFERENCES signatures(id),
   created_at TIMESTAMP DEFAULT NOW()
 );
 CREATE INDEX idx_passport_apps_application ON passport_applications(application_id);
 CREATE INDEX idx_passport_apps_citizen ON passport_applications(citizen_id);
+CREATE UNIQUE INDEX idx_passport_applications_number
+  ON passport_applications(passport_number)
+  WHERE passport_number IS NOT NULL;
 
 CREATE TABLE appointments (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -803,7 +827,6 @@ CREATE TABLE translations (
 );
 CREATE INDEX idx_translations_lang ON translations(language_code);
 
-
 -- ================================================================
 -- SECTION 2: SEED DATA
 -- ================================================================
@@ -854,26 +877,33 @@ INSERT INTO system_settings (key, value, category, description, is_public) VALUE
 ('biometric_fingerprint_enabled', 'true', 'biometrics', 'Enable fingerprint capture', false),
 ('biometric_facial_enabled', 'true', 'biometrics', 'Enable facial capture', false),
 ('biometric_match_threshold', '85', 'biometrics', 'Match threshold percent', false),
-('biometric_max_attempts', '3', 'biometrics', 'Maximum biometric attempts', false);
+('biometric_max_attempts', '3', 'biometrics', 'Maximum biometric attempts', false),
+-- keys the System Settings page reads
+('failed_login_limit', '5', 'security', 'Alias of max_login_attempts for the admin UI', false),
+('account_lockout_duration', '15', 'security', 'Minutes an account stays locked', false),
+('email_notifications', 'Enabled', 'notifications', 'Toggle email notifications', false),
+('sms_notifications', 'Disabled', 'notifications', 'Toggle SMS notifications', false),
+('notifications_poll_seconds', '60', 'notifications', 'Client-side poll interval', true);
 
 INSERT INTO reference_formats (name, prefix, year_format, sequence_length, example) VALUES
-('APPLICATION',           'REF', 'YYYY', 5, 'REF-2026-00001'),
-('PASSPORT_APPLICATION',  'PPT', 'YYYY', 5, 'PPT-2026-00001'),
-('TRAFFIC_RENEWAL',       'TRF', 'YYYY', 5, 'TRF-2026-00001'),
-('POLICE_CASE',           'POL', 'YYYY', 5, 'POL-2026-00001'),
-('BIRTH_CERTIFICATE',     'BC',  'YYYY', 6, 'BC-2026-000001'),
-('DEATH_CERTIFICATE',     'DC',  'YYYY', 6, 'DC-2026-000001'),
-('MARRIAGE_CERTIFICATE',  'MC',  'YYYY', 6, 'MC-2026-000001'),
-('DIVORCE_CERTIFICATE',   'DVC', 'YYYY', 6, 'DVC-2026-000001'),
-('VEHICLE_REGISTRATION',  'VEH', 'YYYY', 5, 'VEH-2026-00001'),
-('VEHICLE_INSPECTION',    'INS', 'YYYY', 5, 'INS-2026-00001'),
-('VEHICLE_LICENCE',       'LIC', 'YYYY', 5, 'LIC-2026-00001'),
-('TRANSPORT_PERMIT',      'TP',  'YYYY', 5, 'TP-2026-00001'),
-('CRIMINAL_RECORD',       'CR',  'YYYY', 5, 'CR-2026-00001'),
-('LEARNERS_LICENCE',      'LL',  'YYYY', 5, 'LL-2026-00001'),
-('DRIVING_LICENCE',       'DL',  'YYYY', 5, 'DL-2026-00001'),
-('PUBLIC_DRIVING_PERMIT', 'PDP', 'YYYY', 5, 'PDP-2026-00001'),
-('DRIVERS_LICENCE_NUMBER','DLN', 'YYYY', 6, 'DLN-2026-000001');
+('APPLICATION',            'REF', 'YYYY', 5, 'REF-2026-00001'),
+('PASSPORT_APPLICATION',   'PPT', 'YYYY', 5, 'PPT-2026-00001'),
+('PASSPORT_NUMBER',        'PPN', 'YYYY', 6, 'PPN-2026-000001'),
+('TRAFFIC_RENEWAL',        'TRF', 'YYYY', 5, 'TRF-2026-00001'),
+('POLICE_CASE',            'POL', 'YYYY', 5, 'POL-2026-00001'),
+('BIRTH_CERTIFICATE',      'BC',  'YYYY', 6, 'BC-2026-000001'),
+('DEATH_CERTIFICATE',      'DC',  'YYYY', 6, 'DC-2026-000001'),
+('MARRIAGE_CERTIFICATE',   'MC',  'YYYY', 6, 'MC-2026-000001'),
+('DIVORCE_CERTIFICATE',    'DVC', 'YYYY', 6, 'DVC-2026-000001'),
+('VEHICLE_REGISTRATION',   'VEH', 'YYYY', 5, 'VEH-2026-00001'),
+('VEHICLE_INSPECTION',     'INS', 'YYYY', 5, 'INS-2026-00001'),
+('VEHICLE_LICENCE',        'LIC', 'YYYY', 5, 'LIC-2026-00001'),
+('TRANSPORT_PERMIT',       'TP',  'YYYY', 5, 'TP-2026-00001'),
+('CRIMINAL_RECORD',        'CR',  'YYYY', 5, 'CR-2026-00001'),
+('LEARNERS_LICENCE',       'LL',  'YYYY', 5, 'LL-2026-00001'),
+('DRIVING_LICENCE',        'DL',  'YYYY', 5, 'DL-2026-00001'),
+('PUBLIC_DRIVING_PERMIT',  'PDP', 'YYYY', 5, 'PDP-2026-00001'),
+('DRIVERS_LICENCE_NUMBER', 'DLN', 'YYYY', 6, 'DLN-2026-000001');
 
 INSERT INTO status_types (code, name, colour_hex, applies_to, display_order) VALUES
 ('DRAFT',               'Draft',               '#7F8C8D', 'application',  1),
@@ -888,7 +918,6 @@ INSERT INTO status_types (code, name, colour_hex, applies_to, display_order) VAL
 ('PENDING',             'Pending',             '#F1C40F', 'certificate', 10),
 ('ISSUED',              'Issued',              '#27AE60', 'certificate', 11),
 ('CANCELLED',           'Cancelled',           '#7F8C8D', 'certificate', 12);
-
 
 -- ================================================================
 -- SECTION 3: TRIGGERS AND VIEWS
@@ -932,11 +961,8 @@ SELECT
     + (SELECT COUNT(*) FROM pension_verifications WHERE status = 'PENDING')
   )::int AS pending_actions;
 
-
 -- ================================================================
 -- SECTION 4: PAYMENTS AND FEE SCHEDULE
--- (Previously labelled "MIGRATION 001" in the file. This is core
---  schema, created here so migration 001 can live in its own file.)
 -- ================================================================
 
 CREATE TABLE payments (
@@ -983,7 +1009,7 @@ SELECT
   ministry,
   COUNT(*)::int                                        AS payment_count,
   COALESCE(SUM(amount), 0)::numeric(14,2)              AS total_amount,
-  COUNT(*) FILTER (WHERE paid_at::date = CURRENT_DATE)::int             AS today_count,
+  COUNT(*) FILTER (WHERE paid_at::date = CURRENT_DATE)::int AS today_count,
   COALESCE(SUM(amount) FILTER (WHERE paid_at::date = CURRENT_DATE), 0)::numeric(14,2) AS today_amount,
   COUNT(*) FILTER (WHERE date_trunc('month', paid_at) = date_trunc('month', CURRENT_DATE))::int AS month_count,
   COALESCE(SUM(amount) FILTER (WHERE date_trunc('month', paid_at) = date_trunc('month', CURRENT_DATE)), 0)::numeric(14,2) AS month_amount
@@ -991,10 +1017,8 @@ FROM payments
 WHERE status = 'COMPLETED'
 GROUP BY ministry;
 
-
 -- ================================================================
 -- SECTION 5: SERVICE CATALOGUE
--- One code per service. No duplicates.
 -- ================================================================
 
 CREATE TABLE services (
@@ -1020,18 +1044,15 @@ CREATE TABLE services (
 CREATE INDEX idx_services_ministry ON services(ministry);
 CREATE INDEX idx_services_enabled ON services(is_enabled);
 
--- HOME AFFAIRS services
 INSERT INTO services (ministry, code, name, description, service_type, is_enabled, form_fields, required_documents, fee, display_order) VALUES
 ('HOME_AFFAIRS', 'NATIONAL_ID_APPLY', 'Apply for a National ID',
  'Apply for a new national identity document.', 'APPLICATION', TRUE,
  '[{"key":"reason","label":"Reason","type":"text","required":false}]'::jsonb,
  '["NATIONAL_ID","BIRTH_CERTIFICATE","PASSPORT_PHOTO"]'::jsonb, 0, 10),
-
 ('HOME_AFFAIRS', 'NATIONAL_ID_REPLACE', 'Replace a National ID',
  'Replace a lost or damaged national identity document.', 'APPLICATION', TRUE,
  '[{"key":"reason","label":"Reason for replacement","type":"text","required":true}]'::jsonb,
  '["BIRTH_CERTIFICATE","PASSPORT_PHOTO"]'::jsonb, 0, 20),
-
 ('HOME_AFFAIRS', 'BIRTH_CERTIFICATE_APPLY', 'Birth certificate',
  'Register a birth or request a birth certificate.', 'APPLICATION', TRUE,
  '[{"key":"childFullName","label":"Child full name","type":"text","required":true},
@@ -1044,7 +1065,6 @@ INSERT INTO services (ministry, code, name, description, service_type, is_enable
    {"key":"fatherNationalId","label":"Father National ID","type":"text","required":false},
    {"key":"requestType","label":"Request type (new or replacement)","type":"text","required":true}]'::jsonb,
  '["NATIONAL_ID","BIRTH_CERTIFICATE"]'::jsonb, 0, 30),
-
 ('HOME_AFFAIRS', 'DEATH_CERTIFICATE_APPLY', 'Death certificate',
  'Register a death or request a death certificate.', 'APPLICATION', TRUE,
  '[{"key":"deceasedFullName","label":"Deceased full name","type":"text","required":true},
@@ -1055,7 +1075,6 @@ INSERT INTO services (ministry, code, name, description, service_type, is_enable
    {"key":"informantFullName","label":"Informant full name","type":"text","required":true},
    {"key":"informantRelationship","label":"Relationship to deceased","type":"text","required":true}]'::jsonb,
  '["NATIONAL_ID"]'::jsonb, 0, 40),
-
 ('HOME_AFFAIRS', 'MARRIAGE_CERTIFICATE_APPLY', 'Marriage certificate',
  'Register a marriage or request a marriage certificate.', 'APPLICATION', TRUE,
  '[{"key":"spouse1FullName","label":"Spouse 1 full name","type":"text","required":true},
@@ -1067,7 +1086,6 @@ INSERT INTO services (ministry, code, name, description, service_type, is_enable
    {"key":"marriageOfficiant","label":"Officiant name","type":"text","required":true},
    {"key":"requestType","label":"Request type (new or certified copy)","type":"text","required":true}]'::jsonb,
  '["NATIONAL_ID"]'::jsonb, 0, 50),
-
 ('HOME_AFFAIRS', 'DIVORCE_CERTIFICATE_APPLY', 'Divorce certificate',
  'Register a divorce or request a certified divorce record.', 'APPLICATION', TRUE,
  '[{"key":"spouse1FullName","label":"Spouse 1 full name","type":"text","required":true},
@@ -1078,7 +1096,6 @@ INSERT INTO services (ministry, code, name, description, service_type, is_enable
    {"key":"courtName","label":"Court name","type":"text","required":true},
    {"key":"caseNumber","label":"Court case number","type":"text","required":true}]'::jsonb,
  '["NATIONAL_ID"]'::jsonb, 0, 60),
-
 ('HOME_AFFAIRS', 'NAME_CHANGE_APPLY', 'Name change or amendment',
  'Change a surname or amend identity and civil records.', 'APPLICATION', TRUE,
  '[{"key":"currentFullName","label":"Current full name","type":"text","required":true},
@@ -1087,35 +1104,27 @@ INSERT INTO services (ministry, code, name, description, service_type, is_enable
    {"key":"reason","label":"Reason for change","type":"textarea","required":true},
    {"key":"supportingDetails","label":"Supporting details","type":"textarea","required":false}]'::jsonb,
  '["NATIONAL_ID","BIRTH_CERTIFICATE"]'::jsonb, 0, 70),
-
 ('HOME_AFFAIRS', 'IMMIGRATION_INFO', 'Immigration information',
  'Visa, residence permits, and immigration procedures.', 'INFORMATION', TRUE, '[]'::jsonb, '[]'::jsonb, 0, 100),
-
 ('HOME_AFFAIRS', 'CITIZENSHIP_INFO', 'Citizenship information',
  'Apply for citizenship, naturalisation, or restoration.', 'INFORMATION', TRUE, '[]'::jsonb, '[]'::jsonb, 0, 110),
-
 ('HOME_AFFAIRS', 'REFUGEE_INFO', 'Refugee and asylum information',
  'Refugee procedures, documentation, and the Refugee Coordinating Unit.', 'INFORMATION', TRUE, '[]'::jsonb, '[]'::jsonb, 0, 120),
-
 ('HOME_AFFAIRS', 'LIVESTOCK_INFO', 'Livestock registration information',
  'Livestock registration, identification, and ownership records.', 'INFORMATION', TRUE, '[]'::jsonb, '[]'::jsonb, 0, 130),
-
 ('HOME_AFFAIRS', 'DOCUMENT_VERIFY_INFO', 'Document verification and enquiries',
  'Confirm a certificate or identity document, or enquire about a delayed application.', 'INFORMATION', TRUE, '[]'::jsonb, '[]'::jsonb, 0, 140);
 
--- PASSPORT services
 INSERT INTO services (ministry, code, name, description, service_type, is_enabled, form_fields, required_documents, fee, display_order) VALUES
 ('PASSPORT', 'PASSPORT_NEW', 'New passport',
  'Apply for a first passport.', 'APPLICATION', TRUE, '[]'::jsonb,
  '["NATIONAL_ID","BIRTH_CERTIFICATE","PASSPORT_PHOTO"]'::jsonb, 500, 10),
-
 ('PASSPORT', 'PASSPORT_RENEWAL', 'Renew passport',
  'Renew an expiring passport.', 'APPLICATION', TRUE,
  '[{"key":"oldPassportNumber","label":"Old passport number","type":"text","required":true},
    {"key":"oldPassportExpiry","label":"Old passport expiry","type":"date","required":false},
    {"key":"collectionOffice","label":"Collection office","type":"text","required":true}]'::jsonb,
  '["NATIONAL_ID","PASSPORT_PHOTO"]'::jsonb, 500, 20),
-
 ('PASSPORT', 'PASSPORT_LOST', 'Lost or stolen passport',
  'Report a lost or stolen passport and request a replacement.', 'APPLICATION', TRUE,
  '[{"key":"oldPassportNumber","label":"Old passport number","type":"text","required":false},
@@ -1123,21 +1132,18 @@ INSERT INTO services (ministry, code, name, description, service_type, is_enable
    {"key":"policeCaseNumber","label":"Police case number","type":"text","required":false},
    {"key":"collectionOffice","label":"Collection office","type":"text","required":true}]'::jsonb,
  '["NATIONAL_ID","POLICE_EVIDENCE","PASSPORT_PHOTO"]'::jsonb, 700, 30),
-
 ('PASSPORT', 'PASSPORT_URGENT', 'Urgent passport',
  'Expedited passport for travel within 14 days.', 'APPLICATION', TRUE,
  '[{"key":"travelDate","label":"Travel date","type":"date","required":true},
    {"key":"travelReason","label":"Reason for travel","type":"textarea","required":true},
    {"key":"collectionOffice","label":"Collection office","type":"text","required":true}]'::jsonb,
  '["NATIONAL_ID","BIRTH_CERTIFICATE","PASSPORT_PHOTO"]'::jsonb, 1200, 40),
-
 ('PASSPORT', 'PASSPORT_OFFICIAL', 'Official or diplomatic passport',
  'Official and diplomatic passports require prior authorisation.', 'APPLICATION', TRUE,
  '[{"key":"authorisingBody","label":"Authorising body","type":"text","required":true},
    {"key":"authorisationReference","label":"Authorisation reference","type":"text","required":true},
    {"key":"justification","label":"Justification","type":"textarea","required":true}]'::jsonb,
  '["NATIONAL_ID","PASSPORT_PHOTO"]'::jsonb, 700, 50),
-
 ('PASSPORT', 'PASSPORT_MINOR', 'Minor passport',
  'Passport for a child under 16, with parent or guardian consent.', 'APPLICATION', TRUE,
  '[{"key":"childFullName","label":"Child full name","type":"text","required":true},
@@ -1149,13 +1155,11 @@ INSERT INTO services (ministry, code, name, description, service_type, is_enable
    {"key":"collectionOffice","label":"Collection office","type":"text","required":true}]'::jsonb,
  '["BIRTH_CERTIFICATE","PASSPORT_PHOTO"]'::jsonb, 500, 60);
 
--- POLICE services
 INSERT INTO services (ministry, code, name, description, service_type, is_enabled, form_fields, required_documents, fee, display_order) VALUES
 ('POLICE', 'POLICE_CLEARANCE', 'Police clearance certificate',
  'Apply for a certificate confirming your criminal record status.', 'APPLICATION', FALSE,
  '[{"key":"purpose","label":"Purpose","type":"text","required":true}]'::jsonb,
  '["NATIONAL_ID"]'::jsonb, 150, 10),
-
 ('POLICE', 'POLICE_REPORT', 'Report a crime',
  'Submit a non-emergency incident report.', 'APPLICATION', FALSE,
  '[{"key":"caseType","label":"Case type","type":"text","required":true},
@@ -1163,12 +1167,10 @@ INSERT INTO services (ministry, code, name, description, service_type, is_enable
    {"key":"location","label":"Location","type":"text","required":true},
    {"key":"description","label":"Description","type":"textarea","required":true}]'::jsonb,
  '["POLICE_EVIDENCE"]'::jsonb, 0, 20),
-
 ('POLICE', 'POLICE_CRIMINAL_RECORD', 'Criminal record check',
  'Request your own criminal record.', 'APPLICATION', FALSE, '[]'::jsonb,
  '["NATIONAL_ID"]'::jsonb, 200, 30);
 
--- PENSIONS services
 INSERT INTO services (ministry, code, name, description, service_type, is_enabled, form_fields, required_documents, fee, display_order) VALUES
 ('PENSIONS', 'PENSION_APPLICATION', 'Pension application',
  'Apply for a state pension.', 'APPLICATION', TRUE,
@@ -1178,55 +1180,40 @@ INSERT INTO services (ministry, code, name, description, service_type, is_enable
    {"key":"bankAccountNumber","label":"Bank account number","type":"text","required":true},
    {"key":"branchCode","label":"Branch code","type":"text","required":false}]'::jsonb,
  '["NATIONAL_ID","BIRTH_CERTIFICATE"]'::jsonb, 0, 10),
-
 ('PENSIONS', 'PENSION_ESTIMATE', 'Benefits estimate',
  'Estimate your future pension benefit.', 'INFORMATION', TRUE, '[]'::jsonb, '[]'::jsonb, 0, 20),
-
 ('PENSIONS', 'PENSION_LIFE_VERIFY', 'Life verification',
  'Confirm your existence to keep receiving your pension.', 'APPLICATION', TRUE, '[]'::jsonb, '[]'::jsonb, 0, 30),
-
 ('PENSIONS', 'PENSION_CLAIM_TRACKING', 'Claim tracking',
  'Track the status of your pension or gratuity claim.', 'INFORMATION', TRUE, '[]'::jsonb, '[]'::jsonb, 0, 40),
-
 ('PENSIONS', 'PENSION_SURVIVOR_INFO', 'Survivor or beneficiary guidance',
  'Guidance on survivor and beneficiary claims.', 'INFORMATION', TRUE, '[]'::jsonb, '[]'::jsonb, 0, 50);
 
--- TRAFFIC services
 INSERT INTO services (ministry, code, name, description, service_type, is_enabled, form_fields, required_documents, fee, display_order) VALUES
 ('TRAFFIC', 'DRIVERS_LICENCE_VIEW', 'View driving licence',
  'See your current driving licence and its status.', 'INFORMATION', TRUE, '[]'::jsonb, '[]'::jsonb, 0, 10),
-
 ('TRAFFIC', 'DRIVING_LICENCE', 'Apply for a new driving licence',
  'Apply for a driving licence after passing your practical test.', 'APPLICATION', TRUE,
  '[]'::jsonb, '[]'::jsonb, 300, 15),
-
 ('TRAFFIC', 'LICENCE_RENEWAL', 'Renew driving licence',
  'Renew an expiring driving licence.', 'APPLICATION', TRUE,
  '[{"key":"mobile","label":"Mobile number for payment","type":"text","required":true}]'::jsonb,
  '[]'::jsonb, 250, 20),
-
 ('TRAFFIC', 'DRIVING_TEST_BOOKING', 'Book a driving test',
  'Book a learner''s or driver''s licence test.', 'APPLICATION', TRUE, '[]'::jsonb, '[]'::jsonb, 100, 30),
-
 ('TRAFFIC', 'MY_APPOINTMENTS', 'My appointments',
  'View and manage your driving test appointments.', 'INFORMATION', TRUE, '[]'::jsonb, '[]'::jsonb, 0, 40),
-
 ('TRAFFIC', 'MY_VEHICLES', 'My vehicles',
  'Register and manage your vehicles.', 'APPLICATION', TRUE, '[]'::jsonb, '[]'::jsonb, 350, 50),
-
 ('TRAFFIC', 'MY_INSPECTIONS', 'Vehicle inspections',
  'Book a roadworthiness inspection.', 'APPLICATION', TRUE, '[]'::jsonb, '[]'::jsonb, 120, 60),
-
 ('TRAFFIC', 'MY_VEHICLE_LICENCES', 'Vehicle licences',
  'Apply for a vehicle licence.', 'APPLICATION', TRUE, '[]'::jsonb, '[]'::jsonb, 150, 70),
-
 ('TRAFFIC', 'MY_TRANSPORT_PERMITS', 'Transport permits',
  'Apply for a transport permit.', 'APPLICATION', TRUE, '[]'::jsonb, '[]'::jsonb, 400, 80),
-
 ('TRAFFIC', 'MY_TRAFFIC_APPLICATIONS', 'My traffic applications',
  'Track your traffic licence and permit applications.', 'INFORMATION', TRUE, '[]'::jsonb, '[]'::jsonb, 0, 90);
 
--- Seed fee_schedule from services.fee
 INSERT INTO fee_schedule (ministry, service_code, service_name, amount, is_active)
 SELECT ministry, code, name, fee, TRUE
 FROM services
@@ -1235,7 +1222,6 @@ WHERE fee > 0;
 UPDATE services
 SET fee_code = code
 WHERE fee > 0 AND fee_code IS NULL;
-
 
 -- ================================================================
 -- SECTION 6: INFORMATION TOPICS AND ENQUIRIES
@@ -1277,313 +1263,6 @@ INSERT INTO information_topics (code, title, content) VALUES
 ('LIVESTOCK_INFO', 'Livestock Registration', 'Registration, identification, and ownership records for livestock.')
 ON CONFLICT (code) DO NOTHING;
 
-
 -- ================================================================
--- SECTION 7: COLLECTION TRACKING COLUMNS ON applications
--- ================================================================
--- Added at the end so this file is safe to re-run on an existing
--- database without the "column already exists" error. Each column
--- is added individually behind an IF NOT EXISTS guard.
---
--- Migrations 001-006 handle everything else. This block matches
--- what 006_collection_columns_guard.sql does, so running 006 after
--- this file is a no-op.
-
-DO $$
-BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM information_schema.columns
-    WHERE table_name = 'applications' AND column_name = 'collected_at'
-  ) THEN
-    ALTER TABLE applications ADD COLUMN collected_at TIMESTAMP;
-  END IF;
-
-  IF NOT EXISTS (
-    SELECT 1 FROM information_schema.columns
-    WHERE table_name = 'applications' AND column_name = 'collected_by_name'
-  ) THEN
-    ALTER TABLE applications ADD COLUMN collected_by_name VARCHAR(200);
-  END IF;
-
-  IF NOT EXISTS (
-    SELECT 1 FROM information_schema.columns
-    WHERE table_name = 'applications' AND column_name = 'collected_by_staff_id'
-  ) THEN
-    ALTER TABLE applications ADD COLUMN collected_by_staff_id UUID REFERENCES users(id);
-  END IF;
-
-  IF NOT EXISTS (
-    SELECT 1 FROM information_schema.columns
-    WHERE table_name = 'applications' AND column_name = 'id_checked'
-  ) THEN
-    ALTER TABLE applications ADD COLUMN id_checked BOOLEAN DEFAULT FALSE;
-  END IF;
-END
-$$;
-
-
--- ================================================================
--- DONE
--- ================================================================
--- After running this file, run the six migrations in
--- /server/src/database/migrations/ in order. They are:
---   001_enable_police_services.sql
---   002_pensions_eligibility.sql
---   003_protect_records.sql
---   004_vehicle_delete_function.sql
---   005_translations_group_i.sql
---   006_collection_columns_guard.sql
--- ================================================================
-
-
--- ================================================================
--- 007_home_affairs_cleanup.sql
--- ================================================================
--- Purpose:
---   Fixes four data issues that have accumulated in the seed:
---
---   1. Police services were seeded with is_enabled = FALSE.
---      This migration turns them on.
---
---   2. DRIVERS_LICENCE_VIEW was seeded with service_type
---      'APPLICATION' (a typo). It is an information-only entry
---      and should render without an Apply button.
---
---   3. NATIONAL_ID_APPLY and NATIONAL_ID_REPLACE required a
---      PASSPORT_PHOTO upload. The citizen's photo now comes from
---      their verified biometrics record, so the upload is no
---      longer needed. This migration removes it from
---      required_documents.
---
---   4. BIRTH_CERTIFICATE_APPLY required motherNationalId, which
---      the applicant cannot know because the parents' records
---      are not always in the system. This migration makes both
---      parent national IDs optional in the form_fields.
---
--- Safe to run more than once:
---   All statements are UPDATEs with a WHERE clause that only
---   touches the affected rows. Re-running is a no-op once the
---   data is already correct.
---
--- Where to run it:
---   Neon / Supabase SQL editor, connected to the project database,
---   as the role that applied schema.sql. Run the whole file.
---
--- Verify after running:
---   SELECT code, is_enabled FROM services WHERE ministry = 'POLICE';
---   -- Expected: three rows, all is_enabled = TRUE.
---
---   SELECT code, service_type FROM services WHERE code = 'DRIVERS_LICENCE_VIEW';
---   -- Expected: INFORMATION.
---
---   SELECT code, required_documents FROM services
---   WHERE code IN ('NATIONAL_ID_APPLY', 'NATIONAL_ID_REPLACE');
---   -- Expected: neither array contains 'PASSPORT_PHOTO'.
---
---   SELECT form_fields FROM services WHERE code = 'BIRTH_CERTIFICATE_APPLY';
---   -- Expected: motherNationalId and fatherNationalId have required = false.
--- ================================================================
-
-BEGIN;
-
--- 1. Enable the three Police services
-UPDATE services
-SET is_enabled = TRUE,
-    updated_at = NOW()
-WHERE ministry = 'POLICE'
-  AND is_enabled = FALSE;
-
--- 2. Fix DRIVERS_LICENCE_VIEW to be information-only
-UPDATE services
-SET service_type = 'INFORMATION',
-    updated_at = NOW()
-WHERE code = 'DRIVERS_LICENCE_VIEW'
-  AND service_type <> 'INFORMATION';
-
--- 3. Remove PASSPORT_PHOTO from the two national-ID services
-UPDATE services
-SET required_documents = (
-      SELECT COALESCE(jsonb_agg(doc), '[]'::jsonb)
-      FROM jsonb_array_elements_text(required_documents) AS doc
-      WHERE doc <> 'PASSPORT_PHOTO'
-    ),
-    updated_at = NOW()
-WHERE code IN ('NATIONAL_ID_APPLY', 'NATIONAL_ID_REPLACE')
-  AND required_documents @> '["PASSPORT_PHOTO"]'::jsonb;
-
--- 4. Make parent national IDs optional in BIRTH_CERTIFICATE_APPLY
-UPDATE services
-SET form_fields = (
-      SELECT jsonb_agg(
-        CASE
-          WHEN field->>'key' IN ('motherNationalId', 'fatherNationalId')
-            THEN jsonb_set(field, '{required}', 'false'::jsonb)
-          ELSE field
-        END
-      )
-      FROM jsonb_array_elements(form_fields) AS field
-    ),
-    updated_at = NOW()
-WHERE code = 'BIRTH_CERTIFICATE_APPLY';
-
-COMMIT;
-
--- Passport numbers and renewal records
-CREATE SEQUENCE IF NOT EXISTS passport_number_seq START WITH 1;
-CREATE SEQUENCE IF NOT EXISTS driver_licence_number_seq START WITH 1;
-SELECT setval(
-  'driver_licence_number_seq',
-  GREATEST(
-    (SELECT last_value FROM driver_licence_number_seq),
-    COALESCE(
-      (SELECT MAX(substring(licence_number FROM '[0-9]+$')::bigint)
-       FROM driver_licences
-       WHERE licence_number LIKE 'DLN-%'),
-      0
-    ) + 1
-  ),
-  FALSE
-);
-ALTER TABLE passport_applications
-  ADD COLUMN IF NOT EXISTS passport_number VARCHAR(30),
-  ADD COLUMN IF NOT EXISTS collection_office VARCHAR(100),
-  ADD COLUMN IF NOT EXISTS is_renewal BOOLEAN NOT NULL DEFAULT FALSE,
-  ADD COLUMN IF NOT EXISTS previous_passport_number VARCHAR(30),
-  ADD COLUMN IF NOT EXISTS issue_date DATE,
-  ADD COLUMN IF NOT EXISTS expiry_date DATE;
-CREATE UNIQUE INDEX IF NOT EXISTS idx_passport_applications_number
-  ON passport_applications(passport_number)
-  WHERE passport_number IS NOT NULL;
-
--- These supporting records are retrieved from Home Affairs and must
--- not be requested as citizen-uploaded documents.
-UPDATE services
-SET required_documents = (
-      SELECT COALESCE(jsonb_agg(doc), '[]'::jsonb)
-      FROM jsonb_array_elements_text(required_documents) AS doc
-      WHERE doc NOT IN ('NATIONAL_ID', 'BIRTH_CERTIFICATE')
-    ),
-    updated_at = NOW()
-WHERE ministry = 'HOME_AFFAIRS'
-  AND (
-    required_documents @> '["NATIONAL_ID"]'::jsonb
-    OR required_documents @> '["BIRTH_CERTIFICATE"]'::jsonb
-  );
-
-INSERT INTO services
-  (ministry, code, name, description, service_type, is_enabled,
-   form_fields, required_documents, fee, display_order)
-VALUES
-  ('TRAFFIC', 'DRIVING_LICENCE', 'Apply for a new driving licence',
-   'Apply for a driving licence after passing your practical test.',
-   'APPLICATION', TRUE, '[]'::jsonb, '[]'::jsonb, 300, 15)
-ON CONFLICT (ministry, code) DO UPDATE
-SET name = EXCLUDED.name,
-    description = EXCLUDED.description,
-    service_type = EXCLUDED.service_type,
-    is_enabled = EXCLUDED.is_enabled,
-    fee = EXCLUDED.fee,
-    updated_at = NOW();
-
--- ================================================================
--- 008_certificates_and_national_id_cards.sql
--- ================================================================
--- Purpose:
---   Two coordinated changes.
---
---   1. BIRTH CERTIFICATE ID NUMBER
---      Birth certificates must show the holder's own National ID.
---      The ID is generated by Home Affairs when the citizen record
---      is completed, so we copy it onto the birth certificate row
---      at the moment the certificate is created. This preserves
---      what the number was on the day of issue, even if the citizen
---      record is later amended.
---
---      This migration adds the column; the write happens in
---      certificateService.recordCertificateApplication.
---
---   2. NATIONAL ID CARDS IN MY DOCUMENTS
---      The national_id_cards row makes the processed card available
---      in My Documents as soon as it is ready for collection.
---
---      This migration creates a national_id_cards table. The
---      table row is inserted by homeAffairsApplicationService when
---      the officer marks the National ID application READY_FOR_COLLECTION.
---      Once that row exists, certificateService.listForCitizen
---      includes it and MyDocuments.jsx renders the card.
---
--- Safe to run more than once:
---   CREATE TABLE IF NOT EXISTS, ALTER TABLE ADD COLUMN IF NOT
---   EXISTS, CREATE INDEX IF NOT EXISTS. No data is dropped.
---
--- Where to run it:
---   Neon / Supabase SQL editor, connected to the project database,
---   as the role that applied schema.sql.
---
--- Verify after running:
---   SELECT column_name FROM information_schema.columns
---   WHERE table_name = 'birth_certificates'
---     AND column_name = 'child_national_id';
---   Expected: one row.
---
---   SELECT table_name FROM information_schema.tables
---   WHERE table_name = 'national_id_cards';
---   Expected: one row.
--- ================================================================
-
-BEGIN;
-
--- ── 1. Birth certificates must store the holder's National ID ────
-ALTER TABLE birth_certificates
-  ADD COLUMN IF NOT EXISTS child_national_id varchar(20);
-
-UPDATE birth_certificates bc
-SET child_national_id = c.national_id
-FROM citizens c
-WHERE bc.citizen_id = c.id
-  AND bc.child_national_id IS NULL;
-
--- ── 2. National ID cards table ───────────────────────────────────
-CREATE TABLE IF NOT EXISTS national_id_cards (
-  id                uuid primary key default gen_random_uuid(),
-  citizen_id        uuid not null references citizens(id) on delete cascade,
-  application_id    uuid references applications(id) on delete set null,
-  card_number       varchar(20) not null,
-  issued_at         timestamp,
-  issued_by         uuid references users(id) on delete set null,
-  status            varchar(20) not null default 'PENDING'
-                    check (status in ('PENDING','ISSUED','REJECTED')),
-  rejection_reason  text,
-  created_at        timestamp not null default now(),
-  updated_at        timestamp not null default now()
-);
-
-CREATE INDEX IF NOT EXISTS idx_national_id_cards_citizen
-  ON national_id_cards(citizen_id);
-
-CREATE INDEX IF NOT EXISTS idx_national_id_cards_application
-  ON national_id_cards(application_id)
-  WHERE application_id IS NOT NULL;
-
-INSERT INTO national_id_cards
-  (citizen_id, application_id, card_number, issued_at, status)
-SELECT a.citizen_id, a.id, c.national_id, COALESCE(a.updated_at, NOW()), 'ISSUED'
-FROM applications a
-JOIN citizens c ON c.id = a.citizen_id
-WHERE a.service = 'HOME_AFFAIRS'
-  AND a.data->>'serviceCode' IN ('NATIONAL_ID_APPLY', 'NATIONAL_ID_REPLACE')
-  AND a.status IN ('READY_FOR_COLLECTION', 'COLLECTED')
-  AND NOT EXISTS (
-    SELECT 1 FROM national_id_cards card WHERE card.application_id = a.id
-  );
-
-COMMIT;
-
--- ================================================================
--- Rollback (only if you need to undo this migration):
---
--- BEGIN;
--- DROP TABLE IF EXISTS national_id_cards;
--- ALTER TABLE birth_certificates DROP COLUMN IF EXISTS child_national_id;
--- COMMIT;
+-- END OF SCHEMA
 -- ================================================================

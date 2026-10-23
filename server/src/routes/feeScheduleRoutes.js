@@ -17,4 +17,11 @@ router.put(
   feeScheduleController.updateFee
 );
 
+router.post(
+  '/',
+  authMiddleware,
+  roleMiddleware(['FINANCE', 'ADMIN']),
+  feeScheduleController.createFee
+);
+
 module.exports = router;

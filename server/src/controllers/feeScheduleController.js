@@ -18,4 +18,10 @@ async function updateFee(req, res, next) {
   } catch (err) { next(err); }
 }
 
-module.exports = { listFees, updateFee };
+async function createFee(req, res, next) {
+  try {
+    res.status(201).json(await feeScheduleService.createFee(req.body, req.user));
+  } catch (err) { next(err); }
+}
+
+module.exports = { listFees, updateFee, createFee };

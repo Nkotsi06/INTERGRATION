@@ -1,7 +1,9 @@
 const paymentRepository = require('../repositories/paymentRepository');
 const referenceFormatRepository = require('../repositories/referenceFormatRepository');
-const auditService = require('./auditService');
+const auditLogRepository = require('../repositories/auditLogRepository');
 const logger = require('../utils/logger');
+const financeRegistersService = require('./financeRegistersService');
+const feeScheduleService = require('./feeScheduleService');
 
 // Generates a receipt number like RCP-2026-00042 using the sequence
 // in the reference_formats table. Falls back to a timestamp-based
@@ -84,16 +86,63 @@ async function recordPayment({
   return payment;
 }
 
+async function recordOfflinePayment(input = {}, staffUser) {
+  input = input || {};
+  const nationalId = String(input.nationalId || '').trim();
+  const ministry = String(input.ministry || '').trim().toUpperCase();
+  const service = String(input.serviceCode || '').trim().toUpperCase();
+  if (!nationalId || !ministry || !service) {
+    const err = new Error('National ID, ministry, and service are required.');
+    err.statusCode = 400;
+    throw err;
+  }
+  const fee = await feeScheduleService.getFeeForService(ministry, service);
+  if (!fee || !fee.is_active) {
+    const err = new Error('No active fee is configured for this service.');
+    err.statusCode = 400;
+    throw err;
+  }
+  const citizenId = await financeRegistersService.citizenIdByNationalId(nationalId);
+  const method = String(input.method || 'CASH').trim().toUpperCase();
+  if (!['CASH', 'MOBILE_MONEY'].includes(method)) {
+    const err = new Error('Choose Cash or Mobile Money.');
+    err.statusCode = 400;
+    throw err;
+  }
+  const payment = await recordPayment({
+    citizenId,
+    ministry,
+    service,
+    applicationReference: input.applicationReference || null,
+    amount: fee.amount,
+    currency: fee.currency,
+    method,
+    mobile: input.mobile,
+    receivedBy: staffUser.userId,
+    notes: input.notes || null,
+  });
+  await auditLogRepository.create({
+    userId: staffUser.userId,
+    username: staffUser.username,
+    action: 'OFFLINE_PAYMENT_RECORDED',
+    recordType: 'PAYMENT',
+    recordId: payment.id,
+    result: 'SUCCESS',
+  });
+  return payment;
+}
+
 async function listForFinance(filters) {
   return paymentRepository.findAll(filters);
 }
 
 async function getFinanceDashboard() {
-  const [totals, byMinistry] = await Promise.all([
+  const [totals, byMinistry, outstandingDebt] = await Promise.all([
     paymentRepository.getTotals(),
     paymentRepository.getMinistrySummary(),
+    financeRegistersService.outstandingDebtTotal(),
   ]);
-  return { totals, byMinistry };
+  return { totals, byMinistry, outstandingDebt };
 }
 
 async function listForCitizen(citizenId) {
@@ -102,6 +151,7 @@ async function listForCitizen(citizenId) {
 
 module.exports = {
   recordPayment,
+  recordOfflinePayment,
   listForFinance,
   getFinanceDashboard,
   listForCitizen,

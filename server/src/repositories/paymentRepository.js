@@ -76,7 +76,11 @@ async function findAll(filters = {}) {
   const pageSize = Math.min(200, Math.max(1, parseInt(filters.pageSize || '50', 10)));
   const offset = (page - 1) * pageSize;
 
-  const countSql = `SELECT COUNT(*)::int AS total FROM payments ${whereClause}`;
+  const countSql = `
+    SELECT COUNT(*)::int AS total,
+      COALESCE(SUM(amount), 0)::numeric(14,2) AS total_amount
+    FROM payments ${whereClause}
+  `;
   const dataSql = `
     SELECT p.*, c.first_name, c.last_name, c.national_id
     FROM payments p
@@ -95,6 +99,7 @@ async function findAll(filters = {}) {
   return {
     rows: dataResult.rows,
     total: countResult.rows[0].total,
+    totalAmount: countResult.rows[0].total_amount,
     page,
     pageSize,
   };

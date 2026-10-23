@@ -95,6 +95,8 @@ import ProcurementView from '../pages/finance/ProcurementView';
 import AuditFindingsView from '../pages/finance/AuditFindingsView';
 import PaymentsReceived from '../pages/finance/PaymentsReceived';
 import FeeSchedule from '../pages/finance/FeeSchedule';
+import GovernmentEmployeeRegister from '../pages/finance/GovernmentEmployeeRegister';
+import GovernmentDebtRegister from '../pages/finance/GovernmentDebtRegister';
 
 import PensionsDashboard from '../pages/pensions/PensionsDashboard';
 import ViewPensionInfo from '../pages/pensions/ViewPensionInfo';
@@ -126,6 +128,7 @@ import LanguageConfig from '../pages/admin/LanguageConfig';
 import BiometricConfig from '../pages/admin/BiometricConfig';
 import BranchManagement from '../pages/admin/BranchManagement';
 import ServiceCatalogue from '../pages/admin/ServiceCatalogue';
+import GovernmentEmployers from '../pages/admin/GovernmentEmployers';
 
 import HelpHome from '../pages/help/HelpHome';
 import HelpGettingStarted from '../pages/help/GettingStarted';
@@ -246,6 +249,8 @@ function AppRoutes() {
       <Route path="/finance/audit" element={<RoleRoute roles={['FINANCE']}><AuditFindingsView /></RoleRoute>} />
       <Route path="/finance/payments" element={<RoleRoute roles={['FINANCE']}><PaymentsReceived /></RoleRoute>} />
       <Route path="/finance/fee-schedule" element={<RoleRoute roles={['FINANCE']}><FeeSchedule /></RoleRoute>} />
+      <Route path="/finance/government-employees" element={<RoleRoute roles={['FINANCE']}><GovernmentEmployeeRegister /></RoleRoute>} />
+      <Route path="/finance/government-debts" element={<RoleRoute roles={['FINANCE']}><GovernmentDebtRegister /></RoleRoute>} />
 
       {/* Pensions */}
       <Route path="/pensions/dashboard" element={<ProtectedRoute><PensionsDashboard /></ProtectedRoute>} />
@@ -280,6 +285,7 @@ function AppRoutes() {
       <Route path="/admin/settings/biometrics" element={<RoleRoute roles={['ADMIN']}><BiometricConfig /></RoleRoute>} />
       <Route path="/admin/branches" element={<RoleRoute roles={['ADMIN']}><BranchManagement /></RoleRoute>} />
       <Route path="/admin/service-catalogue" element={<RoleRoute roles={['ADMIN']}><ServiceCatalogue /></RoleRoute>} />
+      <Route path="/admin/government-employers" element={<RoleRoute roles={['ADMIN']}><GovernmentEmployers /></RoleRoute>} />
 
       {/* Help — public */}
       <Route path="/help" element={<HelpHome />} />

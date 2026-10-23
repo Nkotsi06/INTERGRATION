@@ -14,3 +14,24 @@ export const getProcurementStats = () =>
 export const getAuditFindings = (params) =>
   apiClient.get('/finance/staff/audit-findings', { params });
 export const getAuditStats = () => apiClient.get('/finance/staff/audit-findings/stats');
+
+export const listGovernmentEmployers = (activeOnly = false) =>
+  apiClient.get('/finance/staff/employers', { params: { activeOnly } });
+export const createGovernmentEmployer = (data) =>
+  apiClient.post('/finance/staff/employers', data);
+export const updateGovernmentEmployer = (id, data) =>
+  apiClient.put(`/finance/staff/employers/${id}`, data);
+export const listGovernmentEmployees = (params) =>
+  apiClient.get('/finance/staff/government-employees', { params });
+export const createGovernmentEmployee = (data) =>
+  apiClient.post('/finance/staff/government-employees', data);
+export const updateGovernmentEmployee = (id, data) =>
+  apiClient.put(`/finance/staff/government-employees/${id}`, data);
+export const importGovernmentEmployees = (rows) =>
+  apiClient.post('/finance/staff/government-employees/import', { rows });
+export const listGovernmentDebts = (params) =>
+  apiClient.get('/finance/staff/government-debts', { params });
+export const createGovernmentDebt = (data) =>
+  apiClient.post('/finance/staff/government-debts', data);
+export const clearGovernmentDebt = (id) =>
+  apiClient.patch(`/finance/staff/government-debts/${id}/clear`);

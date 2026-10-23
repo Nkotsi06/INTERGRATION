@@ -1,4 +1,5 @@
 import { Link, useNavigate } from 'react-router-dom';
+import LanguageToggle from '../../components/header/LanguageToggle';
 
 export default function WelcomePage() {
   const navigate = useNavigate();
@@ -33,8 +34,7 @@ export default function WelcomePage() {
           </div>
         </div>
         <div className="header-right">
-          <button className="lang-btn active">EN</button>
-          <button className="lang-btn">ST</button>
+          <LanguageToggle />
         </div>
       </header>
 
@@ -47,7 +47,7 @@ export default function WelcomePage() {
           </p>
           <p className="hero-tags">Simple &nbsp;|&nbsp; Secure &nbsp;|&nbsp; Convenient</p>
           <button className="btn-primary-hero" onClick={() => navigate('/login')}>
-            Sign In &rarr;
+            Sign In
           </button>
         </div>
         <div className="hero-image">
@@ -73,7 +73,6 @@ export default function WelcomePage() {
               <div className="service-body">
                 <h3>{option.title}</h3>
                 <p>{option.description}</p>
-                <span className="learn-more">Continue &rarr;</span>
               </div>
             </Link>
           ))}

@@ -25,4 +25,11 @@ router.get(
   paymentController.financeDashboard
 );
 
+router.post(
+  '/offline',
+  authMiddleware,
+  roleMiddleware(['FINANCE']),
+  paymentController.offlinePayment
+);
+
 module.exports = router;

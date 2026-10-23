@@ -3,6 +3,20 @@ const authMiddleware = require('../middleware/authMiddleware');
 const roleMiddleware = require('../middleware/roleMiddleware');
 
 const staffController = require('../controllers/financeStaffController');
+const registerController = require('../controllers/financeRegistersController');
+
+router.get('/staff/employers', authMiddleware, roleMiddleware(['FINANCE', 'ADMIN']), registerController.listEmployers);
+router.post('/staff/employers', authMiddleware, roleMiddleware(['ADMIN']), registerController.createEmployer);
+router.put('/staff/employers/:id', authMiddleware, roleMiddleware(['ADMIN']), registerController.updateEmployer);
+
+router.get('/staff/government-employees', authMiddleware, roleMiddleware(['FINANCE']), registerController.listEmployees);
+router.post('/staff/government-employees', authMiddleware, roleMiddleware(['FINANCE']), registerController.createEmployee);
+router.put('/staff/government-employees/:id', authMiddleware, roleMiddleware(['FINANCE']), registerController.updateEmployee);
+router.post('/staff/government-employees/import', authMiddleware, roleMiddleware(['FINANCE']), registerController.importEmployees);
+
+router.get('/staff/government-debts', authMiddleware, roleMiddleware(['FINANCE']), registerController.listDebts);
+router.post('/staff/government-debts', authMiddleware, roleMiddleware(['FINANCE']), registerController.createDebt);
+router.patch('/staff/government-debts/:id/clear', authMiddleware, roleMiddleware(['FINANCE']), registerController.clearDebt);
 
 router.get('/staff/treasury',        authMiddleware, roleMiddleware(['FINANCE']), staffController.getTreasury);
 router.get('/staff/treasury/stats',  authMiddleware, roleMiddleware(['FINANCE']), staffController.getTreasuryStats);

@@ -8,19 +8,10 @@ import Input from '../../components/common/Input';
 import Select from '../../components/common/Select';
 import FormActions from '../../components/common/FormActions';
 import { TableSkeleton } from '../../components/common/SkeletonLoader';
-import { listFees, updateFee } from '../../api/feeScheduleApi';
+import { createFee, listFees, updateFee } from '../../api/feeScheduleApi';
 import { useNotification } from '../../context/NotificationContext';
-import { formatCurrency } from '../../utils/formatters';
-
-const MINISTRIES = [
-  { value: '', label: 'All ministries' },
-  { value: 'HOME_AFFAIRS', label: 'Home Affairs' },
-  { value: 'TRAFFIC', label: 'Traffic' },
-  { value: 'POLICE', label: 'Police' },
-  { value: 'FINANCE', label: 'Finance' },
-  { value: 'PENSIONS', label: 'Pensions' },
-  { value: 'PASSPORT', label: 'Passport' },
-];
+import { useSettings } from '../../context/SettingsContext';
+import { formatCurrency, formatDate } from '../../utils/formatters';
 
 function FeeSchedule() {
   const [fees, setFees] = useState([]);
@@ -30,6 +21,7 @@ function FeeSchedule() {
   const [editing, setEditing] = useState(null);
   const [saving, setSaving] = useState(false);
   const { success, error: showError } = useNotification();
+  const { settings } = useSettings();
 
   const load = async () => {
     setLoading(true);
@@ -49,13 +41,21 @@ function FeeSchedule() {
   const handleSave = async () => {
     setSaving(true);
     try {
-      await updateFee(editing.id, {
+      const payload = {
+        ministry: editing.ministry,
+        service_code: editing.service_code,
         service_name: editing.service_name,
         amount: editing.amount,
         is_active: editing.is_active,
         notes: editing.notes,
-      });
-      success('Fee updated');
+      };
+      if (editing.id) {
+        await updateFee(editing.id, payload);
+        success('Fee updated');
+      } else {
+        await createFee(payload);
+        success('Fee created');
+      }
       setEditing(null);
       load();
     } catch (err) {
@@ -66,6 +66,7 @@ function FeeSchedule() {
   };
 
   const columns = [
+    { key: 'id', label: 'Record ID' },
     { key: 'ministry', label: 'Ministry' },
     { key: 'service_code', label: 'Code' },
     { key: 'service_name', label: 'Service' },
@@ -74,14 +75,18 @@ function FeeSchedule() {
       label: 'Fee',
       render: (r) => formatCurrency(r.amount),
     },
+    { key: 'currency', label: 'Currency' },
     {
       key: 'is_active',
       label: 'Active',
       render: (r) => (r.is_active ? 'Yes' : 'No'),
     },
+    { key: 'notes', label: 'Notes', render: (r) => r.notes || '—' },
+    { key: 'created_at', label: 'Created', render: (r) => r.created_at ? formatDate(r.created_at) : '—' },
+    { key: 'updated_at', label: 'Updated', render: (r) => r.updated_at ? formatDate(r.updated_at) : '—' },
     {
       key: 'actions',
-      label: '',
+      label: 'Actions',
       render: (r) => (
         <Button variant="secondary" size="small" onClick={() => setEditing({ ...r })}>
           Edit
@@ -98,6 +103,16 @@ function FeeSchedule() {
         citizens see immediately.
       </p>
 
+      <div className="quick-actions">
+        <Button variant="primary" onClick={() => setEditing({
+          ministry: '',
+          service_code: '',
+          service_name: '',
+          amount: '',
+          is_active: true,
+          notes: '',
+        })}>Add fee</Button>
+      </div>
       <div className="filter-bar">
         <div className="filter-controls">
           <div className="filter-dropdown">
@@ -107,8 +122,9 @@ function FeeSchedule() {
               value={ministry}
               onChange={(e) => setMinistry(e.target.value)}
             >
-              {MINISTRIES.map((m) => (
-                <option key={m.value} value={m.value}>{m.label}</option>
+              <option value="">All ministries</option>
+              {(settings.ministries || []).map((m) => (
+                <option key={m.code} value={m.code}>{m.name}</option>
               ))}
             </select>
           </div>
@@ -128,9 +144,26 @@ function FeeSchedule() {
         <Modal
           isOpen
           onClose={() => setEditing(null)}
-          title={`Edit ${editing.service_name}`}
+          title={editing.id ? `Edit ${editing.service_name}` : 'Add service fee'}
           size="medium"
         >
+          {!editing.id && (
+            <>
+              <Select
+                label="Ministry"
+                value={editing.ministry}
+                onChange={(e) => setEditing({ ...editing, ministry: e.target.value })}
+                options={(settings.ministries || []).map((m) => ({ value: m.code, label: m.name }))}
+                required
+              />
+              <Input
+                label="Service code"
+                value={editing.service_code}
+                onChange={(e) => setEditing({ ...editing, service_code: e.target.value.toUpperCase() })}
+                required
+              />
+            </>
+          )}
           <Input
             label="Service name"
             value={editing.service_name}

@@ -9,3 +9,5 @@ export const getFinanceDashboard = () =>
 
 export const listPayments = (params) =>
   apiClient.get('/payments', { params });
+
+export const recordOfflinePayment = (data) => apiClient.post('/payments/offline', data);

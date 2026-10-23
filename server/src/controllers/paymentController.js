@@ -36,4 +36,12 @@ async function myPayments(req, res, next) {
   }
 }
 
-module.exports = { financeDashboard, listPayments, myPayments };
+async function offlinePayment(req, res, next) {
+  try {
+    res.status(201).json(await paymentService.recordOfflinePayment(req.body, req.user));
+  } catch (err) {
+    next(err);
+  }
+}
+
+module.exports = { financeDashboard, listPayments, myPayments, offlinePayment };

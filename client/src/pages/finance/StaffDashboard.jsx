@@ -23,7 +23,7 @@ function FinanceStaffDashboard() {
     >
       <h1>Finance staff dashboard</h1>
 
-      {loading && <StatsSkeleton count={3} />}
+      {loading && <StatsSkeleton count={4} />}
 
       {!loading && error && (
         <div className="alert alert-error" role="alert">
@@ -52,6 +52,12 @@ function FinanceStaffDashboard() {
                   {formatCurrency(totals.today)}
                 </div>
                 <div className="stat-label">Received today</div>
+              </div>
+            </Card>
+            <Card variant="bordered" className="stat-card">
+              <div className="stat-body">
+                <div className="stat-value">{formatCurrency(data?.outstandingDebt || 0)}</div>
+                <div className="stat-label">Outstanding government debt</div>
               </div>
             </Card>
             <Card variant="bordered" className="stat-card">
@@ -85,7 +91,9 @@ function FinanceStaffDashboard() {
                     <th>Payments</th>
                     <th>Total</th>
                     <th>Today</th>
+                    <th>Today payments</th>
                     <th>This month</th>
+                    <th>Month payments</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -105,7 +113,9 @@ function FinanceStaffDashboard() {
                       <td>{row.payment_count}</td>
                       <td>{formatCurrency(row.total_amount)}</td>
                       <td>{formatCurrency(row.today_amount)}</td>
+                      <td>{row.today_count}</td>
                       <td>{formatCurrency(row.month_amount)}</td>
+                      <td>{row.month_count}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -119,6 +129,15 @@ function FinanceStaffDashboard() {
               onClick={() => navigate('/finance/payments')}
             >
               View all payments
+            </Button>
+            <Button variant="secondary" onClick={() => navigate('/finance/government-employees')}>
+              Government employee register
+            </Button>
+            <Button variant="secondary" onClick={() => navigate('/finance/government-debts')}>
+              Government debt register
+            </Button>
+            <Button variant="secondary" onClick={() => navigate('/finance/fee-schedule')}>
+              Fee schedule
             </Button>
           </div>
         </>

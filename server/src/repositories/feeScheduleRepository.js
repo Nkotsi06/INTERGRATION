@@ -34,6 +34,16 @@ async function findByCode(ministry, serviceCode) {
   return result.rows[0];
 }
 
+async function serviceExists(ministry, serviceCode) {
+  const result = await query(
+    `SELECT EXISTS (
+       SELECT 1 FROM services WHERE ministry = $1 AND code = $2
+     ) AS service_exists`,
+    [ministry, serviceCode]
+  );
+  return result.rows[0].service_exists;
+}
+
 async function upsert(data) {
   const result = await query(
     `INSERT INTO fee_schedule (ministry, service_code, service_name, amount, currency, is_active, notes, updated_at)
@@ -45,6 +55,24 @@ async function upsert(data) {
        is_active = EXCLUDED.is_active,
        notes = EXCLUDED.notes,
        updated_at = NOW()
+     RETURNING *`,
+    [
+      data.ministry,
+      data.service_code,
+      data.service_name,
+      data.amount,
+      data.currency || 'LSL',
+      data.is_active !== false,
+      data.notes || null,
+    ]
+  );
+  return result.rows[0];
+}
+
+async function create(data) {
+  const result = await query(
+    `INSERT INTO fee_schedule (ministry, service_code, service_name, amount, currency, is_active, notes)
+     VALUES ($1, $2, $3, $4, $5, $6, $7)
      RETURNING *`,
     [
       data.ministry,
@@ -81,4 +109,4 @@ async function update(id, data) {
   return result.rows[0];
 }
 
-module.exports = { findAll, findById, findByCode, upsert, update };
+module.exports = { findAll, findById, findByCode, serviceExists, create, upsert, update };
