@@ -1,5 +1,29 @@
 const { query } = require('../config/database');
 
+async function findPublic(ministry) {
+  const params = [];
+  const ministryFilter = ministry
+    ? `AND s.ministry = $${params.push(ministry)}`
+    : '';
+  const result = await query(
+    `SELECT s.*,
+       COALESCE(fs.amount, s.fee) AS fee,
+       COALESCE(fs.currency, s.currency) AS fee_currency,
+       COALESCE(fs.is_active, TRUE) AS fee_active
+     FROM services s
+     LEFT JOIN fee_schedule fs
+       ON fs.ministry = s.ministry AND fs.service_code = s.code
+     WHERE s.is_enabled = TRUE ${ministryFilter}
+     ORDER BY s.ministry, s.display_order, s.name`,
+    params
+  );
+  return result.rows.map((row) => ({
+    ...row,
+    fee: Number(row.fee),
+    fee_active: Boolean(row.fee_active),
+  }));
+}
+
 async function findAll(filters = {}) {
   const conditions = [];
   const params = [];
@@ -99,4 +123,4 @@ async function remove(id) {
   await query('DELETE FROM services WHERE id = $1', [id]);
 }
 
-module.exports = { findAll, findById, findByCode, create, update, remove };
+module.exports = { findAll, findPublic, findById, findByCode, create, update, remove };

@@ -4,11 +4,10 @@ function citizenIdFrom(req) {
   return req.session?.verifiedCitizenId || req.user?.citizenId || null;
 }
 
-// Public list for a ministry — no login required.
+// Public enabled-service catalogue, optionally narrowed to one ministry.
 async function listPublic(req, res, next) {
   try {
     const ministry = req.query.ministry;
-    if (!ministry) return res.status(400).json({ message: 'ministry is required' });
     res.json(await serviceCatalog.listPublic(ministry));
   } catch (err) { next(err); }
 }

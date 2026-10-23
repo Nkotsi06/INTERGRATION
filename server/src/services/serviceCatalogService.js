@@ -1,7 +1,6 @@
 const serviceRepository = require('../repositories/serviceRepository');
 const applicationRepository = require('../repositories/applicationRepository');
 const notificationService = require('./notificationService');
-const paymentService = require('./paymentService');
 const feeScheduleService = require('./feeScheduleService');
 const certificateService = require('./certificateService');
 const pensionsService = require('./pensionsService');
@@ -19,23 +18,8 @@ function normaliseMinistryCode(value) {
 }
 
 async function listPublic(ministry) {
-  const ministryCode = normaliseMinistryCode(ministry);
-  const services = await serviceRepository.findAll({
-    ministry: ministryCode,
-    is_enabled: true,
-  });
-  const enriched = await Promise.all(
-    services.map(async (s) => {
-      const fee = await feeScheduleService.getFeeForService(s.ministry, s.code);
-      return {
-        ...s,
-        fee: fee ? Number(fee.amount) : Number(s.fee),
-        fee_currency: fee ? fee.currency : s.currency,
-        fee_active: fee ? fee.is_active : true,
-      };
-    })
-  );
-  return enriched;
+  const ministryCode = ministry ? normaliseMinistryCode(ministry) : undefined;
+  return serviceRepository.findPublic(ministryCode);
 }
 
 async function listAll(filters) {
@@ -107,21 +91,10 @@ async function submitApplication({ serviceId, citizenId, formData, user }) {
   }
 
   const fee = await feeScheduleService.getFeeForService(service.ministry, service.code);
-  const feeAmount = fee ? Number(fee.amount) : Number(service.fee);
+  const feeAmount = fee
+    ? fee.is_active ? Number(fee.amount) : 0
+    : Number(service.fee);
   const referenceNumber = await generateReference('APPLICATION');
-
-  if (feeAmount > 0) {
-    await paymentService.recordPayment({
-      citizenId,
-      ministry: service.ministry,
-      service: service.code,
-      applicationReference: referenceNumber,
-      amount: feeAmount,
-      method: formData?.method || 'MOBILE_MONEY',
-      mobile: formData?.mobile,
-      receivedBy: user.userId,
-    });
-  }
 
   const application = await applicationRepository.create({
     referenceNumber,
@@ -156,7 +129,9 @@ async function submitApplication({ serviceId, citizenId, formData, user }) {
 
   const owner = await userRepository.findByCitizenId(citizenId);
   if (owner) {
-    const feeText = feeAmount > 0 ? ` Payment received for ${feeAmount}.` : '';
+    const feeText = feeAmount > 0
+      ? ` A service fee of ${feeAmount} is due; pay it from your Finance dashboard.`
+      : '';
     await notificationService.notify(
       owner.id,
       `${service.name} received`,

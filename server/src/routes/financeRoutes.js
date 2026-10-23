@@ -4,6 +4,24 @@ const roleMiddleware = require('../middleware/roleMiddleware');
 
 const staffController = require('../controllers/financeStaffController');
 const registerController = require('../controllers/financeRegistersController');
+const citizenController = require('../controllers/financeCitizenController');
+const { employmentProofUpload } = require('../middleware/uploadMiddleware');
+
+router.get('/citizen/dashboard', authMiddleware, roleMiddleware(['CITIZEN']), citizenController.dashboard);
+router.post('/citizen/payments', authMiddleware, roleMiddleware(['CITIZEN']), citizenController.payApplicationFee);
+router.post(
+  '/citizen/employment',
+  authMiddleware,
+  roleMiddleware(['CITIZEN']),
+  employmentProofUpload.single('proof'),
+  citizenController.submitEmploymentDeclaration
+);
+router.get(
+  '/citizen/employment/:id/proof',
+  authMiddleware,
+  roleMiddleware(['CITIZEN']),
+  citizenController.downloadEmploymentProof
+);
 
 router.get('/staff/employers', authMiddleware, roleMiddleware(['FINANCE', 'ADMIN']), registerController.listEmployers);
 router.post('/staff/employers', authMiddleware, roleMiddleware(['ADMIN']), registerController.createEmployer);

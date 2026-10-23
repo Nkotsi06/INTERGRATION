@@ -161,6 +161,19 @@ async function getBiometrics(req, res, next) {
   }
 }
 
+async function updateBiometrics(req, res, next) {
+  try {
+    const record = await biometricService.updateCitizenBiometrics(
+      req.params.id,
+      req.body,
+      req.user
+    );
+    res.json(record);
+  } catch (err) {
+    next(err);
+  }
+}
+
 // ─────────────────────────────────────────────────────────────────────
 // Photo — serves the citizen's passport photo or biometric facial image.
 // ─────────────────────────────────────────────────────────────────────
@@ -278,6 +291,7 @@ module.exports = {
   updateEmployment,
   getDocuments,
   getBiometrics,
+  updateBiometrics,
   getCitizenPhoto,
   getCertificates,
   issueBirthCertificate,

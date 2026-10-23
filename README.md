@@ -88,6 +88,8 @@ The public birth application accepts PDF/JPG uploads for parent or guardian Nati
 
 Apply database migrations `015_birth_certificate_registration.sql` and `016_remove_tax_business_vat_and_plans.sql` after the existing migrations. The second migration removes the retired tax, VAT, business registration, and payment-plan data structures and catalogue entries.
 
+Apply `020_citizen_finance_services.sql` after the existing migrations to enable citizen employment declarations and private proof uploads. Citizen service and passport application fees are recorded as due on submission and can be paid later from the Finance dashboard; Finance payments use the simulated mobile-money gateway. Passport applications do not require applicants to upload or capture a photo.
+
 ---
 
 ## Technology Stack

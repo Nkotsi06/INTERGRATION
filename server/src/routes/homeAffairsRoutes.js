@@ -21,6 +21,7 @@ router.put('/citizen/:id', controller.update);
 router.post('/citizen/:id/verify', controller.verify);
 router.get('/citizen/:id/documents', controller.getDocuments);
 router.get('/citizen/:id/biometrics', controller.getBiometrics);
+router.put('/citizen/:id/biometrics', controller.updateBiometrics);
 
 // Employment history  ← NEW
 router.post('/citizen/:id/employment', controller.recordEmployment);

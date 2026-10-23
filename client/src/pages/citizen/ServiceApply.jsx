@@ -38,7 +38,7 @@ function ServiceApply() {
   const { success } = useNotification();
 
   const [service, setService] = useState(null);
-  const [formData, setFormData] = useState({ method: 'MOBILE_MONEY', mobile: '', branchId: '' });
+  const [formData, setFormData] = useState({ branchId: '' });
   const [branches, setBranches] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -112,11 +112,6 @@ function ServiceApply() {
       setError('Please choose a collection branch.');
       return;
     }
-    if (needsPayment && formData.method === 'MOBILE_MONEY' && !formData.mobile) {
-      setError('Please enter a mobile number for the payment prompt.');
-      return;
-    }
-
     setSaving(true);
     try {
       const result = await applyForService(id, formData);
@@ -208,16 +203,16 @@ function ServiceApply() {
           </div>
           {fee > 0 && (
             <p className="text-muted">
-              A payment of {formatCurrency(fee)} has been recorded.
+              A fee of {formatCurrency(fee)} is due. Pay it from the Finance dashboard.
             </p>
           )}
           <div className="result-actions">
             <button
               type="button"
               className="btn btn-primary"
-              onClick={() => navigate('/citizen/applications')}
+              onClick={() => navigate(fee > 0 ? '/finance/dashboard' : '/citizen/applications')}
             >
-              View my applications
+              {fee > 0 ? 'Go to Finance to pay' : 'View my applications'}
             </button>
             <button
               type="button"
@@ -345,37 +340,15 @@ function ServiceApply() {
 
       {needsPayment && (
         <div className="form-section">
-          <h3 className="form-section-title">Payment</h3>
+          <h3 className="form-section-title">Service fee</h3>
           <p className="text-muted">
-            This service costs <strong>{formatCurrency(fee)}</strong>.
+            This service costs <strong>{formatCurrency(fee)}</strong>. You can pay after submitting your application from the Finance dashboard.
           </p>
-          <div className="form-grid">
-            <Select
-              label="Payment method"
-              value={formData.method}
-              onChange={(e) => update('method', e.target.value)}
-              options={[
-                { value: 'MOBILE_MONEY', label: 'Mobile money' },
-                { value: 'BANK_TRANSFER', label: 'Bank transfer' },
-                { value: 'CARD', label: 'Card' },
-              ]}
-              required
-            />
-            {formData.method === 'MOBILE_MONEY' && (
-              <Input
-                label="Mobile number"
-                value={formData.mobile}
-                onChange={(e) => update('mobile', e.target.value)}
-                placeholder="+266 5888 2140"
-                required
-              />
-            )}
-          </div>
         </div>
       )}
 
       <FormActions
-        primaryLabel={needsPayment ? `Pay ${formatCurrency(fee)} and submit` : 'Submit application'}
+        primaryLabel="Submit application"
         primaryLoading={saving}
         onPrimary={handleSubmit}
         onSecondary={() => navigate('/citizen/dashboard')}

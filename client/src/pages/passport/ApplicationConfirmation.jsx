@@ -37,9 +37,17 @@ function ApplicationConfirmation() {
 
         <p className="text-muted">
           Keep your reference number safe. Use it to track your application.
+          {Number(result.fee) > 0
+            ? ' Your application fee is due; pay it from the Finance dashboard.'
+            : ''}
         </p>
 
         <div className="result-actions">
+          {Number(result.fee) > 0 && (
+            <Button variant="primary" onClick={() => navigate('/finance/dashboard')}>
+              Go to Finance to pay
+            </Button>
+          )}
           <Button variant="secondary" onClick={() => window.print()}>
             Download receipt
           </Button>

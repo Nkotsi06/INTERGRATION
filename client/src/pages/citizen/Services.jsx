@@ -36,6 +36,12 @@ function Services() {
   const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
+    if (ministry === 'FINANCE') {
+      navigate('/finance/dashboard', { replace: true });
+    }
+  }, [ministry, navigate]);
+
+  useEffect(() => {
     let cancelled = false;
     async function load() {
       setLoading(true);

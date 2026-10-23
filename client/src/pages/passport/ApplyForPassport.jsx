@@ -9,13 +9,11 @@ import SignaturePad from '../../components/signature/SignaturePad';
 import FormActions from '../../components/common/FormActions';
 import Alert from '../../components/common/Alert';
 import CitizenReadOnlyBlock from '../../components/ministry/CitizenReadOnlyBlock';
-import BiometricEnrollment from '../../components/biometrics/BiometricEnrollment';
 import useFetch from '../../hooks/useFetch';
 import useServiceFee from '../../hooks/useServiceFees';
 import { getProfile } from '../../api/citizenApi';
 import { getPublicBranches } from '../../api/serviceApi';
 import { getMyCases } from '../../api/policeApi';
-import apiClient from '../../api/apiClient';
 import { applyForPassport, getCurrentPassport } from '../../api/passportApi';
 import { useNotification } from '../../context/NotificationContext';
 import { formatCurrency } from '../../utils/formatters';
@@ -46,16 +44,11 @@ function ApplyForPassport() {
   const [policeCases, setPoliceCases] = useState([]);
   const [caseLoading, setCaseLoading] = useState(application.code === 'PASSPORT_LOST');
   const [caseError, setCaseError] = useState(null);
-  const [homeAffairsPhoto, setHomeAffairsPhoto] = useState(null);
-  const [photoError, setPhotoError] = useState(null);
-  const [childPhoto, setChildPhoto] = useState(null);
   const [step, setStep] = useState(1);
   const [details, setDetails] = useState({
     passportType: 'ORDINARY',
     reason: '',
     collectionOffice: '',
-    method: 'MOBILE_MONEY',
-    mobile: '',
     circumstances: '',
     policeCaseNumber: '',
     travelDate: '',
@@ -119,31 +112,6 @@ function ApplyForPassport() {
     };
   }, [application.code]);
 
-  useEffect(() => {
-    if (isMinor) return undefined;
-    let objectUrl;
-    let cancelled = false;
-    apiClient.get('/citizen/photo', { responseType: 'blob' })
-      .then((blob) => {
-        if (cancelled) return;
-        objectUrl = URL.createObjectURL(blob);
-        setHomeAffairsPhoto(objectUrl);
-      })
-      .catch((err) => {
-        if (!cancelled) {
-          setPhotoError(
-            err.status === 404
-              ? 'No Home Affairs photo is linked to your citizen record. Please contact Home Affairs to capture or link your photo; you do not need to upload it here.'
-              : err.message || 'Could not load your Home Affairs photo.'
-          );
-        }
-      });
-    return () => {
-      cancelled = true;
-      if (objectUrl) URL.revokeObjectURL(objectUrl);
-    };
-  }, [isMinor]);
-
   const update = (key, value) =>
     setDetails((previous) => ({ ...previous, [key]: value }));
 
@@ -161,10 +129,6 @@ function ApplyForPassport() {
       setError('No issued passport was found for this application.');
       return;
     }
-    if (!isMinor && !homeAffairsPhoto) {
-      setError(photoError || 'Your Home Affairs photo is required before applying.');
-      return;
-    }
     if (application.code === 'PASSPORT_LOST' &&
         (!details.policeCaseNumber || !details.circumstances.trim())) {
       setError('Choose your lost-property police case and explain the circumstances.');
@@ -177,8 +141,8 @@ function ApplyForPassport() {
     }
     if (isMinor && (!details.childFullName.trim() || !details.childDateOfBirth ||
         !details.guardianFullName.trim() || !details.guardianNationalId.trim() ||
-        !details.guardianRelationship.trim() || !childPhoto)) {
-      setError('Complete the child and guardian details and capture the child’s face.');
+        !details.guardianRelationship.trim())) {
+      setError('Complete the child and guardian details.');
       return;
     }
     if (!confirmed) {
@@ -189,18 +153,12 @@ function ApplyForPassport() {
       setError('Please provide your signature before submitting.');
       return;
     }
-    if (fee > 0 && details.method === 'MOBILE_MONEY' && !details.mobile.trim()) {
-      setError('Please enter your mobile number for payment.');
-      return;
-    }
-
     setSubmitting(true);
     try {
       const result = await applyForPassport({
         ...details,
         serviceCode: application.code,
         isRenewal,
-        childPhoto: isMinor ? childPhoto : undefined,
       });
       success('Application submitted');
       navigate('/passport/confirmation', { state: { result } });
@@ -257,28 +215,6 @@ function ApplyForPassport() {
                   <ReadOnly label="Passport type" value={currentPassport?.passport_type} />
                   <ReadOnly label="Collection branch" value={currentPassport?.collection_office} />
                 </div>
-              )}
-            </div>
-          )}
-
-          {!isMinor && (
-            <div className="form-section">
-              <h3 className="form-section-title">Home Affairs photograph</h3>
-              <p className="text-muted">
-                Your existing Home Affairs photo and National ID will be used. No photo upload is required.
-              </p>
-              {homeAffairsPhoto && (
-                <img
-                  src={homeAffairsPhoto}
-                  alt="Photo on your Home Affairs identity record"
-                  style={{ width: 140, height: 170, objectFit: 'cover', borderRadius: 4 }}
-                />
-              )}
-              {photoError && (
-                <Alert
-                  type={photoError.startsWith('No Home Affairs photo') ? 'warning' : 'error'}
-                  message={photoError}
-                />
               )}
             </div>
           )}
@@ -410,20 +346,6 @@ function ApplyForPassport() {
                   onChange={(event) => update('guardianRelationship', event.target.value)}
                   required
                 />
-                <div className="form-grid-full">
-                  <h3>Capture the child's photo</h3>
-                  <p className="text-muted">
-                    The captured image is attached to this application. It does not replace your Home Affairs photo.
-                  </p>
-                  <BiometricEnrollment
-                    key={childPhoto ? 'child-photo-captured' : 'child-photo-empty'}
-                    requireFingerprints={false}
-                    onComplete={(capture) => setChildPhoto(capture.facialImage)}
-                    onChange={(capture) => {
-                      if (capture === null) setChildPhoto(null);
-                    }}
-                  />
-                </div>
               </>
             )}
 
@@ -453,31 +375,10 @@ function ApplyForPassport() {
             <p className="text-muted">Loading application fee…</p>
           ) : fee > 0 ? (
             <div className="form-section">
-              <h3 className="form-section-title">Payment</h3>
+              <h3 className="form-section-title">Application fee</h3>
               <p className="text-muted">
-                Application fee: <strong>{formatCurrency(fee, currency)}</strong>
+                {formatCurrency(fee, currency)} will be due after submission. Pay it from the Finance dashboard. No photo upload is required.
               </p>
-              <div className="form-grid">
-                <Select
-                  label="Payment method"
-                  value={details.method}
-                  onChange={(event) => update('method', event.target.value)}
-                  options={[
-                    { value: 'MOBILE_MONEY', label: 'Mobile money' },
-                    { value: 'BANK_TRANSFER', label: 'Bank transfer' },
-                    { value: 'CARD', label: 'Card' },
-                  ]}
-                  required
-                />
-                {details.method === 'MOBILE_MONEY' && (
-                  <Input
-                    label="Mobile number"
-                    value={details.mobile}
-                    onChange={(event) => update('mobile', event.target.value)}
-                    required
-                  />
-                )}
-              </div>
             </div>
           ) : null}
 
@@ -520,14 +421,12 @@ function ApplyForPassport() {
               />
               <ReadOnly label="Signature" value={details.signature ? 'Provided' : 'Missing'} />
               {isMinor && <ReadOnly label="Child" value={details.childFullName} />}
-              {isMinor && childPhoto && <p className="text-muted">Child's face photo captured.</p>}
               {application.code === 'PASSPORT_LOST' && (
                 <ReadOnly label="Police case" value={details.policeCaseNumber} />
               )}
               {fee > 0 && (
                 <ReadOnly label="Application fee" value={formatCurrency(fee, currency)} />
               )}
-              {fee > 0 && <ReadOnly label="Payment method" value={details.method} />}
             </div>
           </div>
 
@@ -538,11 +437,7 @@ function ApplyForPassport() {
           />
 
           <FormActions
-            primaryLabel={
-              fee > 0
-                ? `Pay ${formatCurrency(fee, currency)} and submit`
-                : 'Submit application'
-            }
+            primaryLabel="Submit application"
             primaryLoading={submitting}
             onPrimary={handleSubmit}
             onSecondary={() => setStep(2)}

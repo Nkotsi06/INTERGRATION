@@ -14,6 +14,8 @@ export const verifyCitizen = (id, data) => apiClient.post(`/home-affairs/citizen
 // Documents and biometrics
 export const getCitizenDocuments = (id) => apiClient.get(`/home-affairs/citizen/${id}/documents`);
 export const getCitizenBiometrics = (id) => apiClient.get(`/home-affairs/citizen/${id}/biometrics`);
+export const updateCitizenBiometrics = (id, data) =>
+  apiClient.put(`/home-affairs/citizen/${id}/biometrics`, data);
 export const getCitizenPhotoBlob = (id) => apiClient.get(`/home-affairs/citizens/${id}/photo`, { responseType: 'blob' });
 
 // Dashboard and reports

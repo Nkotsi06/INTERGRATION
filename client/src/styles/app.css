@@ -473,6 +473,25 @@ small, .text-small { font-size: 0.875rem; color: var(--colour-text-secondary); }
 .service-card-name { font-size: 1rem; font-weight: 700; color: var(--colour-text-primary); }
 .service-card-body .text-muted { line-height: 1.5; }
 .service-card-body .btn { margin-top: auto; }
+.finance-detail-section { padding: var(--spacing-lg); border: 1px solid var(--colour-border); border-radius: var(--radius-md); background: var(--colour-surface); }
+.finance-citizen-card { cursor: pointer; }
+.finance-card-action { margin-top: auto; color: var(--colour-accent); font-size: 0.875rem; font-weight: 700; }
+.finance-invoice-list, .finance-employment-list { display: grid; gap: var(--spacing-sm); margin: var(--spacing-md) 0; }
+.finance-invoice { display: flex; align-items: center; gap: var(--spacing-md); padding: var(--spacing-md); border: 1px solid var(--colour-border); border-radius: var(--radius-md); cursor: pointer; }
+.finance-invoice span { display: flex; flex: 1; flex-direction: column; gap: 4px; }
+.finance-invoice small, .finance-employment-item span { color: var(--colour-text-secondary); }
+.finance-employment-item { display: flex; flex-direction: column; gap: var(--spacing-xs); }
+.finance-pay-form { max-width: 480px; }
+.citizen-finance-print-receipt { display: none; }
+.citizen-finance-print-receipt article { padding: 20px; color: #000; background: #fff; }
+
+@media print {
+  body * { visibility: hidden; }
+  .citizen-finance-print-receipt { display: block !important; }
+  .citizen-finance-print-receipt .print-container,
+  .citizen-finance-print-receipt .print-container * { visibility: visible; }
+  .citizen-finance-print-receipt .print-container { position: absolute; inset: 0 auto auto 0; width: 100%; }
+}
 .service-card-lock { display: inline-flex; align-items: center; gap: 4px; font-size: 0.875rem; color: var(--colour-text-secondary); margin-top: auto; }
 
 /* ============================================

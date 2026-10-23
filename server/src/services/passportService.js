@@ -1,7 +1,6 @@
 const passportApplicationRepository = require('../repositories/passportApplicationRepository');
 const applicationRepository = require('../repositories/applicationRepository');
 const notificationService = require('./notificationService');
-const paymentService = require('./paymentService');
 const signatureService = require('./signatureService');
 const userRepository = require('../repositories/userRepository');
 const citizenRepository = require('../repositories/citizenRepository');
@@ -83,19 +82,7 @@ async function applyForPassport(citizenId, data, user) {
     throw badRequest('No issued passport was found for this application.');
   }
 
-  const childPhoto = data.childPhoto;
-  if (isMinor) {
-    if (typeof childPhoto !== 'string' ||
-        !/^data:image\/(?:jpeg|png);base64,/.test(childPhoto) ||
-        childPhoto.length > 2_000_000) {
-      throw badRequest('Capture a valid photo of the child before applying.');
-    }
-  } else {
-    const biometric = await biometricRepository.findByCitizen(citizenId);
-    if (!biometric?.facial_image) {
-      throw badRequest('A Home Affairs photo is required before applying for a passport.');
-    }
-  }
+  const biometric = isMinor ? null : await biometricRepository.findByCitizen(citizenId);
 
   const citizen = await citizenRepository.findById(citizenId);
   if (!citizen?.national_id) {
@@ -126,6 +113,8 @@ async function applyForPassport(citizenId, data, user) {
     throw badRequest('Complete the child and guardian details before applying.');
   }
 
+  const fee = await feeScheduleService.getFeeForService('PASSPORT', serviceCode);
+  const amount = fee?.is_active ? Number(fee.amount) : 0;
   const referenceNumber = await generateReference('PASSPORT_APPLICATION');
 
   const application = await applicationRepository.create({
@@ -140,10 +129,11 @@ async function applyForPassport(citizenId, data, user) {
       isRenewal,
       nationalId: citizen.national_id,
       passportNumber: null,
+      fee: amount,
       previousPassportNumber: isRenewal
         ? currentPassport.passport_number
         : null,
-      usesHomeAffairsPhoto: !isMinor,
+      usesHomeAffairsPhoto: !isMinor && Boolean(biometric?.facial_image),
       formData: {
         circumstances: data.circumstances,
         policeCaseNumber: data.policeCaseNumber,
@@ -155,7 +145,6 @@ async function applyForPassport(citizenId, data, user) {
         guardianFullName: data.guardianFullName,
         guardianNationalId: data.guardianNationalId,
         guardianRelationship: data.guardianRelationship,
-        childPhoto: isMinor ? childPhoto : undefined,
       },
     },
   });
@@ -182,22 +171,6 @@ async function applyForPassport(citizenId, data, user) {
       : null,
   });
 
-  const fee = await feeScheduleService.getFeeForService('PASSPORT', serviceCode);
-  const amount = fee?.is_active ? Number(fee.amount) : 0;
-
-  if (amount > 0) {
-    await paymentService.recordPayment({
-      citizenId,
-      ministry: 'PASSPORT',
-      service: serviceCode,
-      applicationReference: referenceNumber,
-      amount,
-      method: data.method || 'MOBILE_MONEY',
-      mobile: data.mobile,
-      receivedBy: user.userId,
-    });
-  }
-
   await auditService.log({
     userId: user.userId,
     username: user.username,
@@ -219,6 +192,7 @@ async function applyForPassport(citizenId, data, user) {
     applicantName: `${citizen.first_name} ${citizen.last_name}`.trim(),
     dateSubmitted: application.submitted_at,
     passportType: data.passportType,
+    fee: amount,
     collectionOffice: data.collectionOffice,
     collectionBranch: `${branch.name}${branch.district ? ` — ${branch.district}` : ''}`,
     application,

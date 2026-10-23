@@ -4,6 +4,8 @@ const fs = require('fs');
 const { v4: uuidv4 } = require('uuid');
 
 const UPLOAD_BASE = process.env.UPLOAD_DIR || './uploads';
+const PRIVATE_EMPLOYMENT_UPLOAD_DIR =
+  process.env.PRIVATE_UPLOAD_DIR || path.join(process.cwd(), 'private-uploads', 'employment');
 
 const SUBFOLDERS = {
   documents: path.join(UPLOAD_BASE, 'documents'),
@@ -17,6 +19,9 @@ const SUBFOLDERS = {
 Object.values(SUBFOLDERS).forEach((dir) => {
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
 });
+if (!fs.existsSync(PRIVATE_EMPLOYMENT_UPLOAD_DIR)) {
+  fs.mkdirSync(PRIVATE_EMPLOYMENT_UPLOAD_DIR, { recursive: true });
+}
 
 function createStorage(subfolder) {
   return multer.diskStorage({
@@ -65,6 +70,18 @@ const photoUpload = multer({
   limits: { fileSize: 5 * 1024 * 1024 },
 });
 
+const employmentProofUpload = multer({
+  storage: multer.diskStorage({
+    destination: (_req, _file, cb) => cb(null, PRIVATE_EMPLOYMENT_UPLOAD_DIR),
+    filename: (_req, file, cb) => {
+      const ext = path.extname(file.originalname).toLowerCase();
+      cb(null, `${uuidv4()}${ext}`);
+    },
+  }),
+  fileFilter,
+  limits: { fileSize: maxSize },
+});
+
 const logoUpload = multer({
   storage: createStorage('logos'),
   fileFilter: (req, file, cb) => {
@@ -83,6 +100,7 @@ module.exports = {
   signatureUpload,
   biometricUpload,
   photoUpload,
+  employmentProofUpload,
   logoUpload,
   SUBFOLDERS,
 };

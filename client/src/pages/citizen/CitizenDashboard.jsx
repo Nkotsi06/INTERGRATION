@@ -44,18 +44,19 @@ function CitizenDashboard() {
     let cancelled = false;
     setLoadingServices(true);
     setServicesError(null);
-    Promise.all(
-      (settings.ministries || []).map(async (ministry) => {
-        const services = await getPublicServices(ministry.code);
+    getPublicServices()
+      .then((services) => {
         if (!Array.isArray(services)) {
           throw new Error('The services response was not in the expected format.');
         }
-        return services.length > 0 ? String(ministry.code).toUpperCase() : null;
-      })
-    )
-      .then((codes) => {
         if (!cancelled) {
-          setAvailableMinistries(new Set(codes.filter(Boolean)));
+          setAvailableMinistries(
+            new Set(
+              services
+                .map((service) => String(service.ministry || '').toUpperCase())
+                .filter(Boolean)
+            )
+          );
         }
       })
       .catch((error) => {
@@ -76,13 +77,18 @@ function CitizenDashboard() {
       navigate('/citizen/verify', { state: { targetMinistry: ministry.code } });
       return;
     }
+    if (ministry.code === 'FINANCE') {
+      navigate('/finance/dashboard');
+      return;
+    }
     navigate(`/citizen/services?ministry=${encodeURIComponent(ministry.code)}`);
   };
 
   const ministries = settings.ministries || [];
   const visibleMinistries = availableMinistries
     ? ministries.filter((ministry) =>
-        availableMinistries.has(String(ministry.code || '').toUpperCase())
+        availableMinistries.has(String(ministry.code || '').toUpperCase()) ||
+        String(ministry.code || '').toUpperCase() === 'FINANCE'
       )
     : ministries;
   const showSkeleton =

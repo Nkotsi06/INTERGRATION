@@ -1,5 +1,16 @@
 import apiClient from './apiClient';
 
+export const getCitizenFinanceDashboard = () =>
+  apiClient.get('/finance/citizen/dashboard');
+export const payApplicationFee = (data) =>
+  apiClient.post('/finance/citizen/payments', data);
+export const submitEmploymentDeclaration = (data) =>
+  apiClient.post('/finance/citizen/employment', data, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+export const getEmploymentProof = (id) =>
+  apiClient.get(`/finance/citizen/employment/${id}/proof`, { responseType: 'blob' });
+
 export const getTreasury = (params) => apiClient.get('/finance/staff/treasury', { params });
 export const getTreasuryStats = () => apiClient.get('/finance/staff/treasury/stats');
 export const getBudget = (params) => apiClient.get('/finance/staff/budget', { params });

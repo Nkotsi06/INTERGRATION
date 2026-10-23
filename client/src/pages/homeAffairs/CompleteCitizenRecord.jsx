@@ -16,6 +16,7 @@ import {
   getCitizenBiometrics,
   completeRecord,
   updateCitizen,
+  updateCitizenBiometrics,
   recordEmployment,
   updateEmployment,
 } from '../../api/homeAffairsApi';
@@ -69,6 +70,9 @@ function CompleteCitizenRecord() {
   const [biometrics, setBiometrics] = useState(null);
   const [biometricsLoading, setBiometricsLoading] = useState(false);
   const [biometricsError, setBiometricsError] = useState(null);
+  const [editingBiometrics, setEditingBiometrics] = useState(false);
+  const [biometricsDraft, setBiometricsDraft] = useState(null);
+  const [savingBiometrics, setSavingBiometrics] = useState(false);
   const [errors, setErrors] = useState({});
   const [serverError, setServerError] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -222,6 +226,23 @@ function CompleteCitizenRecord() {
       );
     } finally {
       setSaving(false);
+    }
+  };
+
+  const saveBiometricChanges = async () => {
+    if (!biometricsDraft || !existingCitizenId) return;
+    setSavingBiometrics(true);
+    setBiometricsError(null);
+    try {
+      const updated = await updateCitizenBiometrics(existingCitizenId, biometricsDraft);
+      setBiometrics(updated);
+      setBiometricsDraft(null);
+      setEditingBiometrics(false);
+      success('Biometrics updated');
+    } catch (err) {
+      setBiometricsError(err.message || 'Could not update biometrics.');
+    } finally {
+      setSavingBiometrics(false);
     }
   };
 
@@ -600,6 +621,51 @@ function CompleteCitizenRecord() {
               <FingerprintPreview fingerprints={biometrics?.fingerprints || {}} />
               <h4>Facial photo</h4>
               <FacialPreview image={biometrics?.facialImage} />
+            </>
+          )}
+          {!editingBiometrics ? (
+            <Button
+              variant="secondary"
+              onClick={() => {
+                setBiometricsError(null);
+                setBiometricsDraft(null);
+                setEditingBiometrics(true);
+              }}
+            >
+              Capture or replace biometrics
+            </Button>
+          ) : (
+            <>
+              <h4>Capture replacement biometrics</h4>
+              <p className="text-muted">
+                Capture the facial photo and all four fingerprints, then save them to this citizen record.
+              </p>
+              <BiometricEnrollment
+                onComplete={setBiometricsDraft}
+                requireFingerprints
+              />
+              <div className="form-actions">
+                <div className="form-actions-primary-group">
+                  <Button
+                    variant="primary"
+                    onClick={saveBiometricChanges}
+                    disabled={!biometricsDraft || savingBiometrics}
+                    loading={savingBiometrics}
+                  >
+                    Save biometrics
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    onClick={() => {
+                      setEditingBiometrics(false);
+                      setBiometricsDraft(null);
+                    }}
+                    disabled={savingBiometrics}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </div>
             </>
           )}
         </div>

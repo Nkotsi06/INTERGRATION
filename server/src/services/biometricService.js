@@ -130,6 +130,41 @@ async function get(citizenId) {
   };
 }
 
+async function updateCitizenBiometrics(citizenId, data, user) {
+  const fingerprints = normaliseFingerprints(data?.fingerprints || {});
+  if (Object.values(fingerprints).some((value) => !value)) {
+    const error = new Error('Capture all four fingerprints before saving.');
+    error.statusCode = 400;
+    throw error;
+  }
+  if (typeof data?.facialImage !== 'string' || !data.facialImage.startsWith('data:image/')) {
+    const error = new Error('Capture a facial photo before saving.');
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const result = await biometricRepository.upsert({
+    citizenId,
+    fingerprint_left_thumb: fingerprints.left_thumb,
+    fingerprint_left_index: fingerprints.left_index,
+    fingerprint_right_thumb: fingerprints.right_thumb,
+    fingerprint_right_index: fingerprints.right_index,
+    facial_image: data.facialImage,
+    enrolledBy: user.userId,
+  });
+
+  await auditService.log({
+    userId: user.userId,
+    username: user.username,
+    action: 'BIOMETRICS_UPDATED',
+    recordType: 'BIOMETRIC',
+    recordId: result.id,
+    result: 'SUCCESS',
+  });
+
+  return get(citizenId);
+}
+
 // -------------------------------------------------------------
 // Verify a captured fingerprint against the stored one
 // -------------------------------------------------------------
@@ -150,6 +185,7 @@ async function verifyFingerprint(citizenId, captured) {
 module.exports = {
   enrollFingerprints,
   enrollFacial,
+  updateCitizenBiometrics,
   get,
   verifyFingerprint,
 };
