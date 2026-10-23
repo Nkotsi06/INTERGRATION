@@ -9,11 +9,14 @@ import { getBiometrics } from '../../api/biometricApi';
 function HAVerifyBiometrics() {
   const { id } = useParams();
   const { data: biometrics, loading } = useFetch(() => getBiometrics(id), [id]);
+  const hasBiometrics =
+    Object.values(biometrics?.fingerprints || {}).some(Boolean) ||
+    Boolean(biometrics?.facialImage);
 
   return (
     <PageWrapper title="Verify Biometrics" showBack backPath={`/home-affairs/citizen/${id}`}>
       <h2>Verify Biometrics</h2>
-      <BiometricStatusBadge enrolled={!!biometrics?.fingerprints} />
+      <BiometricStatusBadge enrolled={hasBiometrics} />
       {loading ? (
         <p>Loading...</p>
       ) : (

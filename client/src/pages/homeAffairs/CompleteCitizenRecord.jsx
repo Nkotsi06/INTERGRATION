@@ -8,9 +8,12 @@ import FormActions from '../../components/common/FormActions';
 import Alert from '../../components/common/Alert';
 import Button from '../../components/common/Button';
 import BiometricEnrollment from '../../components/biometrics/BiometricEnrollment';
+import FingerprintPreview from '../../components/biometrics/FingerprintPreview';
+import FacialPreview from '../../components/biometrics/FacialPreview';
 import {
   getRegistrationById,
   getCitizenById,
+  getCitizenBiometrics,
   completeRecord,
   updateCitizen,
   recordEmployment,
@@ -64,6 +67,8 @@ function CompleteCitizenRecord() {
   const [nationalId, setNationalId] = useState('');
   const [form, setForm] = useState(emptyForm);
   const [biometrics, setBiometrics] = useState(null);
+  const [biometricsLoading, setBiometricsLoading] = useState(false);
+  const [biometricsError, setBiometricsError] = useState(null);
   const [errors, setErrors] = useState({});
   const [serverError, setServerError] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -105,6 +110,19 @@ function CompleteCitizenRecord() {
             postalAddress: c.address || '',
           });
           setEmployment(c.employmentHistory || []);
+          setBiometricsLoading(true);
+          try {
+            const record = await getCitizenBiometrics(c.id);
+            if (!cancelled) setBiometrics(record);
+          } catch (err) {
+            if (!cancelled) {
+              setBiometricsError(
+                err.message || "Could not load this citizen's biometrics."
+              );
+            }
+          } finally {
+            if (!cancelled) setBiometricsLoading(false);
+          }
           return;
         }
 
@@ -565,6 +583,24 @@ function CompleteCitizenRecord() {
                 </div>
               </div>
             </div>
+          )}
+        </div>
+      )}
+
+      {isEditMode && (
+        <div className="form-section">
+          <h3 className="form-section-title">Biometrics on record</h3>
+          {biometricsLoading ? (
+            <p className="text-muted">Loading biometrics…</p>
+          ) : biometricsError ? (
+            <Alert type="error" message={biometricsError} />
+          ) : (
+            <>
+              <h4>Fingerprints</h4>
+              <FingerprintPreview fingerprints={biometrics?.fingerprints || {}} />
+              <h4>Facial photo</h4>
+              <FacialPreview image={biometrics?.facialImage} />
+            </>
           )}
         </div>
       )}
