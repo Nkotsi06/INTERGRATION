@@ -66,9 +66,9 @@ function HAIssueCertificate() {
       {type === 'birth' && (
         <div className="form-grid">
           <DatePicker
-            label="Date of birth"
-            value={form.dateOfBirth || ''}
-            onChange={(e) => update('dateOfBirth', e.target.value)}
+            label="Child date of birth"
+            value={form.childDateOfBirth || ''}
+            onChange={(e) => update('childDateOfBirth', e.target.value)}
             required
           />
           <Input
@@ -77,14 +77,14 @@ function HAIssueCertificate() {
             onChange={(e) => update('placeOfBirth', e.target.value)}
           />
           <Input
-            label="Father's name"
-            value={form.fatherName || ''}
-            onChange={(e) => update('fatherName', e.target.value)}
+            label="Father's full name"
+            value={form.fatherFullName || ''}
+            onChange={(e) => update('fatherFullName', e.target.value)}
           />
           <Input
-            label="Mother's name"
-            value={form.motherName || ''}
-            onChange={(e) => update('motherName', e.target.value)}
+            label="Mother's full name"
+            value={form.motherFullName || ''}
+            onChange={(e) => update('motherFullName', e.target.value)}
           />
           <Input
             label="Notes"
@@ -127,14 +127,14 @@ function HAIssueCertificate() {
         <div className="form-grid">
           <Input
             label="Spouse 2 — full name"
-            value={form.spouse2Name || ''}
-            onChange={(e) => update('spouse2Name', e.target.value)}
+            value={form.spouse2FullName || ''}
+            onChange={(e) => update('spouse2FullName', e.target.value)}
             full
           />
           <Input
-            label="Spouse 2 — citizen UUID (optional)"
-            value={form.spouse2CitizenId || ''}
-            onChange={(e) => update('spouse2CitizenId', e.target.value)}
+            label="Spouse 2 — National ID (optional)"
+            value={form.spouse2NationalId || ''}
+            onChange={(e) => update('spouse2NationalId', e.target.value)}
             helpText="Leave blank if spouse 2 is not yet a registered citizen."
             full
           />
@@ -146,13 +146,13 @@ function HAIssueCertificate() {
           />
           <Input
             label="Place of marriage"
-            value={form.placeOfMarriage || ''}
-            onChange={(e) => update('placeOfMarriage', e.target.value)}
+            value={form.marriagePlace || ''}
+            onChange={(e) => update('marriagePlace', e.target.value)}
           />
           <Input
             label="Officiant"
-            value={form.officiant || ''}
-            onChange={(e) => update('officiant', e.target.value)}
+            value={form.marriageOfficiant || ''}
+            onChange={(e) => update('marriageOfficiant', e.target.value)}
           />
           <Input
             label="Notes"

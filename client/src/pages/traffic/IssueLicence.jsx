@@ -23,11 +23,12 @@ function IssueLicence() {
     }
     setSaving(true);
     try {
-      await issueLicence(id, { signature });
+      // Backend expects { action, citizenSignature } — not { signature }.
+      await issueLicence(id, { citizenSignature: signature });
       success('Licence issued');
       navigate('/traffic/staff');
     } catch (err) {
-      setError('Could not issue the licence. Please try again.');
+      setError(err.message || 'Could not issue the licence. Please try again.');
     } finally {
       setSaving(false);
     }

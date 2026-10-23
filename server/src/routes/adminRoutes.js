@@ -25,6 +25,13 @@ router.put('/settings', adminController.updateSettings);
 router.get('/settings/biometrics', adminController.getBiometricSettings);
 router.put('/settings/biometrics', adminController.updateBiometricSettings);
 
+// Config pages — previously had no backend route so all saves 404'd.
+router.put('/settings/ministries/:id', adminController.updateMinistry);
+router.put('/settings/document-types/:id', adminController.updateDocumentType);
+router.put('/settings/status-types/:id', adminController.updateStatusType);
+router.put('/settings/reference-formats/:id', adminController.updateReferenceFormat);
+router.put('/settings/languages/:id', adminController.updateLanguage);
+
 router.get('/branches', branchController.list);
 router.get('/branches/:id', branchController.getOne);
 router.post('/branches', branchController.create);

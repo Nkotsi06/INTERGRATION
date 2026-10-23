@@ -114,9 +114,29 @@ async function listForCitizen(citizenId) {
               b.name AS collection_branch,
               b.address AS collection_address,
               b.district AS collection_district,
-              a.data->'formData'->>'childPhoto' AS applicant_photo
+              a.data->'formData'->>'childPhoto' AS applicant_photo,
+              a.data->'formData'->>'childFullName' AS child_full_name,
+              a.data->'formData'->>'childDateOfBirth' AS child_date_of_birth,
+              a.data->'formData'->>'childNationalId' AS child_national_id,
+              CASE WHEN a.data->>'serviceCode' = 'PASSPORT_MINOR'
+                THEN NULL ELSE c.first_name END AS first_name,
+              CASE WHEN a.data->>'serviceCode' = 'PASSPORT_MINOR'
+                THEN NULL ELSE c.last_name END AS last_name,
+              CASE WHEN a.data->>'serviceCode' = 'PASSPORT_MINOR'
+                THEN child.national_id ELSE c.national_id END AS national_id,
+              CASE WHEN a.data->>'serviceCode' = 'PASSPORT_MINOR'
+                THEN child.date_of_birth ELSE c.date_of_birth END AS passport_birth_date,
+              CASE WHEN a.data->>'serviceCode' = 'PASSPORT_MINOR'
+                THEN child.gender ELSE c.gender END AS passport_gender,
+              CASE WHEN a.data->>'serviceCode' = 'PASSPORT_MINOR'
+                THEN child.place_of_birth ELSE c.place_of_birth END AS place_of_birth,
+              CASE WHEN a.data->>'serviceCode' = 'PASSPORT_MINOR'
+                THEN child.nationality ELSE c.nationality END AS nationality
        FROM passport_applications pa
        JOIN applications a ON a.id = pa.application_id
+       LEFT JOIN citizens c ON c.id = pa.citizen_id
+       LEFT JOIN citizens child
+         ON child.national_id = a.data->'formData'->>'childNationalId'
        LEFT JOIN branches b ON b.id::text = pa.collection_office
        LEFT JOIN LATERAL (
          SELECT signature_data

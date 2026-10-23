@@ -21,7 +21,10 @@ function VerificationHistory() {
     return data.filter((v) => {
       if (statusFilter && v.status !== statusFilter) return false;
       if (methodFilter && v.method !== methodFilter) return false;
-      if (dateFilter && v.verifiedAt < dateFilter) return false;
+      if (dateFilter) {
+        const rowDate = (v.verifiedAt || '').slice(0, 10);
+        if (rowDate && rowDate < dateFilter) return false;
+      }
       return true;
     });
   }, [data, statusFilter, methodFilter, dateFilter]);
@@ -29,18 +32,34 @@ function VerificationHistory() {
   const hasActive = !!(statusFilter || methodFilter || dateFilter);
 
   const columns = [
-    { key: 'verifiedAt', label: 'Date', render: (r) => formatDate(r.verifiedAt) },
+    {
+      key: 'verifiedAt',
+      label: 'Date',
+      render: (r) => (r.verifiedAt ? formatDate(r.verifiedAt) : '—'),
+    },
     {
       key: 'status',
       label: 'Status',
       render: (r) => (
         <StatusBadge
           variant={r.status === 'VERIFIED' ? 'verified' : 'rejected'}
-          label={r.status === 'VERIFIED' ? 'Successful' : 'Failed'}
+          label={r.status === 'VERIFIED' ? 'Successful' : r.status}
         />
       ),
     },
-    { key: 'method', label: 'Method' },
+    {
+      key: 'method',
+      label: 'Method',
+      render: (r) => {
+        const map = {
+          SECURITY_QUESTION: 'Security question',
+          FINGERPRINT: 'Fingerprint',
+          ONLINE: 'Online',
+          IN_PERSON: 'In person',
+        };
+        return map[r.method] || r.method || '—';
+      },
+    },
   ];
 
   return (
@@ -74,8 +93,8 @@ function VerificationHistory() {
               onChange={(e) => setMethodFilter(e.target.value)}
             >
               <option value="">All</option>
-              <option value="ONLINE">Online</option>
-              <option value="IN_PERSON">In person</option>
+              <option value="SECURITY_QUESTION">Security question</option>
+              <option value="FINGERPRINT">Fingerprint</option>
             </select>
           </div>
           <div className="filter-dropdown">

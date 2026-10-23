@@ -8,6 +8,7 @@ const citizenRepository = require('../repositories/citizenRepository');
 const biometricRepository = require('../repositories/biometricRepository');
 const branchRepository = require('../repositories/branchRepository');
 const policeCaseRepository = require('../repositories/policeCaseRepository');
+const settingsRepository = require('../repositories/settingsRepository');
 const { generateReference } = require('../utils/referenceGenerator');
 const auditService = require('./auditService');
 const { query } = require('../config/database');
@@ -281,11 +282,32 @@ async function processApplication(id, action, staffUser) {
 }
 
 async function markReadyForCollection(id, staffUser) {
+  const serviceCode = await passportApplicationRepository.getServiceCode(id);
+  if (!serviceCode) {
+    const error = new Error('Passport application not found.');
+    error.statusCode = 404;
+    throw error;
+  }
+
+  const settingKey = serviceCode === 'PASSPORT_MINOR'
+    ? 'passport_minor_validity_years'
+    : 'passport_validity_years';
+  const validitySetting = await settingsRepository.getByKey(settingKey);
+  const validityYears = Number(validitySetting?.value);
+  if (!Number.isInteger(validityYears) || validityYears < 1 || validityYears > 100) {
+    const error = new Error(
+      `Configure ${settingKey} as a whole number between 1 and 100 before issuing passports.`
+    );
+    error.statusCode = 500;
+    throw error;
+  }
+
   const passportNumber = await generateReference('PASSPORT_NUMBER');
   const application = await passportApplicationRepository.markReadyForCollection(
     id,
     passportNumber,
-    staffUser.userId
+    staffUser.userId,
+    validityYears
   );
 
   const assignedPassportNumber = application.passport_number || passportNumber;

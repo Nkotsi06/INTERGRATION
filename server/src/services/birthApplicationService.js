@@ -373,13 +373,13 @@ async function review(id, decision, reason, staffUser) {
     );
     await client.query(
       `INSERT INTO birth_certificates
-         (certificate_number, child_full_name, child_date_of_birth, child_gender,
+         (certificate_number, citizen_id, child_full_name, child_date_of_birth, child_gender,
           child_national_id, place_of_birth, mother_full_name, mother_national_id,
           father_full_name, father_national_id, request_type, issued_by, issued_at,
           status, certificate_pdf)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,'NEW',$11,NOW(),'ISSUED',$12)`,
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,'NEW',$12,NOW(),'ISSUED',$13)`,
       [
-        certificateNumber, fullName, form.dateOfBirth, form.gender, nationalId,
+        certificateNumber, citizenId, fullName, form.dateOfBirth, form.gender, nationalId,
         form.placeOfBirth, form.motherFullName, form.motherNationalId || null,
         form.fatherFullName || null, form.fatherNationalId || null,
         staffUser.userId, pdf,

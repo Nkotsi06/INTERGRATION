@@ -51,7 +51,7 @@ function CaseDetails() {
   const history = (c.updates || []).map((u) => ({
     status: u.status || 'UPDATED',
     statusLabel: u.status || 'Updated',
-    date: formatDate(u.createdAt),
+    date: u.createdAt ? formatDate(u.createdAt) : '—',
     notes: u.notes,
   }));
 
@@ -62,14 +62,14 @@ function CaseDetails() {
       backPath="/police/cases"
       accentColour="#922B21"
     >
-      <h1>Case {c.caseNumber}</h1>
+      <h1>Case {c.caseNumber || '—'}</h1>
       <StatusBadge variant={STATUS_VARIANT[c.status] || 'pending'} label={c.status} />
 
       <div className="card card-flat" style={{ marginTop: 16 }}>
         <div className="form-grid">
           <ReadOnly label="Case type" value={c.caseType} />
-          <ReadOnly label="Date reported" value={formatDate(c.createdAt)} />
-          <ReadOnly label="Incident date" value={formatDate(c.incidentDate)} />
+          <ReadOnly label="Date reported" value={c.createdAt ? formatDate(c.createdAt) : '—'} />
+          <ReadOnly label="Incident date" value={c.incidentDate ? formatDate(c.incidentDate) : '—'} />
           <ReadOnly label="Location" value={c.location} />
           <ReadOnly label="Assigned officer" value={c.officer || '—'} />
         </div>
@@ -87,10 +87,7 @@ function CaseDetails() {
 
       <div className="form-actions">
         <div className="form-actions-primary-group">
-          <Button
-            variant="secondary"
-            onClick={() => navigate('/police/cases')}
-          >
+          <Button variant="secondary" onClick={() => navigate('/police/cases')}>
             Back to my cases
           </Button>
         </div>

@@ -31,4 +31,11 @@ router.post(
   certificateController.reject
 );
 
+// Staff edit — previously missing, caused EditCertificate to 404 on save.
+router.put(
+  '/:type/:id',
+  roleMiddleware(['HOME_AFFAIRS', 'ADMIN']),
+  certificateController.update
+);
+
 module.exports = router;

@@ -46,6 +46,7 @@ function RenewLicence() {
         amount: fee,
         method: form.method,
         mobile: form.mobile,
+        signature: form.signature,   // ← REQUIRED by backend
       });
       setConfirmation(result);
       setStep(3);
@@ -78,24 +79,24 @@ function RenewLicence() {
             <p className="text-muted">Loading…</p>
           ) : (
             <>
-            {!licence && (
-              <Alert
-                type="warning"
-                message="No driving licence is on record for your verified citizen profile."
-              />
-            )}
-            <div className="card card-flat">
-              <h3>Review your information</h3>
-              <p className="text-muted">
-                These details come from Home Affairs and cannot be edited here.
-              </p>
-              <div className="form-grid">
-                <ReadOnly label="Full name" value={licence?.fullName} />
-                <ReadOnly label="National ID" value={licence?.nationalId} />
-                <ReadOnly label="Licence number" value={licence?.licenceNumber} />
-                <ReadOnly label="Expiry date" value={formatDate(licence?.expiryDate)} />
+              {!licence && (
+                <Alert
+                  type="warning"
+                  message="No driving licence is on record for your verified citizen profile."
+                />
+              )}
+              <div className="card card-flat">
+                <h3>Review your information</h3>
+                <p className="text-muted">
+                  These details come from Home Affairs and cannot be edited here.
+                </p>
+                <div className="form-grid">
+                  <ReadOnly label="Full name" value={licence?.fullName} />
+                  <ReadOnly label="National ID" value={licence?.nationalId} />
+                  <ReadOnly label="Licence number" value={licence?.licenceNumber} />
+                  <ReadOnly label="Expiry date" value={formatDate(licence?.expiryDate)} />
+                </div>
               </div>
-            </div>
             </>
           )}
 
@@ -165,13 +166,13 @@ function RenewLicence() {
           <h2>Renewal submitted</h2>
           <p>Your reference number is:</p>
           <div className="reference-number">
-            <span className="reference-value">{confirmation.referenceNumber}</span>
+            <span className="reference-value">
+              {confirmation.referenceNumber ||
+                confirmation.application?.reference_number ||
+                confirmation.application?.referenceNumber ||
+                '—'}
+            </span>
           </div>
-          {confirmation.receiptNumber && (
-            <p className="text-muted">
-              Payment receipt: <strong>{confirmation.receiptNumber}</strong>
-            </p>
-          )}
           <div className="result-actions">
             <Button variant="secondary" onClick={() => window.print()}>
               Print receipt

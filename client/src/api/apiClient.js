@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { normalize } from './normalize';
 
 const baseURL =
   import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
@@ -35,7 +36,16 @@ apiClient.interceptors.request.use((config) => {
 apiClient.interceptors.response.use(
   (response) => {
     onRequestEnd();
-    return response.data;
+
+    // Blobs are downloads (PDF, CSV, photos) — never touch them.
+    const responseType = response.config?.responseType;
+    if (responseType === 'blob' || responseType === 'arraybuffer') {
+      return response.data;
+    }
+
+    // Everything else is normalised from snake_case → camelCase so
+    // every page can rely on a single shape.
+    return normalize(response.data);
   },
   (error) => {
     onRequestEnd();

@@ -20,6 +20,7 @@ router.get('/applications/:reference', authMiddleware, c.getApplicationByReferen
 
 // Citizen — vehicles
 router.get('/vehicles', authMiddleware, c.getVehicles);
+router.get('/vehicles/:id', authMiddleware, c.getVehicleById);   // ← NEW
 router.post('/vehicles', authMiddleware, c.registerVehicle);
 router.put('/vehicles/:id', authMiddleware, c.updateVehicle);
 router.delete('/vehicles/:id', authMiddleware, c.deleteVehicle);
@@ -38,7 +39,7 @@ router.post('/vehicle-licences/:id/renew', authMiddleware, c.renewVehicleLicence
 router.post('/permits', authMiddleware, c.applyTransportPermit);
 router.get('/permits', authMiddleware, c.getTransportPermits);
 
-// Staff — dashboard stats  ← NEW
+// Staff — dashboard stats
 router.get('/staff/stats', authMiddleware, roleMiddleware(['TRAFFIC']), c.getStaffStats);
 
 // Staff — processing

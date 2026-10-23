@@ -3,6 +3,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useSettings } from '../../context/SettingsContext';
 import LanguageToggle from '../header/LanguageToggle';
 import Logo from '../header/Logo';
+import { FiArrowLeft, FiLogOut } from '../../utils/actionIcons';
 
 function Header({ title, showBack = false, backPath = -1, accentColour }) {
   const { user, logout } = useAuth();
@@ -34,6 +35,7 @@ function Header({ title, showBack = false, backPath = -1, accentColour }) {
             onClick={handleBack}
             aria-label="Go back"
           >
+            <FiArrowLeft className="ui-icon" aria-hidden="true" focusable="false" />
             Back
           </button>
         )}
@@ -55,6 +57,7 @@ function Header({ title, showBack = false, backPath = -1, accentColour }) {
               className="header-logout-btn header-logout-text"
               onClick={handleLogout}
             >
+              <FiLogOut className="ui-icon" aria-hidden="true" focusable="false" />
               Logout
             </button>
           </>

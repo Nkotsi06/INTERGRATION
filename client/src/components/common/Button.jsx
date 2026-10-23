@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
+import { getButtonIcon } from '../../utils/actionIcons';
 
 function Button({
   children,
+  icon,
   variant = 'primary',
   size = 'medium',
   type = 'button',
@@ -24,6 +26,7 @@ function Button({
   }, [loading]);
 
   const isDisabled = disabled || loading;
+  const Icon = icon === false ? null : icon || getButtonIcon(children);
   const style = accentColour && variant === 'primary'
     ? { backgroundColor: accentColour }
     : {};
@@ -46,7 +49,10 @@ function Button({
           </span>
         </span>
       ) : (
-        children
+        <>
+          {Icon && <Icon className="ui-icon" aria-hidden="true" focusable="false" />}
+          {children}
+        </>
       )}
     </button>
   );

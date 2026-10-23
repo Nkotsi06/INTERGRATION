@@ -1,3 +1,5 @@
+import { FiX } from '../../utils/actionIcons';
+
 function Modal({ isOpen, onClose, title, children, size = 'medium' }) {
   if (!isOpen) return null;
 
@@ -18,7 +20,8 @@ function Modal({ isOpen, onClose, title, children, size = 'medium' }) {
             onClick={onClose}
             aria-label="Close"
           >
-            Close
+            <FiX className="ui-icon" aria-hidden="true" focusable="false" />
+            <span className="sr-only">Close</span>
           </button>
         </div>
         <div className="modal-body">{children}</div>

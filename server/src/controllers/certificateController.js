@@ -35,11 +35,19 @@ async function listAll(req, res, next) {
 async function getOne(req, res, next) {
   try {
     const type = checkType(req);
-    res.json(await certificateService.getById(type, req.params.id));
+    const cert = await certificateService.getById(type, req.params.id);
+    if (!cert) return res.status(404).json({ message: 'Certificate not found' });
+    // Ownership check for citizens.
+    if (req.user.role === 'CITIZEN') {
+      const ownerCitizenId = req.user.verifiedCitizenId || req.user.citizenId;
+      if (cert.citizen_id && cert.citizen_id !== ownerCitizenId) {
+        return res.status(403).json({ message: 'You cannot view this certificate.' });
+      }
+    }
+    res.json(cert);
   } catch (err) { next(err); }
 }
 
-// ─── NEW: update before issue ─────────────────────────────────────────────
 async function update(req, res, next) {
   try {
     const type = checkType(req);
@@ -48,7 +56,6 @@ async function update(req, res, next) {
     );
   } catch (err) { next(err); }
 }
-// ─────────────────────────────────────────────────────────────────────────
 
 async function issue(req, res, next) {
   try {

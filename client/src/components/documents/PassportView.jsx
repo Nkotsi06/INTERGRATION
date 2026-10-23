@@ -1,81 +1,204 @@
-function displayDate(value) {
-  if (!value) return 'Not recorded';
-  const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? 'Not recorded' : date.toLocaleDateString('en-GB');
+import { useMemo } from 'react';
+import Alert from '../common/Alert';
+import {
+  buildMrzLines,
+  formatPassportDate,
+} from '../../utils/passportHelpers';
+
+function isoDate(value) {
+  if (!value) return '';
+  return String(value).slice(0, 10);
+}
+
+function displayValue(value) {
+  return value || 'Not recorded';
+}
+
+function nationalityCode(value) {
+  const normalized = String(value || '').trim().toUpperCase();
+  if (normalized === 'MOSOTHO' || normalized === 'LESOTHO') return 'LSO';
+  return /^[A-Z]{3}$/.test(normalized) ? normalized : '';
+}
+
+function nationalityName(value) {
+  const normalized = String(value || '').trim().toUpperCase();
+  if (normalized === 'MOSOTHO' || normalized === 'LESOTHO' || normalized === 'LSO') {
+    return 'LESOTHO';
+  }
+  return normalized || 'Not recorded';
+}
+
+function splitFullName(fullName) {
+  const parts = String(fullName || '').trim().split(/\s+/).filter(Boolean);
+  if (parts.length < 2) return { surname: parts[0] || '', givenNames: '' };
+  return {
+    surname: parts[parts.length - 1],
+    givenNames: parts.slice(0, -1).join(' '),
+  };
 }
 
 function PassportView({ data, photoUrl }) {
+  const isMinorPassport = Boolean(data.child_full_name);
+  const holderName = data.child_full_name ||
+    [data.first_name, data.last_name].filter(Boolean).join(' ');
+  const nameParts = isMinorPassport
+    ? splitFullName(holderName)
+    : { surname: data.last_name || '', givenNames: data.first_name || '' };
+  const birthDate = isoDate(data.child_date_of_birth || data.passport_birth_date);
+  const issueDate = isoDate(data.issue_date || data.issued_at);
+  const expiryDate = isoDate(data.expiry_date);
+  const mrzSex = data.passport_gender === 'MALE'
+    ? 'M'
+    : data.passport_gender === 'FEMALE' ? 'F' : '';
+  const nationality = nationalityCode(data.nationality);
+
+  const { mrzLines, mrzError } = useMemo(() => {
+    if (!data.passport_number || !birthDate || !expiryDate || !nationality) {
+      return {
+        mrzLines: null,
+        mrzError: 'Machine-readable data is unavailable because a passport number, nationality, date of birth, or expiry date is missing.',
+      };
+    }
+    try {
+      return {
+        mrzLines: buildMrzLines({
+          issuingState: 'LSO',
+          surname: nameParts.surname,
+          givenNames: nameParts.givenNames,
+          passportNumber: data.passport_number,
+          nationality,
+          birthDate,
+          sex: mrzSex,
+          expiryDate,
+          personalNumber: data.national_id || data.child_national_id || '',
+        }),
+        mrzError: null,
+      };
+    } catch (error) {
+      return { mrzLines: null, mrzError: error.message };
+    }
+  }, [
+    birthDate,
+    data.child_national_id,
+    data.national_id,
+    data.passport_number,
+    expiryDate,
+    mrzSex,
+    nameParts.givenNames,
+    nameParts.surname,
+    nationality,
+  ]);
+
   const statusLabels = {
     COLLECTED: 'Collected',
     COMPLETED: 'Collected',
-    READY_FOR_COLLECTION: 'Ready for Collection',
+    READY_FOR_COLLECTION: 'Ready for collection',
   };
   const status = statusLabels[data.status] || data.status;
 
   return (
-    <article className="card card-flat print-container" style={{ maxWidth: 760, margin: '0 auto', padding: 24 }}>
-      
-      {/* Header with Coat of Arms and Flag */}
-      <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24, borderBottom: '2px solid #1A5276', paddingBottom: 16 }}>
-        <img 
-          src="/Logo.jpeg" 
-          alt="Lesotho Coat of Arms" 
-          className="document-logo" 
-        />
-        
-        <div style={{ textAlign: 'center' }}>
-          <h2 style={{ margin: 0, color: '#1A5276' }}>Kingdom of Lesotho</h2>
-          <h3 style={{ margin: 0, color: '#555' }}>Passport</h3>
+    <article className="passport-page print-container" aria-label="Passport data page">
+      <header className="passport-page-header">
+        <div className="passport-document-title">
+          <span>PASSPORT</span>
+          <span>PASSEPORT</span>
         </div>
-        
-        <img 
-          src="/background.jpg" 
-          alt="Lesotho Flag" 
-          style={{ width: 60, height: 40, objectFit: 'cover', border: '1px solid #ccc' }} 
-        />
+        <div className="passport-country-heading">
+          <strong>KINGDOM OF LESOTHO</strong>
+          <span>Issuing country / Pays émetteur</span>
+          <b>LSO</b>
+        </div>
+        <img className="passport-emblem" src="/Logo.jpeg" alt="Kingdom of Lesotho emblem" />
       </header>
 
-      <div style={{ display: 'flex', gap: 24, alignItems: 'flex-start', flexWrap: 'wrap' }}>
-        <div style={{ width: 150, height: 190, border: '1px solid #ccc', background: '#f2f2f2' }}>
+      <div className="passport-fields">
+        <div className="passport-photo-frame">
           {photoUrl ? (
-            <img
-              src={photoUrl}
-              alt="Passport holder"
-              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-            />
+            <img src={photoUrl} alt="Passport holder" />
           ) : (
-            <div style={{ padding: 12, textAlign: 'center' }}>Photo unavailable</div>
+            <span>Photo unavailable</span>
           )}
         </div>
-        <dl style={{ display: 'grid', gridTemplateColumns: 'max-content 1fr', gap: '10px 20px', margin: 0 }}>
-          <dt>Passport number</dt>
-          <dd style={{ margin: 0 }}>{data.passport_number || '—'}</dd>
-          <dt>Type</dt>
-          <dd style={{ margin: 0 }}>{data.passport_type || '—'}</dd>
-          <dt>Issue date</dt>
-          <dd style={{ margin: 0 }}>{displayDate(data.issued_at || data.issue_date)}</dd>
-          <dt>Expiry date</dt>
-          <dd style={{ margin: 0 }}>{displayDate(data.expiry_date)}</dd>
-          <dt>Status</dt>
-          <dd style={{ margin: 0 }}>{status || '—'}</dd>
-          {data.collection_branch && (
-            <>
-              <dt>Collection branch</dt>
-              <dd style={{ margin: 0 }}>{data.collection_branch}</dd>
-            </>
-          )}
-        </dl>
+
+        <div className="passport-main-fields">
+          <div className="passport-number-field">
+            <span className="passport-field-label">Passport No / Passeport No</span>
+            <strong>{displayValue(data.passport_number)}</strong>
+          </div>
+
+          <div className="passport-field passport-type">
+            <span className="passport-field-label">Type</span>
+            <strong>P</strong>
+          </div>
+          <div className="passport-field">
+            <span className="passport-field-label">Surname / Nom</span>
+            <strong>{displayValue(nameParts.surname)}</strong>
+          </div>
+          <div className="passport-field">
+            <span className="passport-field-label">Given names / Prénoms</span>
+            <strong>{displayValue(nameParts.givenNames)}</strong>
+          </div>
+          <div className="passport-field">
+            <span className="passport-field-label">Nationality / Nationalité</span>
+            <strong>{nationalityName(data.nationality)}</strong>
+          </div>
+
+          <div className="passport-field">
+            <span className="passport-field-label">Date of birth / Date de naissance</span>
+            <strong>{formatPassportDate(birthDate) || 'Not recorded'}</strong>
+          </div>
+          <div className="passport-field passport-sex">
+            <span className="passport-field-label">Sex / Sexe</span>
+            <strong>{mrzSex || 'Not recorded'}</strong>
+          </div>
+          <div className="passport-field passport-place">
+            <span className="passport-field-label">Place of birth / Lieu de naissance</span>
+            <strong>{displayValue(data.place_of_birth)}</strong>
+          </div>
+
+          <div className="passport-field">
+            <span className="passport-field-label">Date of issue / Date de délivrance</span>
+            <strong>{formatPassportDate(issueDate) || 'Not recorded'}</strong>
+          </div>
+          <div className="passport-field">
+            <span className="passport-field-label">Date of expiry / Date d’expiration</span>
+            <strong>{formatPassportDate(expiryDate) || 'Not recorded'}</strong>
+          </div>
+        </div>
+
+        <aside className="passport-side-fields">
+          <div className="passport-field">
+            <span className="passport-field-label">National ID / No d’identité</span>
+            <strong>{displayValue(data.child_national_id || data.national_id)}</strong>
+          </div>
+          <div className="passport-field">
+            <span className="passport-field-label">Authority / Autorité</span>
+            <strong>LSO</strong>
+          </div>
+          <div className="passport-signature">
+            <span className="passport-field-label">Holder’s signature / signature du titulaire</span>
+            {data.signature_data ? (
+              <img src={data.signature_data} alt="Passport holder signature" />
+            ) : (
+              <span className="passport-signature-empty">Not recorded</span>
+            )}
+          </div>
+          <div className="passport-collection">
+            <span className="passport-field-label">Collection office</span>
+            <strong>{displayValue(data.collection_branch || data.collection_office)}</strong>
+          </div>
+        </aside>
       </div>
-      {data.signature_data && (
-        <div style={{ marginTop: 24 }}>
-          <img
-            src={data.signature_data}
-            alt="Passport holder signature"
-            style={{ width: 180, height: 60, objectFit: 'contain' }}
-          />
-          <div>Signature of holder</div>
-        </div>
-      )}
+
+      <div className="passport-mrz" aria-label="Machine-readable zone">
+        {mrzLines ? (
+          mrzLines.map((line) => <div key={line}>{line}</div>)
+        ) : (
+          <Alert type="warning" message={mrzError} />
+        )}
+      </div>
+
+      {status && <span className="passport-status no-print">Status: {status}</span>}
     </article>
   );
 }

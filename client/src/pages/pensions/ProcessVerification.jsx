@@ -8,6 +8,7 @@ import { TableSkeleton } from '../../components/common/SkeletonLoader';
 import useFetch from '../../hooks/useFetch';
 import { getStaffVerifications, processVerification } from '../../api/pensionsApi';
 import { useNotification } from '../../context/NotificationContext';
+import { formatDate } from '../../utils/formatters';
 
 function ProcessVerification() {
   const { data, loading, refetch } = useFetch(getStaffVerifications, []);
@@ -30,10 +31,30 @@ function ProcessVerification() {
   };
 
   const columns = [
-    { key: 'citizenName', label: 'Citizen' },
-    { key: 'nationalId', label: 'National ID' },
-    { key: 'lastVerified', label: 'Last verified' },
-    { key: 'status', label: 'Status', render: (r) => <StatusBadge variant="captured" label={r.status} /> },
+    {
+      key: 'citizenName',
+      label: 'Citizen',
+      render: (r) => {
+        const name = [r.firstName, r.lastName].filter(Boolean).join(' ').trim();
+        return name || '—';
+      },
+    },
+    { key: 'nationalId', label: 'National ID', render: (r) => r.nationalId || '—' },
+    {
+      key: 'verifiedAt',
+      label: 'Last verified',
+      render: (r) => (r.verifiedAt ? formatDate(r.verifiedAt) : '—'),
+    },
+    {
+      key: 'status',
+      label: 'Status',
+      render: (r) => (
+        <StatusBadge
+          variant={r.status === 'VERIFIED' ? 'verified' : 'pending'}
+          label={r.status}
+        />
+      ),
+    },
     {
       key: 'actions',
       label: 'Actions',

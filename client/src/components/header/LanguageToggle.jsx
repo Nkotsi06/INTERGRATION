@@ -1,4 +1,5 @@
 import { useLanguage } from '../../context/LanguageContext';
+import { FiGlobe } from '../../utils/actionIcons';
 
 function LanguageToggle() {
   const { currentLanguage, switchLanguage, languages } = useLanguage();
@@ -7,6 +8,7 @@ function LanguageToggle() {
 
   return (
     <div className="language-toggle" role="group" aria-label="Language">
+      <FiGlobe className="ui-icon language-icon" aria-hidden="true" focusable="false" />
       {languages.map((lang, index) => (
         <span key={lang.code}>
           <button

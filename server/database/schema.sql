@@ -878,6 +878,8 @@ INSERT INTO system_settings (key, value, category, description, is_public) VALUE
 ('biometric_facial_enabled', 'true', 'biometrics', 'Enable facial capture', false),
 ('biometric_match_threshold', '85', 'biometrics', 'Match threshold percent', false),
 ('biometric_max_attempts', '3', 'biometrics', 'Maximum biometric attempts', false),
+('passport_validity_years', '10', 'passport', 'Validity period in years for adult passports', false),
+('passport_minor_validity_years', '10', 'passport', 'Validity period in years for minor passports', false),
 -- keys the System Settings page reads
 ('failed_login_limit', '5', 'security', 'Alias of max_login_attempts for the admin UI', false),
 ('account_lockout_duration', '15', 'security', 'Minutes an account stays locked', false),

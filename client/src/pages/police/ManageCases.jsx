@@ -29,7 +29,10 @@ function ManageCases() {
     if (!cases) return [];
     return cases.filter((c) => {
       if (statusFilter && c.status !== statusFilter) return false;
-      if (dateFilter && c.createdAt < dateFilter) return false;
+      if (dateFilter) {
+        const rowDate = (c.createdAt || '').slice(0, 10);
+        if (rowDate && rowDate < dateFilter) return false;
+      }
       return true;
     });
   }, [cases, statusFilter, dateFilter]);
@@ -37,14 +40,24 @@ function ManageCases() {
   const hasActive = !!(statusFilter || dateFilter);
 
   const columns = [
-    { key: 'caseNumber', label: 'Case number' },
-    { key: 'citizenName', label: 'Citizen' },
-    { key: 'caseType', label: 'Type' },
-    { key: 'createdAt', label: 'Date', render: (r) => formatDate(r.createdAt) },
+    { key: 'caseNumber', label: 'Case number', render: (r) => r.caseNumber || '—' },
+    {
+      key: 'citizen',
+      label: 'Citizen',
+      render: (r) => r.citizenName || r.citizenId || '—',
+    },
+    { key: 'caseType', label: 'Type', render: (r) => r.caseType || '—' },
+    {
+      key: 'createdAt',
+      label: 'Date',
+      render: (r) => (r.createdAt ? formatDate(r.createdAt) : '—'),
+    },
     {
       key: 'status',
       label: 'Status',
-      render: (r) => <StatusBadge variant={STATUS_VARIANT[r.status] || 'pending'} label={r.status} />,
+      render: (r) => (
+        <StatusBadge variant={STATUS_VARIANT[r.status] || 'pending'} label={r.status} />
+      ),
     },
     {
       key: 'actions',

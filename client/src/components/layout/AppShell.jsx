@@ -3,6 +3,7 @@ import { useLocation } from 'react-router-dom';
 import Header from './Header';
 import Footer from './Footer';
 import Sidebar from './Sidebar';
+import { FiMenu } from '../../utils/actionIcons';
 
 function AppShell({
   children,
@@ -42,7 +43,8 @@ function AppShell({
             aria-expanded={sidebarOpen}
             onClick={() => setSidebarOpen((v) => !v)}
           >
-            Menu
+            <FiMenu className="ui-icon" aria-hidden="true" focusable="false" />
+            <span className="sr-only">Menu</span>
           </button>
 
           <Header

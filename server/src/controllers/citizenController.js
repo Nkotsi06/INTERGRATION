@@ -1,35 +1,26 @@
 const citizenService = require('../services/citizenService');
+const biometricService = require('../services/biometricService');
 const applicationRepository = require('../repositories/applicationRepository');
 const documentService = require('../services/documentService');
 const notificationService = require('../services/notificationService');
 const { query } = require('../config/database');
 const { signToken } = require('../utils/jwt');
 const { authCookieOptions } = require('../utils/authCookies');
+const { citizenIdFrom } = require('../middleware/citizenId');
 const fs = require('fs');
-
-// The verification state lives in the JWT (req.user.verifiedCitizenId),
-// not in req.session. express-session is not mounted on the app, so
-// the old `req.session?.verifiedCitizenId` was always undefined.
-function citizenIdFrom(req) {
-  return req.user?.verifiedCitizenId || req.user?.citizenId || null;
-}
 
 async function getProfile(req, res, next) {
   try {
     const profile = await citizenService.getProfile(req.user.userId);
     res.json(profile);
-  } catch (err) {
-    next(err);
-  }
+  } catch (err) { next(err); }
 }
 
 async function updateContact(req, res, next) {
   try {
     const updated = await citizenService.updateContact(req.user.userId, req.body);
     res.json(updated);
-  } catch (err) {
-    next(err);
-  }
+  } catch (err) { next(err); }
 }
 
 async function changePassword(req, res, next) {
@@ -46,9 +37,7 @@ async function changePassword(req, res, next) {
     });
     res.cookie('token', token, authCookieOptions);
     res.json(result);
-  } catch (err) {
-    next(err);
-  }
+  } catch (err) { next(err); }
 }
 
 async function getApplications(req, res, next) {
@@ -78,14 +67,9 @@ async function getApplications(req, res, next) {
     }));
 
     res.json(apps);
-  } catch (err) {
-    next(err);
-  }
+  } catch (err) { next(err); }
 }
 
-// Ownership check is strict. If the citizenId is missing, or the
-// application does not belong to this citizen, return 404.
-// Never return a row that belongs to a different citizen.
 async function getApplicationByRef(req, res, next) {
   try {
     const citizenId = citizenIdFrom(req);
@@ -95,18 +79,22 @@ async function getApplicationByRef(req, res, next) {
     }
     const history = await applicationRepository.getStatusHistory(app.id);
     res.json({ ...app, history });
-  } catch (err) {
-    next(err);
-  }
+  } catch (err) { next(err); }
 }
 
 async function deleteApplication(req, res, next) {
   try {
-    const result = await citizenService.deleteApplication(req.params.id, req.user?.userId);
+    const citizenId = citizenIdFrom(req);
+    if (!citizenId) {
+      return res.status(403).json({ message: 'Citizen profile required.' });
+    }
+    const result = await citizenService.deleteApplication(
+      req.params.id,
+      req.user?.userId,
+      citizenId
+    );
     res.json(result);
-  } catch (err) {
-    next(err);
-  }
+  } catch (err) { next(err); }
 }
 
 async function getDocuments(req, res, next) {
@@ -115,9 +103,18 @@ async function getDocuments(req, res, next) {
     if (!citizenId) return res.json([]);
     const docs = await documentService.findByCitizen(citizenId);
     res.json(docs);
-  } catch (err) {
-    next(err);
-  }
+  } catch (err) { next(err); }
+}
+
+async function getBiometrics(req, res, next) {
+  try {
+    const citizenId = citizenIdFrom(req);
+    if (!citizenId) {
+      return res.status(403).json({ message: 'Citizen profile required.' });
+    }
+    const record = await biometricService.get(citizenId);
+    res.json(record || {});
+  } catch (err) { next(err); }
 }
 
 async function getPhoto(req, res, next) {
@@ -144,48 +141,33 @@ async function getPhoto(req, res, next) {
     res.setHeader('Content-Type', photo.fileType || 'image/jpeg');
     res.setHeader('Cache-Control', 'private, max-age=300');
     fs.createReadStream(filePath).pipe(res);
-  } catch (err) {
-    next(err);
-  }
+  } catch (err) { next(err); }
 }
 
 async function getNotifications(req, res, next) {
   try {
     const notifications = await notificationService.getForUser(req.user.userId);
     res.json(notifications);
-  } catch (err) {
-    next(err);
-  }
+  } catch (err) { next(err); }
 }
 
 async function deleteNotification(req, res, next) {
   try {
     await notificationService.deleteForUser(req.params.id, req.user.userId);
     res.json({ message: 'Notification deleted' });
-  } catch (err) {
-    next(err);
-  }
+  } catch (err) { next(err); }
 }
 
 async function markNotificationRead(req, res, next) {
   try {
     await notificationService.markRead(req.params.id, req.user.userId);
     res.json({ message: 'Notification marked as read' });
-  } catch (err) {
-    next(err);
-  }
+  } catch (err) { next(err); }
 }
 
 module.exports = {
-  getProfile,
-  updateContact,
-  changePassword,
-  getApplications,
-  getApplicationByRef,
-  deleteApplication,
-  getDocuments,
-  getPhoto,
-  getNotifications,
-  deleteNotification,
-  markNotificationRead,
+  getProfile, updateContact, changePassword,
+  getApplications, getApplicationByRef, deleteApplication,
+  getDocuments, getBiometrics, getPhoto,
+  getNotifications, deleteNotification, markNotificationRead,
 };

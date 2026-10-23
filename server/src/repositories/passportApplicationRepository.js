@@ -102,11 +102,22 @@ async function updateApplicationStatus(applicationId, status, changedBy, notes) 
   });
 }
 
-async function markReadyForCollection(applicationId, passportNumber, issuedBy) {
+async function getServiceCode(applicationId) {
+  const result = await query(
+    `SELECT a.data->>'serviceCode' AS service_code
+     FROM applications a
+     WHERE a.id = $1 AND a.service = 'PASSPORT'`,
+    [applicationId]
+  );
+  return result.rows[0]?.service_code || null;
+}
+
+async function markReadyForCollection(applicationId, passportNumber, issuedBy, validityYears) {
   return withTransaction(async (client) => {
     const result = await client.query(
       `SELECT a.citizen_id,
               a.reference_number,
+              a.data->>'serviceCode' AS service_code,
               a.status AS application_status,
               pa.status AS passport_status,
               pa.passport_number,
@@ -141,9 +152,18 @@ async function markReadyForCollection(applicationId, passportNumber, issuedBy) {
            passport_number = $2,
            issued_at = NOW(),
            issued_by = $3,
-           issue_date = CURRENT_DATE
+           issue_date = CURRENT_DATE,
+           expiry_date = (
+             make_date(
+               EXTRACT(YEAR FROM CURRENT_DATE)::int + $4::integer,
+               EXTRACT(MONTH FROM CURRENT_DATE)::int,
+               1
+             ) +
+             (EXTRACT(DAY FROM CURRENT_DATE)::int - 1) * INTERVAL '1 day' -
+             INTERVAL '1 day'
+           )::date
        WHERE application_id = $1`,
-      [applicationId, passportNumber, issuedBy]
+      [applicationId, passportNumber, issuedBy, validityYears]
     );
     await client.query(
       `UPDATE applications
@@ -283,6 +303,7 @@ async function findCurrentByCitizen(citizenId) {
 module.exports = {
   create,
   findByApplicationId,
+  getServiceCode,
   findForStaff,
   updateStatus,
   updateApplicationStatus,

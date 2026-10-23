@@ -58,7 +58,8 @@ function MyDocuments() {
     setPhotoError(null);
     setPhotoUrl(cert.applicant_photo || null);
     if (cert.certificate_type === 'ID_CARD' ||
-        (cert.certificate_type === 'PASSPORT' && !cert.applicant_photo)) {
+        (cert.certificate_type === 'PASSPORT' &&
+          !cert.applicant_photo && !cert.child_full_name)) {
       try {
         const blob = await apiClient.get('/citizen/photo', { responseType: 'blob' });
         setPhotoUrl(URL.createObjectURL(blob));

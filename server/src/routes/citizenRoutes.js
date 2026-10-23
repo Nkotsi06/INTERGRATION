@@ -9,6 +9,7 @@ router.put('/contact', citizenController.updateContact);
 router.put('/change-password', citizenController.changePassword);
 
 router.get('/photo', citizenController.getPhoto);
+router.get('/biometrics', citizenController.getBiometrics);
 
 router.get('/applications', citizenController.getApplications);
 router.get('/applications/:ref', citizenController.getApplicationByRef);

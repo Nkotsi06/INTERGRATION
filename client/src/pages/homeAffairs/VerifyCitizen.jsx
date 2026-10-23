@@ -62,9 +62,7 @@ function HAVerifyCitizen() {
     }
   };
 
-  const handleCancel = () => {
-    navigate(`/home-affairs/citizen/${id}`);
-  };
+  const handleCancel = () => navigate(`/home-affairs/citizen/${id}`);
 
   if (loading) {
     return (
@@ -87,8 +85,7 @@ function HAVerifyCitizen() {
             <h1>Citizen verified</h1>
             <StatusBadge variant="verified" />
             <p>
-              Verified by{' '}
-              <strong>{user?.fullName || user?.username}</strong> on{' '}
+              Verified by <strong>{user?.fullName || user?.username}</strong> on{' '}
               {formatDate(confirmedAt)}.
             </p>
             <div className="result-actions">
@@ -111,6 +108,11 @@ function HAVerifyCitizen() {
     );
   }
 
+  const displayName = citizen
+    ? (citizen.fullName ||
+       [citizen.firstName, citizen.lastName].filter(Boolean).join(' ').trim())
+    : '';
+
   return (
     <PageWrapper
       title="Verify Citizen"
@@ -122,7 +124,7 @@ function HAVerifyCitizen() {
 
       <div className="card card-flat" style={{ marginBottom: 24 }}>
         <div className="form-grid">
-          <ReadOnly label="Full name" value={citizen?.fullName} />
+          <ReadOnly label="Full name" value={displayName} />
           <ReadOnly label="National ID" value={citizen?.nationalId} />
           <ReadOnly
             label="Date of birth"

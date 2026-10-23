@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import PageWrapper from '../../components/layout/PageWrapper';
 import Select from '../../components/common/Select';
-import Input from '../../components/common/Input';
 import FormActions from '../../components/common/FormActions';
 import Alert from '../../components/common/Alert';
 import { addCaseUpdate, updateCase } from '../../api/policeApi';
@@ -27,12 +26,14 @@ function CaseUpdate() {
     try {
       await updateCase(id, { status });
       if (notes.trim()) {
-        await addCaseUpdate(id, { notes });
+        // Send notes as a plain string field. Requires the
+        // policeController.addCaseUpdate fix above.
+        await addCaseUpdate(id, { notes: notes.trim() });
       }
       success('Case updated');
       navigate('/police/manage');
     } catch (err) {
-      setError('Could not save the update. Please try again.');
+      setError(err.message || 'Could not save the update. Please try again.');
     } finally {
       setSaving(false);
     }

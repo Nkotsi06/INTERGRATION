@@ -36,6 +36,16 @@ function HACitizenSearch() {
     }
   };
 
+  const displayName =
+    result && (result.fullName ||
+      [result.firstName, result.lastName].filter(Boolean).join(' ').trim());
+
+  const statusVariant = result?.isVerified
+    ? 'verified'
+    : result?.nationalId
+      ? 'captured'
+      : 'awaiting';
+
   return (
     <PageWrapper
       title="Citizen Search"
@@ -44,9 +54,7 @@ function HACitizenSearch() {
       accentColour="#1A5276"
     >
       <h1>Citizen search</h1>
-      <p className="text-muted">
-        Search by National ID, full name, or username.
-      </p>
+      <p className="text-muted">Search by National ID, full name, or username.</p>
 
       <form onSubmit={handleSearch} noValidate>
         <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end' }}>
@@ -56,11 +64,7 @@ function HACitizenSearch() {
             onChange={(e) => setQuery(e.target.value)}
             placeholder="e.g. 198503150012 or Teboho Nko"
           />
-          <Button
-            type="submit"
-            variant="primary"
-            loading={loading}
-          >
+          <Button type="submit" variant="primary" loading={loading}>
             Search
           </Button>
         </div>
@@ -70,7 +74,7 @@ function HACitizenSearch() {
 
       {result && (
         <div className="card card-bordered" style={{ marginTop: 16 }}>
-          <h3>{result.fullName || result.username}</h3>
+          <h3>{displayName || result.username}</h3>
           <div className="profile-rows">
             <div className="profile-row">
               <span>National ID</span>
@@ -78,22 +82,12 @@ function HACitizenSearch() {
             </div>
             <div className="profile-row">
               <span>Status</span>
-              <StatusBadge
-                variant={
-                  result.isVerified
-                    ? 'verified'
-                    : result.nationalId
-                    ? 'captured'
-                    : 'awaiting'
-                }
-              />
+              <StatusBadge variant={statusVariant} />
             </div>
           </div>
           <Button
             variant="primary"
-            onClick={() =>
-              navigate(`/home-affairs/citizen/${result.id}`)
-            }
+            onClick={() => navigate(`/home-affairs/citizen/${result.id}`)}
           >
             View citizen profile
           </Button>
