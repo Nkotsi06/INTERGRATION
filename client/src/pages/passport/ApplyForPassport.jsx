@@ -130,7 +130,13 @@ function ApplyForPassport() {
         setHomeAffairsPhoto(objectUrl);
       })
       .catch((err) => {
-        if (!cancelled) setPhotoError(err.message || 'Could not load your Home Affairs photo.');
+        if (!cancelled) {
+          setPhotoError(
+            err.status === 404
+              ? 'No Home Affairs photo is linked to your citizen record. Please contact Home Affairs to capture or link your photo; you do not need to upload it here.'
+              : err.message || 'Could not load your Home Affairs photo.'
+          );
+        }
       });
     return () => {
       cancelled = true;
@@ -268,7 +274,12 @@ function ApplyForPassport() {
                   style={{ width: 140, height: 170, objectFit: 'cover', borderRadius: 4 }}
                 />
               )}
-              {photoError && <Alert type="error" message={photoError} />}
+              {photoError && (
+                <Alert
+                  type={photoError.startsWith('No Home Affairs photo') ? 'warning' : 'error'}
+                  message={photoError}
+                />
+              )}
             </div>
           )}
 

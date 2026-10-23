@@ -17,6 +17,14 @@ const MINISTRY_LABELS = {
   PASSPORT: 'Passport',
 };
 
+const HIDDEN_HOME_AFFAIRS_SERVICE_CODES = new Set([
+  'DOCUMENT_VERIFY_INFO',
+  'LIVESTOCK_INFO',
+  'REFUGEE_INFO',
+  'CITIZENSHIP_INFO',
+  'IMMIGRATION_INFO',
+]);
+
 function Services() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -72,10 +80,15 @@ function Services() {
     MY_TRANSPORT_PERMITS: '/traffic/permits',
   };
 
-  const applicationServices = services.filter(
+  const visibleServices = services.filter(
+    (service) =>
+      ministry !== 'HOME_AFFAIRS' ||
+      !HIDDEN_HOME_AFFAIRS_SERVICE_CODES.has(String(service.code || '').toUpperCase())
+  );
+  const applicationServices = visibleServices.filter(
     (s) => s.serviceType === 'APPLICATION'
   );
-  const informationServices = services.filter(
+  const informationServices = visibleServices.filter(
     (s) => s.serviceType !== 'APPLICATION'
   );
 
@@ -115,7 +128,7 @@ function Services() {
         </>
       )}
 
-      {!loading && !error && services.length === 0 && (
+      {!loading && !error && visibleServices.length === 0 && (
         <EmptyState
           title={`No services available from ${ministryLabel}`}
           message="This ministry has no services enabled at the moment. Please check back later, or choose a different ministry from your dashboard."
@@ -146,33 +159,6 @@ function Services() {
                   </span>
                 )}
 
-                {!loading && !error && informationServices.length > 0 && (
-                  <section className="dashboard-section">
-                    <h2>Information and other services</h2>
-                    <div className="services-grid">
-                      {informationServices.map((service) => (
-                        <Card
-                          key={service.id}
-                          variant="bordered"
-                          className="service-card"
-                        >
-                          <div
-                            className="service-card-accent"
-                            style={{ backgroundColor: getAccentColor() }}
-                          />
-                          <div className="service-card-body" style={{ paddingTop: '12px' }}>
-                            <span className="service-card-name">{service.name}</span>
-                            {service.description && (
-                              <span className="text-muted" style={{ display: 'block' }}>
-                                {service.description}
-                              </span>
-                            )}
-                          </div>
-                        </Card>
-                      ))}
-                    </div>
-                  </section>
-                )}
                 <Button
                   variant="primary"
                   onClick={() =>
@@ -188,6 +174,32 @@ function Services() {
             </Card>
           ))}
         </div>
+      )}
+
+      {!loading && !error && informationServices.length > 0 && (
+        <section className="dashboard-section">
+          <h2>Information and other services</h2>
+          <div className="services-grid">
+            {informationServices.map((service) => (
+              <Card
+                key={service.id}
+                variant="bordered"
+                className="service-card"
+              >
+                <div
+                  className="service-card-accent"
+                  style={{ backgroundColor: getAccentColor() }}
+                />
+                <div className="service-card-body">
+                  <span className="service-card-name">{service.name}</span>
+                  {service.description && (
+                    <span className="text-muted">{service.description}</span>
+                  )}
+                </div>
+              </Card>
+            ))}
+          </div>
+        </section>
       )}
 
     </PageWrapper>

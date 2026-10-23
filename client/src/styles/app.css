@@ -463,14 +463,16 @@ small, .text-small { font-size: 0.875rem; color: var(--colour-text-secondary); }
 /* ============================================
    16. SERVICE CARDS (Dashboard)
    ============================================ */
-.services-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: var(--spacing-md); margin-top: var(--spacing-md); }
-.service-card { position: relative; background-color: var(--colour-surface); border: 1px solid var(--colour-border); border-radius: var(--radius-md); padding: var(--spacing-lg); text-align: left; transition: border-color 0.15s, box-shadow 0.15s; cursor: pointer; min-height: 100px; display: flex; flex-direction: column; gap: var(--spacing-xs); }
-.service-card:hover { border-color: var(--colour-accent); box-shadow: var(--shadow-md); }
+.services-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 250px), 1fr)); gap: var(--spacing-md); margin-top: var(--spacing-md); align-items: stretch; }
+.service-card { position: relative; overflow: hidden; background-color: var(--colour-surface); border: 1px solid var(--colour-border); border-radius: var(--radius-md); padding: var(--spacing-lg); text-align: left; transition: transform 0.15s, border-color 0.15s, box-shadow 0.15s; cursor: pointer; min-height: 132px; display: flex; flex-direction: column; gap: var(--spacing-xs); }
+.service-card:hover { transform: translateY(-2px); border-color: var(--colour-accent); box-shadow: var(--shadow-md); }
 .service-card.is-locked { opacity: 0.6; }
 .service-card.is-locked:hover { border-color: var(--colour-border); box-shadow: none; }
 .service-card-accent { position: absolute; top: 0; left: 0; right: 0; height: 4px; z-index: 1; border-top-left-radius: var(--radius-md); border-top-right-radius: var(--radius-md); }
-.service-card-body { display: flex; flex-direction: column; gap: 4px; margin-top: var(--spacing-sm); }
+.service-card-body { display: flex; flex: 1; flex-direction: column; align-items: flex-start; gap: var(--spacing-sm); margin-top: var(--spacing-sm); }
 .service-card-name { font-size: 1rem; font-weight: 700; color: var(--colour-text-primary); }
+.service-card-body .text-muted { line-height: 1.5; }
+.service-card-body .btn { margin-top: auto; }
 .service-card-lock { display: inline-flex; align-items: center; gap: 4px; font-size: 0.875rem; color: var(--colour-text-secondary); margin-top: auto; }
 
 /* ============================================

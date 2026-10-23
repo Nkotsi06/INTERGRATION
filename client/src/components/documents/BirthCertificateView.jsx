@@ -3,8 +3,6 @@ import Barcode from './Barcode';
 function BirthCertificateView({ data }) {
   return (
     <div className="a4-page print-container">
-      <div className="watermark">SAMPLE</div>
-      
       <div className="cert-header">
         <div>
           <strong>Certificate Number</strong><br />
@@ -36,7 +34,7 @@ function BirthCertificateView({ data }) {
 
       <table className="cert-fields">
         <tbody>
-          <tr><td>1. ID Number</td><td>{data.child_national_id || data.national_id || '—'}</td></tr>
+          <tr><td>1. ID Number</td><td>{data.childNationalId || data.child_national_id || data.nationalId || data.national_id || '—'}</td></tr>
           <tr><td>2. Name(s)</td><td>{data.child_full_name?.split(' ').slice(0, -1).join(' ')}</td></tr>
           <tr><td>3. Surname</td><td>{data.child_full_name?.split(' ').slice(-1)[0]}</td></tr>
           <tr><td>4. Gender</td><td>{data.child_gender}</td></tr>

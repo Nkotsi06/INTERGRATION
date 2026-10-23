@@ -49,7 +49,7 @@ export function normalize(value) {
     if (normalizedKey === key || !Object.prototype.hasOwnProperty.call(value, normalizedKey)) {
       out[normalizedKey] = normalizedValue;
     }
-    if (normalizedKey !== key && !Object.prototype.hasOwnProperty.call(value, normalizedKey)) {
+    if (normalizedKey !== key) {
       out[key] = normalizedValue;
     }
   }

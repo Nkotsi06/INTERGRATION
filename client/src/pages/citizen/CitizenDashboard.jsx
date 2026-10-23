@@ -5,17 +5,22 @@ import { useSession } from '../../context/SessionContext';
 import { useSettings } from '../../context/SettingsContext';
 import PageWrapper from '../../components/layout/PageWrapper';
 import Card from '../../components/common/Card';
+import Alert from '../../components/common/Alert';
 import { StatsSkeleton } from '../../components/common/SkeletonLoader';
 import { getProfile } from '../../api/citizenApi';
+import { getPublicServices } from '../../api/serviceApi';
 
 function CitizenDashboard() {
   const { user } = useAuth();
   const { session } = useSession();
-  const { settings } = useSettings();
+  const { settings, loading: settingsLoading } = useSettings();
   const navigate = useNavigate();
 
   const [profile, setProfile] = useState(null);
   const [loadingProfile, setLoadingProfile] = useState(true);
+  const [availableMinistries, setAvailableMinistries] = useState(null);
+  const [loadingServices, setLoadingServices] = useState(true);
+  const [servicesError, setServicesError] = useState(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -33,6 +38,37 @@ function CitizenDashboard() {
     return () => { cancelled = true; };
   }, []);
 
+  useEffect(() => {
+    if (settingsLoading) return undefined;
+
+    let cancelled = false;
+    setLoadingServices(true);
+    setServicesError(null);
+    Promise.all(
+      (settings.ministries || []).map(async (ministry) => {
+        const services = await getPublicServices(ministry.code);
+        if (!Array.isArray(services)) {
+          throw new Error('The services response was not in the expected format.');
+        }
+        return services.length > 0 ? String(ministry.code).toUpperCase() : null;
+      })
+    )
+      .then((codes) => {
+        if (!cancelled) {
+          setAvailableMinistries(new Set(codes.filter(Boolean)));
+        }
+      })
+      .catch((error) => {
+        if (!cancelled) {
+          setServicesError(error.message || 'Could not load available services.');
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setLoadingServices(false);
+      });
+    return () => { cancelled = true; };
+  }, [settings.ministries, settingsLoading]);
+
   const isVerified = !!profile?.isVerified;
 
   const handleMinistryClick = (ministry) => {
@@ -44,7 +80,15 @@ function CitizenDashboard() {
   };
 
   const ministries = settings.ministries || [];
-  const showSkeleton = loadingProfile && ministries.length === 0;
+  const visibleMinistries = availableMinistries
+    ? ministries.filter((ministry) =>
+        availableMinistries.has(String(ministry.code || '').toUpperCase())
+      )
+    : ministries;
+  const showSkeleton =
+    settingsLoading ||
+    loadingServices ||
+    (loadingProfile && ministries.length === 0);
 
   return (
     <PageWrapper title="Citizen Dashboard">
@@ -75,29 +119,31 @@ function CitizenDashboard() {
         <h2>Government services</h2>
 
         {showSkeleton && <StatsSkeleton count={6} />}
+        {servicesError && <Alert type="error" message={servicesError} />}
 
-        {/* Changed from ministry-grid to services-grid */}
-        <div className="services-grid">
-          {ministries.map((ministry) => (
-            <Card
-              key={ministry.code}
-              variant="bordered"
-              className="service-card"
-              onClick={() => handleMinistryClick(ministry)}
-            >
-              <div
-                className="service-card-accent"
-                style={{ backgroundColor: ministry.colourHex }}
-              />
-              <div className="service-card-body">
-                <span className="service-card-name">{ministry.name}</span>
-                <span className="text-muted">
-                  {isVerified ? 'Open services' : 'Verification required'}
-                </span>
-              </div>
-            </Card>
-          ))}
-        </div>
+        {!showSkeleton && (
+          <div className="services-grid">
+            {visibleMinistries.map((ministry) => (
+              <Card
+                key={ministry.code}
+                variant="bordered"
+                className="service-card"
+                onClick={() => handleMinistryClick(ministry)}
+              >
+                <div
+                  className="service-card-accent"
+                  style={{ backgroundColor: ministry.colourHex }}
+                />
+                <div className="service-card-body">
+                  <span className="service-card-name">{ministry.name}</span>
+                  <span className="text-muted">
+                    {isVerified ? 'Open services' : 'Verification required'}
+                  </span>
+                </div>
+              </Card>
+            ))}
+          </div>
+        )}
       </section>
     </PageWrapper>
   );
