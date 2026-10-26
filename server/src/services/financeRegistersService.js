@@ -65,7 +65,20 @@ async function audit(actor, action, recordType, recordId) {
   });
 }
 
-async function employers(activeOnly) {
+async function syncHomeAffairsEmployers(actor) {
+  const synced = await repository.syncHomeAffairsEmployers();
+  if (synced.length) {
+    await audit(
+      actor,
+      'HOME_AFFAIRS_GOVERNMENT_EMPLOYERS_SYNCED',
+      'GOVERNMENT_EMPLOYER',
+      `count:${synced.length}`
+    );
+  }
+}
+
+async function employers(activeOnly, actor) {
+  await syncHomeAffairsEmployers(actor);
   return repository.listEmployers(activeOnly);
 }
 
@@ -106,6 +119,7 @@ async function saveEmployee(input = {}, actor, id) {
   if (id && !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
     throw fail('Invalid employee record identifier.');
   }
+  await syncHomeAffairsEmployers(actor);
   const employersList = await repository.listEmployers(true);
   if (!employersList.some((employer) => employer.id === data.employerId)) {
     throw fail('Choose an active government employer.');
@@ -127,6 +141,7 @@ async function importEmployees(rows, actor) {
   if (!Array.isArray(rows) || rows.length === 0) throw fail('The import file contains no employee rows.');
   if (rows.length > 1000) throw fail('Import up to 1,000 employee rows at a time.');
   const results = [];
+  await syncHomeAffairsEmployers(actor);
   const activeEmployerIds = new Set((await repository.listEmployers(true)).map((employer) => employer.id));
   for (let index = 0; index < rows.length; index += 1) {
     try {

@@ -4,13 +4,14 @@ import PageWrapper from '../../components/layout/PageWrapper';
 import Table from '../../components/common/Table';
 import Button from '../../components/common/Button';
 import EmptyState from '../../components/common/EmptyState';
+import Alert from '../../components/common/Alert';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
 import useFetch from '../../hooks/useFetch';
 import { getVehicles, deleteVehicle } from '../../api/trafficApi';
 import { useNotification } from '../../context/NotificationContext';
 
 function MyVehicles() {
-  const { data: vehicles, loading, refetch } = useFetch(getVehicles, []);
+  const { data: vehicles, loading, error, refetch } = useFetch(getVehicles, []);
   const [pendingDelete, setPendingDelete] = useState(null);
   const [deleting, setDeleting] = useState(false);
   const navigate = useNavigate();
@@ -66,9 +67,10 @@ function MyVehicles() {
         </Button>
       </div>
 
+      {error && <Alert type="error" message={error} />}
       {loading ? (
         <p className="text-muted">Loading…</p>
-      ) : !vehicles || vehicles.length === 0 ? (
+      ) : error ? null : !vehicles || vehicles.length === 0 ? (
         <EmptyState title="No vehicles registered" message="Click 'Register a vehicle' to add one." />
       ) : (
         <Table columns={columns} data={vehicles} />

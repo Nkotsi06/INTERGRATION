@@ -92,7 +92,7 @@ function BiometricEnrollment({
             image={facialImage}
             onAccept={handleReviewAccept}
             onRetake={handleReviewRetake}
-            allowOverride={settings?.allowOverride !== false}
+            allowOverride={settings?.allowOverride === true}
           />
         )}
 

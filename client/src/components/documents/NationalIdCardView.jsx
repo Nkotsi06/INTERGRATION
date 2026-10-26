@@ -1,6 +1,9 @@
-import Barcode from './Barcode';
+import { formatDate } from '../../utils/formatters';
 
 function NationalIdCardView({ data, photoUrl }) {
+  const signatureData = data.signatureData || data.signature_data;
+  const dateOfBirth = data.dateOfBirth || data.date_of_birth;
+
   return (
     <div className="id-card-page print-container" style={{ background: 'linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%)' }}>
       
@@ -58,7 +61,7 @@ function NationalIdCardView({ data, photoUrl }) {
           </div>
           <div style={{ display: 'flex' }}>
             <span style={{ width: '25mm' }}>Date of Birth</span>
-            <span>{new Date(data.dateOfBirth).toLocaleDateString('en-GB')}</span>
+            <span>{formatDate(dateOfBirth)}</span>
           </div>
           <div style={{ display: 'flex' }}>
             <span style={{ width: '25mm' }}>Sex</span>
@@ -82,9 +85,9 @@ function NationalIdCardView({ data, photoUrl }) {
           <div style={{ width: '10mm', height: '12mm', background: '#eee', opacity: 0.5, border: '1px solid #ccc' }}></div>
           <div style={{ marginTop: 'auto', fontSize: '6px', textAlign: 'center' }}>
             <div style={{ borderBottom: '1px solid #000', width: '15mm', height: '5mm', fontFamily: 'cursive' }}>
-              {data.signatureData && (
+              {signatureData && (
                 <img
-                  src={data.signatureData}
+                  src={signatureData}
                   alt="Holder signature"
                   style={{ width: '100%', height: '100%', objectFit: 'contain' }}
                 />

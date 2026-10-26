@@ -80,16 +80,6 @@ export default function FacialCamera({ onCapture, onCancel, settings }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ready, lastCaptured, thresholds.holdStillMs]);
 
-  useEffect(() => {
-    if (!thresholds.allowManualFallback) return undefined;
-    const t = setTimeout(() => {
-      if (!lastCaptured) {
-        setMessage('Having trouble? You can capture manually instead.');
-      }
-    }, thresholds.giveUpMs);
-    return () => clearTimeout(t);
-  }, [lastCaptured, thresholds.giveUpMs, thresholds.allowManualFallback]);
-
   const handleCapture = useCallback(() => {
     const shot = webcamRef.current?.getScreenshot();
     if (shot) {
@@ -97,13 +87,6 @@ export default function FacialCamera({ onCapture, onCancel, settings }) {
       onCapture(shot);
     }
   }, [onCapture]);
-
-  const handleRetake = () => {
-    setLastCaptured(null);
-    holdStartRef.current = null;
-    setHoldProgress(0);
-    lastAnalysisRef.current = { noseTip: null, timestamp: 0 };
-  };
 
   return (
     <div className="facial-camera">
@@ -150,24 +133,9 @@ export default function FacialCamera({ onCapture, onCancel, settings }) {
 
           <div className="facial-actions">
             <Button variant="secondary" onClick={onCancel}>Cancel</Button>
-            <Button variant="primary" onClick={handleCapture} disabled={!ready}>
-              Capture manually
-            </Button>
           </div>
         </>
-      ) : (
-        <>
-          <img src={lastCaptured} alt="Captured face" className="facial-image" />
-          <div className="facial-actions">
-            <Button variant="secondary" onClick={handleRetake}>
-              Retake
-            </Button>
-            <Button variant="primary" onClick={handleCapture}>
-              Use this photo
-            </Button>
-          </div>
-        </>
-      )}
+      ) : <img src={lastCaptured} alt="Captured face" className="facial-image" />}
     </div>
   );
 }
@@ -179,9 +147,11 @@ function humanise(key) {
     facingForward: 'Facing forward',
     standingStill: 'Standing still',
     eyesVisible: 'Eyes visible',
+    noGlasses: 'No glasses obscuring the eyes',
     noHat: 'No hat',
     clearBackground: 'Clear background',
     goodLight: 'Good light',
+    sharpImage: 'Sharp, focused image',
   };
   return map[key] || key;
 }

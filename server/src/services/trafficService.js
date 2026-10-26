@@ -513,10 +513,22 @@ async function renewVehicleLicence(citizenId, licenceId, data, user) {
 
 // ─── Transport permits ────────────────────────────────────────────────
 async function applyTransportPermit(citizenId, data, user) {
-  if (!data.permitCategory) throw badRequest('Permit category is required.');
-  if (!data.permitType) throw badRequest('Permit type is required.');
-  if (!data.validFrom) throw badRequest('Valid-from date is required.');
-  if (!data.validUntil) throw badRequest('Valid-until date is required.');
+  if (!['PASSENGER', 'GOODS', 'ABNORMAL'].includes(data.permitCategory)) {
+    throw badRequest('Choose a valid permit category.');
+  }
+  if (!['SHORT_TERM', 'ANNUAL'].includes(data.permitType)) {
+    throw badRequest('Choose a valid permit type.');
+  }
+  const validDate = (value) => {
+    if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+    const date = new Date(`${value}T00:00:00.000Z`);
+    return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value;
+  };
+  if (!validDate(data.validFrom)) throw badRequest('Enter the valid-from date.');
+  if (!validDate(data.validUntil)) throw badRequest('Enter the valid-until date.');
+  if (data.validUntil < data.validFrom) {
+    throw badRequest('The valid-until date cannot be before the valid-from date.');
+  }
   const referenceNumber = await generateReference('TRANSPORT_PERMIT');
   const created = await transportPermitRepository.create({
     citizenId, referenceNumber,

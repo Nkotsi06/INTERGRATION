@@ -539,7 +539,7 @@ CREATE TABLE transport_permits (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   citizen_id UUID NOT NULL REFERENCES citizens(id) ON DELETE CASCADE,
   reference_number VARCHAR(50) UNIQUE NOT NULL,
-  permit_category VARCHAR(5) NOT NULL,
+  permit_category VARCHAR(30) NOT NULL,
   permit_type VARCHAR(30) NOT NULL,
   vehicle_id UUID REFERENCES vehicles(id) ON DELETE SET NULL,
   route_description TEXT,

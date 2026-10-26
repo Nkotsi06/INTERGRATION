@@ -10,9 +10,9 @@ function errorHandler(err, req, res, next) {
 
   const statusCode = err.statusCode || 500;
   const message =
-    process.env.NODE_ENV === 'production'
-      ? 'An unexpected error occurred'
-      : err.message;
+    statusCode < 500 || process.env.NODE_ENV !== 'production'
+      ? err.message
+      : 'An unexpected error occurred';
 
   res.status(statusCode).json({ message });
 }

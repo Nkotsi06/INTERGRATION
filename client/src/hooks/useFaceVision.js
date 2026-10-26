@@ -15,7 +15,7 @@ export default function useFaceVision() {
     async function load() {
       try {
         const fileset = await FilesetResolver.forVisionTasks(
-          'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.6/wasm'
+          'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@1.1.0/wasm'
         );
 
         const [landmarker, segmenter] = await Promise.all([

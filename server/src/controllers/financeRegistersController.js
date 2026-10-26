@@ -11,7 +11,7 @@ function filters(query) {
 }
 
 async function listEmployers(req, res, next) {
-  try { res.json(await registerService.employers(req.query.activeOnly === 'true')); } catch (error) { next(error); }
+  try { res.json(await registerService.employers(req.query.activeOnly === 'true', req.user)); } catch (error) { next(error); }
 }
 
 async function createEmployer(req, res, next) {

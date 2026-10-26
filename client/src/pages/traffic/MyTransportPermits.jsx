@@ -1,9 +1,9 @@
-import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import PageWrapper from '../../components/layout/PageWrapper';
 import Table from '../../components/common/Table';
 import Button from '../../components/common/Button';
 import EmptyState from '../../components/common/EmptyState';
+import Alert from '../../components/common/Alert';
 import StatusBadge from '../../components/common/StatusBadge';
 import useFetch from '../../hooks/useFetch';
 import { getTransportPermits } from '../../api/trafficApi';
@@ -17,7 +17,7 @@ const STATUS_VARIANT = {
 };
 
 function MyTransportPermits() {
-  const { data, loading } = useFetch(getTransportPermits, []);
+  const { data, loading, error } = useFetch(getTransportPermits, []);
   const navigate = useNavigate();
 
   const columns = [
@@ -39,9 +39,10 @@ function MyTransportPermits() {
         </Button>
       </div>
 
+      {error && <Alert type="error" message={error} />}
       {loading ? (
         <p className="text-muted">Loading…</p>
-      ) : !data || data.length === 0 ? (
+      ) : error ? null : !data || data.length === 0 ? (
         <EmptyState title="No permits yet" message="Apply for a permit to see it here." />
       ) : (
         <Table columns={columns} data={data} />

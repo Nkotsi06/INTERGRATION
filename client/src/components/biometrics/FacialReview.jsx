@@ -3,22 +3,25 @@ import Button from '../common/Button';
 import Checkbox from '../common/Checkbox';
 import Alert from '../common/Alert';
 
-export default function FacialReview({ image, onAccept, onRetake, allowOverride = true }) {
+export default function FacialReview({ image, onAccept, onRetake, allowOverride = false }) {
   const [confirmed, setConfirmed] = useState({
     noSunglasses: false,
+    noGlasses: false,
     noHat: false,
     plainBackground: false,
+    sharpAndClear: false,
   });
   const [overrideOpen, setOverrideOpen] = useState(false);
   const [overrideReason, setOverrideReason] = useState('');
   const [error, setError] = useState(null);
 
   const allConfirmed =
-    confirmed.noSunglasses && confirmed.noHat && confirmed.plainBackground;
+    confirmed.noSunglasses && confirmed.noGlasses && confirmed.noHat &&
+    confirmed.plainBackground && confirmed.sharpAndClear;
 
   const handleAccept = () => {
     if (!allConfirmed && !(overrideOpen && overrideReason.trim())) {
-      setError('Confirm all three checks, or provide an override reason.');
+      setError('Confirm every photo quality check, or provide an override reason.');
       return;
     }
     onAccept({
@@ -34,6 +37,9 @@ export default function FacialReview({ image, onAccept, onRetake, allowOverride 
       <h4 className="facial-label">Confirm the photo</h4>
 
       <img src={image} alt="Captured face" className="facial-image facial-image-large" />
+      <p className="text-muted">
+        Inspect the photo directly. Automatic checks cannot reliably identify hats or glasses.
+      </p>
 
       {error && <Alert type="error" message={error} />}
 
@@ -44,14 +50,24 @@ export default function FacialReview({ image, onAccept, onRetake, allowOverride 
           onChange={(e) => setConfirmed({ ...confirmed, noSunglasses: e.target.checked })}
         />
         <Checkbox
+          label="No glasses obscuring the eyes"
+          checked={confirmed.noGlasses}
+          onChange={(e) => setConfirmed({ ...confirmed, noGlasses: e.target.checked })}
+        />
+        <Checkbox
           label="No hat or head covering"
           checked={confirmed.noHat}
           onChange={(e) => setConfirmed({ ...confirmed, noHat: e.target.checked })}
         />
         <Checkbox
-          label="Plain background and face clearly visible"
+          label="Plain background"
           checked={confirmed.plainBackground}
           onChange={(e) => setConfirmed({ ...confirmed, plainBackground: e.target.checked })}
+        />
+        <Checkbox
+          label="Face is sharp, clear, and fully visible"
+          checked={confirmed.sharpAndClear}
+          onChange={(e) => setConfirmed({ ...confirmed, sharpAndClear: e.target.checked })}
         />
       </div>
 

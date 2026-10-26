@@ -144,6 +144,7 @@ function AppRoutes() {
       {/* Public */}
       <Route path="/" element={<Welcome />} />
       <Route path="/register" element={<Register />} />
+      <Route path="/apply" element={<Navigate to="/birth-certificate/apply" replace />} />
       <Route path="/birth-certificate/apply" element={<ApplyBirthCertificate />} />
       <Route path="/login" element={<Login />} />
       <Route path="/staff/login" element={<StaffLogin />} />

@@ -1,3 +1,4 @@
+const crypto = require('crypto');
 const { query } = require('../config/database');
 
 function pagination(filters) {
@@ -20,6 +21,42 @@ async function listEmployers(activeOnly = false) {
      ORDER BY name`
   );
   return result.rows;
+}
+
+async function syncHomeAffairsEmployers() {
+  const [homeAffairsEmployers, existingEmployers] = await Promise.all([
+    query(
+      `SELECT DISTINCT ON (LOWER(BTRIM(employer_name)))
+         BTRIM(employer_name) AS name
+       FROM citizen_employment_history
+       WHERE UPPER(BTRIM(employer_type)) = 'GOVERNMENT'
+         AND NULLIF(BTRIM(employer_name), '') IS NOT NULL
+       ORDER BY LOWER(BTRIM(employer_name)), BTRIM(employer_name)`
+    ),
+    query('SELECT LOWER(BTRIM(name)) AS normalized_name FROM government_employers'),
+  ]);
+  const knownNames = new Set(existingEmployers.rows.map((row) => row.normalized_name));
+  const synced = [];
+
+  for (const { name } of homeAffairsEmployers.rows) {
+    const normalizedName = name.toLocaleLowerCase('en');
+    if (knownNames.has(normalizedName)) continue;
+
+    const code = `HA_${crypto.createHash('sha256').update(normalizedName).digest('hex').slice(0, 32)}`;
+    const result = await query(
+      `INSERT INTO government_employers (code, name)
+       VALUES ($1, $2)
+       ON CONFLICT (code) DO UPDATE
+         SET name = EXCLUDED.name, updated_at = NOW()
+         WHERE government_employers.name IS DISTINCT FROM EXCLUDED.name
+       RETURNING id, code, name, is_active AS "isActive"`,
+      [code, name]
+    );
+    if (result.rows[0]) synced.push(result.rows[0]);
+    knownNames.add(normalizedName);
+  }
+
+  return synced;
 }
 
 async function saveEmployer(data, id) {
@@ -171,6 +208,7 @@ async function findCitizenByNationalId(nationalId) {
 
 module.exports = {
   listEmployers,
+  syncHomeAffairsEmployers,
   saveEmployer,
   listEmployees,
   saveEmployee,

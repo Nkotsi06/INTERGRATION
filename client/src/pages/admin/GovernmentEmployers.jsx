@@ -61,7 +61,7 @@ function GovernmentEmployers() {
   return (
     <AdminLayout title="Government employers">
       <h1>Government employers</h1>
-      <p className="text-muted">Manage ministries and departments used by the government employment register.</p>
+      <p className="text-muted">Government employers recorded by Home Affairs are added automatically. Manage their codes, names, and active status here.</p>
       <Button variant="primary" onClick={() => openEditor(null)}>Add employer</Button>
       {error && <Alert type="error" message={error} />}
       {loading ? <p role="status">Loading employers…</p> : <Table columns={columns} data={employers} emptyMessage="No employers have been added." />}

@@ -88,7 +88,11 @@ The public birth application accepts PDF/JPG uploads for parent or guardian Nati
 
 Apply database migrations `015_birth_certificate_registration.sql` and `016_remove_tax_business_vat_and_plans.sql` after the existing migrations. The second migration removes the retired tax, VAT, business registration, and payment-plan data structures and catalogue entries.
 
+Apply `017_finance_registers.sql` to create the government employer and employee registers. Finance employer options are synchronized from distinct Home Affairs employment-history entries marked `GOVERNMENT` (the history table is created by `002_pensions_eligibility.sql`). Existing employer names are matched case-insensitively, and admin-disabled employers remain disabled.
+
 Apply `020_citizen_finance_services.sql` after the existing migrations to enable citizen employment declarations and private proof uploads. Citizen service and passport application fees are recorded as due on submission and can be paid later from the Finance dashboard; Finance payments use the simulated mobile-money gateway. Passport applications do not require applicants to upload or capture a photo.
+
+Apply `021_transport_permit_category_length.sql` after the existing migrations to support all Traffic permit categories, including `PASSENGER` and `ABNORMAL`.
 
 ---
 

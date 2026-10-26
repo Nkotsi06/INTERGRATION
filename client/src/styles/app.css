@@ -1239,6 +1239,12 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   }
   .passport-page .no-print { display: none !important; }
   body * { visibility: hidden !important; }
+  .print-container,
+  .print-container *,
+  .printable-profile,
+  .printable-profile *,
+  .passport-page,
+  .passport-page *,
   .offline-payment-receipt,
   .offline-payment-receipt * { visibility: visible !important; }
   .offline-payment-receipt {

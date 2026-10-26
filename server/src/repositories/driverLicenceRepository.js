@@ -5,6 +5,7 @@ async function findByCitizen(citizenId) {
     `SELECT dl.*,
             c.first_name || ' ' || c.last_name AS full_name,
             c.national_id,
+            c.date_of_birth,
             signature.signature_data
      FROM driver_licences dl
      JOIN citizens c ON c.id = dl.citizen_id

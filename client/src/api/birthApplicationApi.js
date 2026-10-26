@@ -1,9 +1,7 @@
 import apiClient from './apiClient';
 
 export const submitBirthApplication = (data) =>
-  apiClient.post('/birth-applications', data, {
-    headers: { 'Content-Type': 'multipart/form-data' },
-  });
+  apiClient.post('/birth-applications', data);
 export const getBirthApplications = (params) =>
   apiClient.get('/birth-applications', { params });
 export const getBirthApplication = (id) =>
