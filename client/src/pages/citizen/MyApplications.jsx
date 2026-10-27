@@ -6,8 +6,13 @@ import Button from '../../components/common/Button';
 import EmptyState from '../../components/common/EmptyState';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
 import Alert from '../../components/common/Alert';
+import Modal from '../../components/common/Modal';
 import { TableSkeleton } from '../../components/common/SkeletonLoader';
 import { getApplications, deleteApplication } from '../../api/citizenApi';
+import {
+  getTrafficApplicationByRef,
+  submitTrafficInformationResponse,
+} from '../../api/trafficApi';
 import { formatDate } from '../../utils/formatters';
 import { useNotification } from '../../context/NotificationContext';
 
@@ -21,6 +26,7 @@ const STATUS_VARIANT = {
   READY_FOR_COLLECTION: 'approved',
   COLLECTED: 'completed',
   IN_PRODUCTION: 'inReview',
+  INFO_REQUESTED: 'pending',
 };
 
 function MyApplications() {
@@ -29,6 +35,10 @@ function MyApplications() {
   const [error, setError] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleting, setDeleting] = useState(false);
+  const [trafficRequest, setTrafficRequest] = useState(null);
+  const [trafficResponse, setTrafficResponse] = useState('');
+  const [loadingTrafficRequest, setLoadingTrafficRequest] = useState(false);
+  const [submittingTrafficResponse, setSubmittingTrafficResponse] = useState(false);
   const [filterValues, setFilterValues] = useState({ status: '', service: '' });
   const { success, error: showError } = useNotification();
 
@@ -62,6 +72,39 @@ function MyApplications() {
       showError(err.message || 'Could not delete application.');
     } finally {
       setDeleting(false);
+    }
+  };
+
+  const openTrafficRequest = async (application) => {
+    setLoadingTrafficRequest(true);
+    try {
+      const details = await getTrafficApplicationByRef(application.reference_number);
+      setTrafficRequest(details);
+      setTrafficResponse('');
+    } catch (err) {
+      showError(err.message || 'Could not load the application information request.');
+    } finally {
+      setLoadingTrafficRequest(false);
+    }
+  };
+
+  const submitTrafficResponse = async (event) => {
+    event.preventDefault();
+    if (!trafficRequest) return;
+    setSubmittingTrafficResponse(true);
+    try {
+      await submitTrafficInformationResponse(
+        trafficRequest.reference_number,
+        trafficResponse
+      );
+      success('Your response has been sent to Traffic staff.');
+      setTrafficRequest(null);
+      setTrafficResponse('');
+      await load();
+    } catch (err) {
+      showError(err.message || 'Could not submit your response.');
+    } finally {
+      setSubmittingTrafficResponse(false);
     }
   };
 
@@ -106,6 +149,17 @@ function MyApplications() {
       key: 'actions',
       label: 'Actions',
       render: (row) => (
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+        {row.service === 'TRAFFIC' && row.status === 'INFO_REQUESTED' && (
+          <Button
+            variant="primary"
+            size="small"
+            onClick={() => openTrafficRequest(row)}
+            loading={loadingTrafficRequest}
+          >
+            View request
+          </Button>
+        )}
         <Button
           variant="danger"
           size="small"
@@ -113,6 +167,7 @@ function MyApplications() {
         >
           Delete
         </Button>
+        </div>
       ),
     },
   ];
@@ -140,6 +195,7 @@ function MyApplications() {
               <option value="">All</option>
               <option value="SUBMITTED">Submitted</option>
               <option value="UNDER_REVIEW">Under Review</option>
+              <option value="INFO_REQUESTED">Information Requested</option>
               <option value="APPROVED">Approved</option>
               <option value="READY_FOR_COLLECTION">Ready for Collection</option>
               <option value="COLLECTED">Collected</option>
@@ -188,9 +244,59 @@ function MyApplications() {
         variant="danger"
         loading={deleting}
       />
+      {trafficRequest && (
+        <Modal
+          isOpen
+          onClose={() => !submittingTrafficResponse && setTrafficRequest(null)}
+          title={`Information requested: ${trafficRequest.reference_number}`}
+          size="medium"
+        >
+          <div className="form-section">
+            <h3 className="form-section-title">
+              {trafficRequest.data?.serviceName || trafficRequest.sub_type || 'Traffic application'}
+            </h3>
+            {(trafficRequest.history || [])
+              .filter((entry) => entry.notes?.startsWith('Information requested:') ||
+                entry.notes?.startsWith('Citizen information response:'))
+              .map((entry) => (
+                <p key={entry.id}>
+                  <strong>{entry.notes.startsWith('Information requested:')
+                    ? 'Traffic staff requested'
+                    : 'Your response'}:</strong>{' '}
+                  {entry.notes.replace(/^(Information requested:|Citizen information response:)\s*/, '')}
+                  <br />
+                  <small>{formatDate(entry.changed_at)}</small>
+                </p>
+              ))}
+          </div>
+          {trafficRequest.status === 'INFO_REQUESTED' ? (
+            <form onSubmit={submitTrafficResponse}>
+              <label htmlFor="traffic-information-response">Your response</label>
+              <textarea
+                id="traffic-information-response"
+                value={trafficResponse}
+                onChange={(event) => setTrafficResponse(event.target.value)}
+                maxLength={4000}
+                rows={5}
+                required
+                style={{ width: '100%', marginTop: 8, marginBottom: 16 }}
+              />
+              <div className="form-actions">
+                <Button variant="secondary" type="button" onClick={() => setTrafficRequest(null)} disabled={submittingTrafficResponse}>
+                  Close
+                </Button>
+                <Button variant="primary" type="submit" loading={submittingTrafficResponse}>
+                  Submit response
+                </Button>
+              </div>
+            </form>
+          ) : (
+            <Button variant="secondary" onClick={() => setTrafficRequest(null)}>Close</Button>
+          )}
+        </Modal>
+      )}
     </PageWrapper>
   );
 }
 
 export default MyApplications;
-

@@ -6,16 +6,50 @@
 -- Run this file FIRST on a fresh PostgreSQL database, then run the
 -- numbered migrations in order (see README of migrations).
 --
--- SAFE TO RE-RUN: every DROP has IF EXISTS, every CREATE TABLE and
--- CREATE SEQUENCE is preceded by a DROP in Section 0 so a re-run
--- never hits "already exists". Verified against a partially
--- populated database.
+-- FRESH DATABASE ONLY: this schema is not a migration. It refuses to
+-- run when any managed relation already exists to protect stored data.
 -- ================================================================
 
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
+DO $schema_guard$
+BEGIN
+  IF EXISTS (
+    SELECT 1
+    FROM pg_class AS relation
+    WHERE relation.relnamespace = current_schema()::regnamespace
+      AND relation.relname = ANY (ARRAY[
+        'admin_user_list', 'admin_dashboard_stats', 'finance_payment_summary',
+        'divorce_certificates', 'death_certificates_new',
+        'birth_certificate_applications', 'birth_certificates',
+        'marriage_certificates', 'national_id_cards', 'audit_findings',
+        'procurement_records', 'debt_records', 'budget_allocations',
+        'treasury_payments', 'transport_permits', 'vehicle_licences',
+        'vehicle_inspections', 'vehicles', 'driving_tests', 'driver_licences',
+        'criminal_records', 'police_case_updates', 'police_cases',
+        'pension_verifications', 'pension_records', 'pension_rules',
+        'passport_applications', 'citizen_employment_history',
+        'home_affairs_records', 'application_status_history', 'status_types',
+        'applications', 'biometrics', 'signatures', 'citizen_documents',
+        'citizen_edit_history', 'document_types', 'citizens', 'users',
+        'translations', 'languages', 'reference_formats', 'system_settings',
+        'branches', 'ministries', 'notifications', 'audit_logs', 'appointments',
+        'information_topics', 'enquiry_messages', 'document_enquiries',
+        'services', 'fee_schedule', 'payments',
+        'citizen_national_id_serial_seq', 'birth_certificate_number_seq',
+        'driving_test_reference_seq', 'passport_number_seq',
+        'driver_licence_number_seq'
+      ]::text[])
+  ) THEN
+    RAISE EXCEPTION
+      'Refusing to run schema.sql because a managed relation already exists in schema %. Use the numbered migrations to update an existing database.',
+      current_schema();
+  END IF;
+END;
+$schema_guard$;
+
 -- ----------------------------------------------------------------
--- SECTION 0: DROP EVERYTHING (safe on fresh DB, safe on re-run)
+-- SECTION 0: CLEAN UP AN EMPTY FRESH SCHEMA
 -- ----------------------------------------------------------------
 DROP VIEW  IF EXISTS admin_user_list CASCADE;
 DROP VIEW  IF EXISTS admin_dashboard_stats CASCADE;
@@ -852,7 +886,7 @@ INSERT INTO document_types (code, name, accepted_formats, max_size_mb, is_requir
 ('NATIONAL_ID', 'National ID Card', 'pdf,jpg,jpeg,png', 5, true, 3),
 ('DRIVERS_LICENCE', 'Driver''s Licence', 'pdf,jpg,jpeg,png', 5, false, 4),
 ('PASSPORT', 'Passport', 'pdf,jpg,jpeg,png', 5, false, 6),
-('PASSPORT_PHOTO', 'Passport Photo', 'jpg,jpeg,png', 5, true, 7),
+('PASSPORT_PHOTO', 'Passport Photo', 'jpg,jpeg,png', 5, false, 7),
 ('POLICE_EVIDENCE', 'Police Evidence', 'pdf,jpg,jpeg,png', 5, false, 8);
 
 INSERT INTO ministries (name, code, colour_hex, icon_name, display_order) VALUES
@@ -1050,11 +1084,11 @@ INSERT INTO services (ministry, code, name, description, service_type, is_enable
 ('HOME_AFFAIRS', 'NATIONAL_ID_APPLY', 'Apply for a National ID',
  'Apply for a new national identity document.', 'APPLICATION', TRUE,
  '[{"key":"reason","label":"Reason","type":"text","required":false}]'::jsonb,
- '["NATIONAL_ID","BIRTH_CERTIFICATE","PASSPORT_PHOTO"]'::jsonb, 0, 10),
+ '["NATIONAL_ID","BIRTH_CERTIFICATE"]'::jsonb, 0, 10),
 ('HOME_AFFAIRS', 'NATIONAL_ID_REPLACE', 'Replace a National ID',
  'Replace a lost or damaged national identity document.', 'APPLICATION', TRUE,
  '[{"key":"reason","label":"Reason for replacement","type":"text","required":true}]'::jsonb,
- '["BIRTH_CERTIFICATE","PASSPORT_PHOTO"]'::jsonb, 0, 20),
+ '["BIRTH_CERTIFICATE"]'::jsonb, 0, 20),
 ('HOME_AFFAIRS', 'BIRTH_CERTIFICATE_APPLY', 'Birth certificate',
  'Register a birth or request a birth certificate.', 'APPLICATION', TRUE,
  '[{"key":"childFullName","label":"Child full name","type":"text","required":true},
@@ -1120,32 +1154,32 @@ INSERT INTO services (ministry, code, name, description, service_type, is_enable
 INSERT INTO services (ministry, code, name, description, service_type, is_enabled, form_fields, required_documents, fee, display_order) VALUES
 ('PASSPORT', 'PASSPORT_NEW', 'New passport',
  'Apply for a first passport.', 'APPLICATION', TRUE, '[]'::jsonb,
- '["NATIONAL_ID","BIRTH_CERTIFICATE","PASSPORT_PHOTO"]'::jsonb, 500, 10),
+ '["NATIONAL_ID","BIRTH_CERTIFICATE"]'::jsonb, 500, 10),
 ('PASSPORT', 'PASSPORT_RENEWAL', 'Renew passport',
  'Renew an expiring passport.', 'APPLICATION', TRUE,
  '[{"key":"oldPassportNumber","label":"Old passport number","type":"text","required":true},
    {"key":"oldPassportExpiry","label":"Old passport expiry","type":"date","required":false},
    {"key":"collectionOffice","label":"Collection office","type":"text","required":true}]'::jsonb,
- '["NATIONAL_ID","PASSPORT_PHOTO"]'::jsonb, 500, 20),
+ '["NATIONAL_ID"]'::jsonb, 500, 20),
 ('PASSPORT', 'PASSPORT_LOST', 'Lost or stolen passport',
  'Report a lost or stolen passport and request a replacement.', 'APPLICATION', TRUE,
  '[{"key":"oldPassportNumber","label":"Old passport number","type":"text","required":false},
    {"key":"circumstances","label":"Circumstances","type":"textarea","required":true},
    {"key":"policeCaseNumber","label":"Police case number","type":"text","required":false},
    {"key":"collectionOffice","label":"Collection office","type":"text","required":true}]'::jsonb,
- '["NATIONAL_ID","POLICE_EVIDENCE","PASSPORT_PHOTO"]'::jsonb, 700, 30),
+ '["NATIONAL_ID","POLICE_EVIDENCE"]'::jsonb, 700, 30),
 ('PASSPORT', 'PASSPORT_URGENT', 'Urgent passport',
  'Expedited passport for travel within 14 days.', 'APPLICATION', TRUE,
  '[{"key":"travelDate","label":"Travel date","type":"date","required":true},
    {"key":"travelReason","label":"Reason for travel","type":"textarea","required":true},
    {"key":"collectionOffice","label":"Collection office","type":"text","required":true}]'::jsonb,
- '["NATIONAL_ID","BIRTH_CERTIFICATE","PASSPORT_PHOTO"]'::jsonb, 1200, 40),
+ '["NATIONAL_ID","BIRTH_CERTIFICATE"]'::jsonb, 1200, 40),
 ('PASSPORT', 'PASSPORT_OFFICIAL', 'Official or diplomatic passport',
  'Official and diplomatic passports require prior authorisation.', 'APPLICATION', TRUE,
  '[{"key":"authorisingBody","label":"Authorising body","type":"text","required":true},
    {"key":"authorisationReference","label":"Authorisation reference","type":"text","required":true},
    {"key":"justification","label":"Justification","type":"textarea","required":true}]'::jsonb,
- '["NATIONAL_ID","PASSPORT_PHOTO"]'::jsonb, 700, 50),
+ '["NATIONAL_ID"]'::jsonb, 700, 50),
 ('PASSPORT', 'PASSPORT_MINOR', 'Minor passport',
  'Passport for a child under 16, with parent or guardian consent.', 'APPLICATION', TRUE,
  '[{"key":"childFullName","label":"Child full name","type":"text","required":true},
@@ -1155,7 +1189,7 @@ INSERT INTO services (ministry, code, name, description, service_type, is_enable
    {"key":"guardianNationalId","label":"Parent or guardian National ID","type":"text","required":true},
    {"key":"guardianRelationship","label":"Relationship","type":"text","required":true},
    {"key":"collectionOffice","label":"Collection office","type":"text","required":true}]'::jsonb,
- '["BIRTH_CERTIFICATE","PASSPORT_PHOTO"]'::jsonb, 500, 60);
+ '["BIRTH_CERTIFICATE"]'::jsonb, 500, 60);
 
 INSERT INTO services (ministry, code, name, description, service_type, is_enabled, form_fields, required_documents, fee, display_order) VALUES
 ('POLICE', 'POLICE_CLEARANCE', 'Police clearance certificate',
@@ -1177,7 +1211,6 @@ INSERT INTO services (ministry, code, name, description, service_type, is_enable
 ('PENSIONS', 'PENSION_APPLICATION', 'Pension application',
  'Apply for a state pension.', 'APPLICATION', TRUE,
  '[{"key":"pensionType","label":"Pension type","type":"text","required":true},
-   {"key":"employmentHistory","label":"Previous employment","type":"textarea","required":true},
    {"key":"bankName","label":"Bank name","type":"text","required":true},
    {"key":"bankAccountNumber","label":"Bank account number","type":"text","required":true},
    {"key":"branchCode","label":"Branch code","type":"text","required":false}]'::jsonb,

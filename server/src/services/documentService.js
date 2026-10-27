@@ -4,8 +4,23 @@ const auditService = require('./auditService');
 const { deleteFile, getPublicUrl } = require('../utils/fileStorage');
 const logger = require('../utils/logger');
 const { query } = require('../config/database');
+const fs = require('fs');
 
 async function upload(citizenId, file, documentTypeCode, user, registrationId = null) {
+  if (String(documentTypeCode).trim().toUpperCase() === 'PASSPORT_PHOTO') {
+    try {
+      fs.unlinkSync(file.path);
+    } catch (error) {
+      if (error.code !== 'ENOENT') {
+        logger.error('Could not remove a rejected passport-photo upload:', error);
+      }
+    }
+    const error = new Error(
+      'Passport photograph uploads are not accepted. Home Affairs captures identity photographs through the authorized process.'
+    );
+    error.statusCode = 400;
+    throw error;
+  }
   const documentType = await documentTypeRepository.findByCode(documentTypeCode);
   if (!documentType) throw new Error('Invalid document type');
 

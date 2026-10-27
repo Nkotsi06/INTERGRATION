@@ -11,7 +11,12 @@ import { useNotification } from '../../context/NotificationContext';
 import { formatCurrency } from '../../utils/formatters';
 
 function ApplyVehicleLicence() {
-  const { fee, currency } = useServiceFee('TRAFFIC', 'VEHICLE_LICENCE');
+  const {
+    fee,
+    currency,
+    loading: feeLoading,
+    error: feeError,
+  } = useServiceFee('TRAFFIC', 'MY_VEHICLE_LICENCES');
   const [searchParams] = useSearchParams();
   const renewalId = searchParams.get('renewalId');
   const renewalVehicleId = searchParams.get('vehicleId');
@@ -50,18 +55,21 @@ function ApplyVehicleLicence() {
       setError('Please choose a vehicle.');
       return;
     }
-    if (fee > 0 && form.method === 'MOBILE_MONEY' && !form.mobile.trim()) {
-      setError('Please enter your mobile number for payment.');
+    if (feeError) {
+      setError(feeError);
+      return;
+    }
+    if (fee > 0 && form.method === 'MOBILE_MONEY' &&
+        !/^[0-9+\-\s()]{6,30}$/.test(form.mobile.trim())) {
+      setError('Please enter a valid mobile number for payment.');
       return;
     }
     setLoading(true);
     try {
       const request = {
         vehicleId: form.vehicleId,
-        feeAmount: fee,
         method: form.method,
         mobile: form.mobile,
-        amount: fee,
       };
       if (renewalId) {
         await renewVehicleLicence(renewalId, request);
@@ -87,6 +95,7 @@ function ApplyVehicleLicence() {
       <h1>{renewalId ? 'Renew vehicle licence' : 'Apply for a vehicle licence'}</h1>
 
       {error && <Alert type="error" message={error} />}
+      {feeError && <Alert type="error" message={feeError} />}
 
       <Select
         label="Vehicle"
@@ -135,6 +144,7 @@ function ApplyVehicleLicence() {
             : renewalId ? 'Submit renewal' : 'Submit'
         }
         primaryLoading={loading}
+        primaryDisabled={feeLoading || !!feeError}
         onPrimary={handleSubmit}
         onSecondary={() => navigate('/traffic/vehicle-licences')}
       />

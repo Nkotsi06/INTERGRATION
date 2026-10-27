@@ -39,6 +39,14 @@ router.get('/staff/verifications',
   authMiddleware, roleMiddleware(['PENSIONS']),
   pensionsController.getStaffVerifications);
 
+router.get('/staff/applications',
+  authMiddleware, roleMiddleware(['PENSIONS']),
+  pensionsController.getStaffApplications);
+
+router.put('/staff/applications/:id',
+  authMiddleware, roleMiddleware(['PENSIONS']),
+  pensionsController.processApplication);
+
 router.put('/staff/verifications/:id',
   authMiddleware, roleMiddleware(['PENSIONS']),
   pensionsController.processVerification);

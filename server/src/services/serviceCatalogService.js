@@ -55,31 +55,24 @@ async function updateService(id, data, adminUser) {
   return updated;
 }
 
-const PENSION_SERVICES = new Set([
-  'PENSION_APPLICATION',
-  'PENSION_LIFE_VERIFY',
-]);
-
 async function submitApplication({ serviceId, citizenId, formData, user }) {
   const service = await serviceRepository.findById(serviceId);
   if (!service) throw notFound('Service not found');
   if (!service.is_enabled) throw badRequest('This service is currently unavailable.');
-
-  // ── Pensions eligibility gate ─────────────────────────────────
-  // Runs before anything is created so an ineligible citizen cannot
-  // reach the form-submitted state at all.
-  if (service.ministry === 'PENSIONS' && PENSION_SERVICES.has(service.code)) {
-    const eligibility = await pensionsService.assessEligibility(citizenId);
-    if (!eligibility.eligible) {
-      throw badRequest(eligibility.message);
-    }
-  }
 
   const fields = Array.isArray(service.form_fields) ? service.form_fields : [];
   const missing = fields
     .filter((f) => f.required && !formData?.[f.key])
     .map((f) => f.label || f.key);
   if (missing.length > 0) throw badRequest(`Please complete: ${missing.join(', ')}`);
+
+  if (service.ministry === 'PENSIONS' && service.code === 'PENSION_APPLICATION') {
+    return pensionsService.submitPensionApplication({
+      citizenId,
+      formData: formData || {},
+      user,
+    });
+  }
 
   if (service.ministry === 'HOME_AFFAIRS') {
     const branch = formData?.branchId

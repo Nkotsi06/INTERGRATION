@@ -47,9 +47,11 @@ function ServiceApply() {
 
   // Group C — pension eligibility gate
   const [pensionEligibility, setPensionEligibility] = useState(null);
+  const [pensionEligibilityLoading, setPensionEligibilityLoading] = useState(false);
+  const [pensionEligibilityError, setPensionEligibilityError] = useState(null);
   const isPensionService =
     service?.ministry === 'PENSIONS' &&
-    (service?.code === 'PENSION_APPLICATION' || service?.code === 'PENSION_LIFE_VERIFY');
+    service?.code === 'PENSION_APPLICATION';
 
   useEffect(() => {
     let cancelled = false;
@@ -89,11 +91,18 @@ function ServiceApply() {
     if (!isPensionService) return undefined;
     let cancelled = false;
     async function load() {
+      setPensionEligibilityLoading(true);
+      setPensionEligibilityError(null);
       try {
         const data = await getEligibility();
         if (!cancelled) setPensionEligibility(data);
-      } catch {
-        if (!cancelled) setPensionEligibility(null);
+      } catch (err) {
+        if (!cancelled) {
+          setPensionEligibility(null);
+          setPensionEligibilityError(err.message || 'Could not check pension eligibility.');
+        }
+      } finally {
+        if (!cancelled) setPensionEligibilityLoading(false);
       }
     }
     load();
@@ -155,6 +164,18 @@ function ServiceApply() {
           type="info"
           message={service.unavailableMessage || 'This service is currently unavailable.'}
         />
+      </PageWrapper>
+    );
+  }
+
+  if (isPensionService && (pensionEligibilityLoading || !pensionEligibility)) {
+    return (
+      <PageWrapper title={service.name} showBack backPath="/citizen/dashboard">
+        {pensionEligibilityError ? (
+          <Alert type="error" message={pensionEligibilityError} />
+        ) : (
+          <TableSkeleton rows={3} columns={2} />
+        )}
       </PageWrapper>
     );
   }
@@ -285,10 +306,14 @@ function ServiceApply() {
                             { value: 'NEW', label: 'New' },
                             { value: 'REPLACEMENT', label: 'Replacement' },
                           ]
-                        : [
-                            { value: 'OLD_AGE', label: 'Old Age Pension' },
-                            { value: 'CIVIL_SERVICE', label: 'Civil Service Pension' },
-                          ])
+                        : (pensionEligibility?.evaluatedCategories || [])
+                            .filter((category) => category.eligible)
+                            .map((category) => ({
+                              value: category.category,
+                              label: category.category === 'OLD_AGE'
+                                ? 'Old Age Pension'
+                                : 'Civil Service Pension',
+                            })))
                   }
                   required={f.required}
                 />

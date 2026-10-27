@@ -153,6 +153,19 @@ async function getApplicationByReference(req, res, next) {
     res.json(app);
   } catch (e) { next(e); }
 }
+async function submitInformationResponse(req, res, next) {
+  try {
+    const citizenId = citizenIdFrom(req);
+    if (!citizenId) return res.status(403).json({ message: 'Citizen profile required.' });
+    const result = await trafficService.submitTrafficInformationResponse(
+      req.params.reference,
+      citizenId,
+      req.body.response,
+      req.user.userId
+    );
+    res.json(result);
+  } catch (e) { next(e); }
+}
 
 module.exports = {
   getStaffStats,
@@ -167,4 +180,5 @@ module.exports = {
   getStaffTransportPermits, processTransportPermit,
   applyForLearnersLicence, applyForDrivingLicence, applyForPublicDrivingPermit,
   getMyApplications, getApplicationByReference,
+  submitInformationResponse,
 };

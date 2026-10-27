@@ -15,6 +15,7 @@ export default function useServiceFee(ministry, serviceCode) {
   const [fee, setFee] = useState(0);
   const [currency, setCurrency] = useState('LSL');
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     if (!ministry || !serviceCode) {
@@ -24,6 +25,7 @@ export default function useServiceFee(ministry, serviceCode) {
     let cancelled = false;
 
     async function load() {
+      setError(null);
       try {
         const data = await apiClient.get('/services/public', {
           params: { ministry },
@@ -31,12 +33,16 @@ export default function useServiceFee(ministry, serviceCode) {
         if (cancelled) return;
         const list = Array.isArray(data) ? data : [];
         const match = list.find((s) => s.code === serviceCode);
-        if (match) {
-          setFee(Number(match.fee) || 0);
-          setCurrency(match.fee_currency || 'LSL');
+        if (!match) {
+          setError('Fee details for this service could not be found.');
+          return;
         }
-      } catch {
-        // Non-fatal — page still works with fee = 0.
+        setFee(Number(match.fee) || 0);
+        setCurrency(match.fee_currency || 'LSL');
+      } catch (err) {
+        if (!cancelled) {
+          setError(err.message || 'Could not load the service fee.');
+        }
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -48,5 +54,5 @@ export default function useServiceFee(ministry, serviceCode) {
     };
   }, [ministry, serviceCode]);
 
-  return { fee, currency, loading };
+  return { fee, currency, loading, error };
 }

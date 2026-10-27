@@ -50,6 +50,23 @@ function PensionsDashboard() {
               <span className="verification-status-subtitle">
                 {eligibility.message}
               </span>
+              {eligibility.hasExistingPension && (
+                <span className="verification-status-subtitle">
+                  Existing pension status: {eligibility.existingPensionStatus || 'Recorded'}.
+                </span>
+              )}
+              {eligibility.hasOutstandingDebt && (
+                <span className="verification-status-subtitle">
+                  Outstanding Finance debt: LSL {Number(eligibility.outstandingDebtAmount || 0).toFixed(2)}.
+                  Resolve the debt with Finance before applying.
+                </span>
+              )}
+              {eligibility.isCurrentGovernmentEmployee && (
+                <span className="verification-status-subtitle">
+                  Finance confirms current government employment. Old Age Pension is unavailable;
+                  eligibility is assessed under the Civil Service Pension rules.
+                </span>
+              )}
             </div>
           )}
 

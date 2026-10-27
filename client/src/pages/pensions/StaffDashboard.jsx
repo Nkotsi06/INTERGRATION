@@ -42,6 +42,9 @@ function PensionsStaffDashboard() {
       )}
 
       <div className="quick-actions">
+        <Button variant="primary" onClick={() => navigate('/pensions/applications')}>
+          Process pension applications
+        </Button>
         <Button variant="primary" onClick={() => navigate('/pensions/process')}>
           Process verifications
         </Button>

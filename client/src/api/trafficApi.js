@@ -14,6 +14,8 @@ export const applyForDrivingLicence = (data) => apiClient.post('/traffic/licence
 export const applyForPublicDrivingPermit = (data) => apiClient.post('/traffic/licence/pdp', data);
 export const getMyTrafficApplications = () => apiClient.get('/traffic/applications');
 export const getTrafficApplicationByRef = (reference) => apiClient.get(`/traffic/applications/${reference}`);
+export const submitTrafficInformationResponse = (reference, response) =>
+  apiClient.post(`/traffic/applications/${reference}/information-response`, { response });
 
 // Citizen — vehicles
 export const getVehicles = () => apiClient.get('/traffic/vehicles');

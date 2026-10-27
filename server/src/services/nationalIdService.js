@@ -2,6 +2,7 @@ const { query } = require('../config/database');
 const citizenRepository = require('../repositories/citizenRepository');
 const applicationRepository = require('../repositories/applicationRepository');
 const signatureRepository = require('../repositories/signatureRepository');
+const biometricRepository = require('../repositories/biometricRepository');
 const notificationService = require('./notificationService');
 const { generateReference } = require('../utils/referenceGenerator');
 
@@ -45,6 +46,12 @@ async function submitApplication(citizenId, data, user) {
 
   if (!hasBirthCert) throw badRequest('You need a birth certificate on record to apply.');
   if (hasActiveApplication) throw badRequest('You already have an active application.');
+  const authorizedPhoto = await biometricRepository.findByCitizen(citizenId);
+  if (!authorizedPhoto?.facial_image) {
+    throw badRequest(
+      'Home Affairs must capture your photograph before you can apply for a National ID.'
+    );
+  }
 
   const referenceNumber = await generateReference('APPLICATION');
 
@@ -60,6 +67,7 @@ async function submitApplication(citizenId, data, user) {
         reason: data.reason,
         phone: data.phone,
         branchId: data.branchId,
+        authorizedPhotoRecordId: authorizedPhoto.id,
       },
       fee: 0,
     },

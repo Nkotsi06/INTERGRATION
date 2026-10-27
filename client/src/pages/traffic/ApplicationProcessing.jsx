@@ -27,6 +27,8 @@ function TrafficApplicationProcessing() {
   const [dateFilter, setDateFilter] = useState('');
   const [issuing, setIssuing] = useState(null);
   const [signature, setSignature] = useState(null);
+  const [actionTarget, setActionTarget] = useState(null);
+  const [actionDetails, setActionDetails] = useState('');
   const [busy, setBusy] = useState(false);
   const { success, error: showError } = useNotification();
 
@@ -48,6 +50,41 @@ function TrafficApplicationProcessing() {
       refetch();
     } catch (err) {
       showError(err.message || 'Could not process this application.');
+    }
+  };
+
+  const openActionModal = (application, action) => {
+    setActionDetails('');
+    setActionTarget({ application, action });
+  };
+
+  const submitAction = async (event) => {
+    event.preventDefault();
+    if (!actionTarget) return;
+    const details = actionDetails.trim();
+    if (!details) {
+      showError(actionTarget.action === 'REQUEST_INFO'
+        ? 'Enter the information required from the citizen.'
+        : 'Enter a reason for rejecting this application.');
+      return;
+    }
+
+    setBusy(true);
+    try {
+      await processApplication(actionTarget.application.id, {
+        action: actionTarget.action,
+        [actionTarget.action === 'REQUEST_INFO' ? 'details' : 'reason']: details,
+      });
+      success(actionTarget.action === 'REQUEST_INFO'
+        ? 'Information request sent to the citizen.'
+        : 'Application rejected.');
+      setActionTarget(null);
+      setActionDetails('');
+      refetch();
+    } catch (err) {
+      showError(err.message || 'Could not process this application.');
+    } finally {
+      setBusy(false);
     }
   };
 
@@ -84,7 +121,12 @@ function TrafficApplicationProcessing() {
   const columns = [
     { key: 'reference_number', label: 'Reference' },
     { key: 'sub_type', label: 'Type',
-      render: (r) => SUB_TYPE_LABEL[r.sub_type] || r.sub_type || '—' },
+      render: (r) =>
+        SUB_TYPE_LABEL[r.sub_type] ||
+        r.sub_type ||
+        r.data?.serviceName ||
+        r.data?.serviceCode ||
+        '—' },
     { key: 'submitted_at', label: 'Submitted',
       render: (r) => (r.submitted_at ? formatDate(r.submitted_at) : '—') },
     { key: 'status', label: 'Status',
@@ -95,10 +137,10 @@ function TrafficApplicationProcessing() {
           onClick={() => (needsSignature(r) ? openIssueModal(r) : handle(r.id, 'APPROVE'))}>
           Approve
         </Button>
-        <Button variant="secondary" size="small" onClick={() => handle(r.id, 'REQUEST_INFO')}>
+        <Button variant="secondary" size="small" onClick={() => openActionModal(r, 'REQUEST_INFO')}>
           Request info
         </Button>
-        <Button variant="danger" size="small" onClick={() => handle(r.id, 'REJECT')}>
+        <Button variant="danger" size="small" onClick={() => openActionModal(r, 'REJECT')}>
           Reject
         </Button>
       </div>
@@ -118,6 +160,7 @@ function TrafficApplicationProcessing() {
               <option value="">All</option>
               <option value="SUBMITTED">Submitted</option>
               <option value="UNDER_REVIEW">Under review</option>
+              <option value="INFO_REQUESTED">Information requested</option>
               <option value="APPROVED">Approved</option>
               <option value="COMPLETED">Completed</option>
               <option value="REJECTED">Rejected</option>
@@ -173,6 +216,47 @@ function TrafficApplicationProcessing() {
               </Button>
             </div>
           </div>
+        </Modal>
+      )}
+      {actionTarget && (
+        <Modal
+          isOpen
+          onClose={() => !busy && setActionTarget(null)}
+          title={actionTarget.action === 'REQUEST_INFO' ? 'Request information' : 'Reject application'}
+          size="medium"
+        >
+          <p>
+            <strong>{actionTarget.application.reference_number}</strong>
+            {' — '}
+            {actionTarget.application.sub_type ||
+              actionTarget.application.data?.serviceName ||
+              actionTarget.application.data?.serviceCode ||
+              'Traffic application'}
+          </p>
+          <form onSubmit={submitAction}>
+            <label htmlFor="traffic-application-action-details">
+              {actionTarget.action === 'REQUEST_INFO'
+                ? 'Information or documents required'
+                : 'Reason for rejection'}
+            </label>
+            <textarea
+              id="traffic-application-action-details"
+              value={actionDetails}
+              onChange={(event) => setActionDetails(event.target.value)}
+              maxLength={2000}
+              rows={5}
+              required
+              style={{ width: '100%', marginTop: 8, marginBottom: 16 }}
+            />
+            <div className="form-actions">
+              <Button variant="secondary" type="button" onClick={() => setActionTarget(null)} disabled={busy}>
+                Cancel
+              </Button>
+              <Button variant={actionTarget.action === 'REJECT' ? 'danger' : 'primary'} type="submit" loading={busy}>
+                {actionTarget.action === 'REQUEST_INFO' ? 'Send request' : 'Reject application'}
+              </Button>
+            </div>
+          </form>
         </Modal>
       )}
     </PageWrapper>

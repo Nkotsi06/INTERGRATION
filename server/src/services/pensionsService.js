@@ -1,12 +1,12 @@
 const pensionRepository = require('../repositories/pensionRepository');
 const pensionVerificationRepository = require('../repositories/pensionVerificationRepository');
 const deathCertificateRepository = require('../repositories/deathCertificateRepository');
-const employmentHistoryRepository = require('../repositories/employmentHistoryRepository');
 const citizenRepository = require('../repositories/citizenRepository');
 const notificationService = require('./notificationService');
 const userRepository = require('../repositories/userRepository');
 const auditService = require('./auditService');
-const { query } = require('../config/database');
+const { query, getClient } = require('../config/database');
+const { generateReference } = require('../utils/referenceGenerator');
 
 async function notifyCitizen(citizenId, title, message) {
   if (!citizenId) return;
@@ -59,7 +59,17 @@ function yearsBetween(dob, now = new Date()) {
   return age;
 }
 
-async function assessEligibility(citizenId) {
+function completedServiceYears(startDate, endDate) {
+  if (!startDate) return 0;
+  const start = new Date(startDate);
+  const end = endDate ? new Date(endDate) : new Date();
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || end < start) {
+    return 0;
+  }
+  return Math.floor((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24 * 365.25));
+}
+
+async function assessEligibility(citizenId, executor = query, options = {}) {
   const citizen = await citizenRepository.findById(citizenId);
   if (!citizen) {
     return baseResult({
@@ -76,13 +86,34 @@ async function assessEligibility(citizenId) {
     });
   }
 
-  const currentAge = yearsBetween(citizen.date_of_birth);
-  const governmentServiceYears = Number(
-    await employmentHistoryRepository.totalGovernmentServiceYears(citizenId)
-  ) || 0;
-  const hasGovernmentService = governmentServiceYears > 0;
+  const [facts, pensionRecord, rules] = await Promise.all([
+    pensionRepository.getEligibilityFacts(
+      citizenId,
+      executor,
+      options.ignorePendingApplicationId || null
+    ),
+    pensionRepository.findByCitizen(citizenId, executor),
+    pensionRepository.findRulesForCategory(executor),
+  ]);
+  if (!facts) {
+    return baseResult({
+      reason: 'NO_RECORD',
+      message: 'Citizen record not found.',
+    });
+  }
 
-  const rules = await pensionRepository.findRulesForCategory();
+  const currentAge = yearsBetween(citizen.date_of_birth);
+  const governmentEmployee = Boolean(facts.government_employee_id);
+  const isCurrentGovernmentEmployee =
+    governmentEmployee && facts.employment_status === 'ACTIVE';
+  const governmentServiceYears = governmentEmployee
+    ? completedServiceYears(facts.employment_start_date, facts.employment_end_date)
+    : 0;
+  const hasGovernmentService = governmentServiceYears > 0;
+  const hasOutstandingDebt = Number(facts.outstanding_debt_count) > 0;
+  const hasExistingPension = Boolean(pensionRecord);
+  const hasPendingApplication = Boolean(facts.has_pending_application);
+
   if (!rules || rules.length === 0) {
     return baseResult({
       reason: 'NO_RULES',
@@ -94,10 +125,18 @@ async function assessEligibility(citizenId) {
   const evaluatedCategories = rules.map((rule) => {
     const minimumAge = Number(rule.minimum_age) || 0;
     const minimumServiceYears = Number(rule.minimum_service_years) || 0;
-    const young = currentAge != null && currentAge >= minimumAge;
+    const ageMet = currentAge != null && currentAge >= minimumAge;
     const serviceMet =
       !rule.requires_government_service ||
       governmentServiceYears >= minimumServiceYears;
+    const employeeTypeMet = !(
+      rule.pension_type === 'OLD_AGE' && isCurrentGovernmentEmployee
+    );
+    const blockers = [];
+    if (!employeeTypeMet) blockers.push('GOVERNMENT_EMPLOYEE');
+    if (hasOutstandingDebt) blockers.push('OUTSTANDING_GOVERNMENT_DEBT');
+    if (hasExistingPension) blockers.push('EXISTING_PENSION');
+    if (hasPendingApplication) blockers.push('PENDING_APPLICATION');
     return {
       category: rule.pension_type,
       minimumAge,
@@ -105,9 +144,17 @@ async function assessEligibility(citizenId) {
       requiresGovernmentService: rule.requires_government_service,
       monthlyAmount: Number(rule.monthly_amount),
       currency: rule.currency,
-      ageMet: young,
+      ageMet,
       serviceMet,
-      eligible: young && serviceMet,
+      employeeTypeMet,
+      blockers,
+      eligible:
+        ageMet &&
+        serviceMet &&
+        employeeTypeMet &&
+        !hasOutstandingDebt &&
+        !hasExistingPension &&
+        !hasPendingApplication,
     };
   });
 
@@ -123,6 +170,58 @@ async function assessEligibility(citizenId) {
       hasGovernmentService,
       governmentServiceYears,
       minimumServiceYears: winner.minimumServiceYears,
+      governmentEmployee,
+      isCurrentGovernmentEmployee,
+      employmentStatus: facts.employment_status || null,
+      employeeNumber: facts.employee_number || null,
+      hasOutstandingDebt,
+      outstandingDebtAmount: Number(facts.outstanding_debt_amount),
+      hasExistingPension,
+      existingPensionStatus: facts.pension_status || null,
+      hasPendingApplication,
+      evaluatedCategories,
+    };
+  }
+
+  let blockedReason;
+  let blockedMessage;
+  if (hasOutstandingDebt) {
+    blockedReason = 'OUTSTANDING_GOVERNMENT_DEBT';
+    blockedMessage = 'Outstanding government debt must be resolved before a pension application can proceed.';
+  } else if (hasExistingPension) {
+    blockedReason = 'EXISTING_PENSION';
+    blockedMessage = 'A pension entitlement is already recorded. The one-pension rule prevents another application.';
+  } else if (hasPendingApplication) {
+    blockedReason = 'PENDING_APPLICATION';
+    blockedMessage = 'A pension application is already being processed.';
+  } else if (
+    isCurrentGovernmentEmployee &&
+    evaluatedCategories.some((category) => category.category === 'OLD_AGE')
+  ) {
+    blockedReason = 'GOVERNMENT_EMPLOYEE';
+    blockedMessage = 'Government employees cannot receive the Old Age Pension. Check the Civil Service Pension criteria.';
+  }
+
+  if (blockedReason) {
+    return {
+      eligible: false,
+      category: null,
+      reason: blockedReason,
+      message: blockedMessage,
+      currentAge,
+      minimumAge: 0,
+      hasGovernmentService,
+      governmentServiceYears,
+      minimumServiceYears: 0,
+      governmentEmployee,
+      isCurrentGovernmentEmployee,
+      employmentStatus: facts.employment_status || null,
+      employeeNumber: facts.employee_number || null,
+      hasOutstandingDebt,
+      outstandingDebtAmount: Number(facts.outstanding_debt_amount),
+      hasExistingPension,
+      existingPensionStatus: facts.pension_status || null,
+      hasPendingApplication,
       evaluatedCategories,
     };
   }
@@ -143,6 +242,15 @@ async function assessEligibility(citizenId) {
       hasGovernmentService,
       governmentServiceYears,
       minimumServiceYears: 0,
+      governmentEmployee,
+      isCurrentGovernmentEmployee,
+      employmentStatus: facts.employment_status || null,
+      employeeNumber: facts.employee_number || null,
+      hasOutstandingDebt,
+      outstandingDebtAmount: Number(facts.outstanding_debt_amount),
+      hasExistingPension,
+      existingPensionStatus: facts.pension_status || null,
+      hasPendingApplication,
       evaluatedCategories,
     };
   }
@@ -162,6 +270,15 @@ async function assessEligibility(citizenId) {
       hasGovernmentService,
       governmentServiceYears,
       minimumServiceYears: requiringService.minimumServiceYears,
+      governmentEmployee,
+      isCurrentGovernmentEmployee,
+      employmentStatus: facts.employment_status || null,
+      employeeNumber: facts.employee_number || null,
+      hasOutstandingDebt,
+      outstandingDebtAmount: Number(facts.outstanding_debt_amount),
+      hasExistingPension,
+      existingPensionStatus: facts.pension_status || null,
+      hasPendingApplication,
       evaluatedCategories,
     };
   }
@@ -176,6 +293,15 @@ async function assessEligibility(citizenId) {
     hasGovernmentService,
     governmentServiceYears,
     minimumServiceYears: requiringService?.minimumServiceYears || 0,
+    governmentEmployee,
+    isCurrentGovernmentEmployee,
+    employmentStatus: facts.employment_status || null,
+    employeeNumber: facts.employee_number || null,
+    hasOutstandingDebt,
+    outstandingDebtAmount: Number(facts.outstanding_debt_amount),
+    hasExistingPension,
+    existingPensionStatus: facts.pension_status || null,
+    hasPendingApplication,
     evaluatedCategories,
   };
 }
@@ -209,6 +335,224 @@ async function getPensionInfo(citizenId) {
   return pensionRepository.findByCitizen(citizenId);
 }
 
+async function submitPensionApplication({ citizenId, formData, user }) {
+  const referenceNumber = await generateReference('APPLICATION');
+  const client = await getClient();
+  let application;
+  let eligibility;
+
+  try {
+    await client.query('BEGIN');
+    const executor = client.query.bind(client);
+    const lockedCitizen = await executor(
+      'SELECT id FROM citizens WHERE id = $1 FOR UPDATE',
+      [citizenId]
+    );
+    if (!lockedCitizen.rows[0]) {
+      const error = new Error('Citizen record not found.');
+      error.statusCode = 404;
+      throw error;
+    }
+
+    eligibility = await assessEligibility(citizenId, executor);
+    if (!eligibility.eligible) {
+      const error = new Error(eligibility.message);
+      error.statusCode = 400;
+      throw error;
+    }
+
+    const requestedType = String(formData.pensionType || '').trim().toUpperCase();
+    if (requestedType !== eligibility.category) {
+      const error = new Error('Choose the pension type returned by your current eligibility assessment.');
+      error.statusCode = 400;
+      throw error;
+    }
+
+    const result = await executor(
+      `INSERT INTO applications
+        (reference_number, citizen_id, service, status, data, submitted_at)
+       VALUES ($1, $2, 'PENSIONS', 'SUBMITTED', $3::jsonb, NOW())
+       RETURNING *`,
+      [
+        referenceNumber,
+        citizenId,
+        JSON.stringify({
+          serviceCode: 'PENSION_APPLICATION',
+          serviceName: 'Pension application',
+          formData,
+        }),
+      ]
+    );
+    application = result.rows[0];
+    await executor(
+      `INSERT INTO application_status_history (application_id, status, changed_by, notes)
+       VALUES ($1, 'SUBMITTED', $2, 'Pension application submitted')`,
+      [application.id, user.userId]
+    );
+    await client.query('COMMIT');
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
+
+  await auditService.log({
+    userId: user.userId,
+    username: user.username,
+    action: 'PENSION_APPLICATION_SUBMITTED',
+    recordType: 'APPLICATION',
+    recordId: application.id,
+    result: 'SUCCESS',
+  });
+  await notifyCitizen(
+    citizenId,
+    'Pension application received',
+    `Your ${humanCategory(eligibility.category)} application ${referenceNumber} has been received.`
+  );
+  return { referenceNumber, application, eligibility };
+}
+
+async function getPensionApplications(filters) {
+  return pensionRepository.findApplications(filters || {});
+}
+
+async function processPensionApplication(id, input, staffUser) {
+  const action = String(input.action || '').trim().toUpperCase();
+  if (!['APPROVE', 'REJECT'].includes(action)) {
+    const error = new Error('Choose approve or reject.');
+    error.statusCode = 400;
+    throw error;
+  }
+  const reason = String(input.reason || '').trim();
+  if (action === 'REJECT' && !reason) {
+    const error = new Error('A reason is required when rejecting an application.');
+    error.statusCode = 400;
+    throw error;
+  }
+  const pensionNumber = String(input.pensionNumber || '').trim();
+  if (action === 'APPROVE' && (!pensionNumber || pensionNumber.length > 50)) {
+    const error = new Error('Enter the authorized pension number before approval.');
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const client = await getClient();
+  let application;
+  let approvedPension;
+  let nextStatus;
+  try {
+    await client.query('BEGIN');
+    const executor = client.query.bind(client);
+    const applicationResult = await executor(
+      `SELECT * FROM applications
+       WHERE id = $1 AND service = 'PENSIONS'
+         AND data->>'serviceCode' = 'PENSION_APPLICATION'
+       FOR UPDATE`,
+      [id]
+    );
+    application = applicationResult.rows[0];
+    if (!application) {
+      const error = new Error('Pension application not found.');
+      error.statusCode = 404;
+      throw error;
+    }
+    if (!['SUBMITTED', 'UNDER_REVIEW'].includes(application.status)) {
+      const error = new Error('This pension application has already been processed.');
+      error.statusCode = 409;
+      throw error;
+    }
+
+    nextStatus = action === 'REJECT' ? 'REJECTED' : 'APPROVED';
+    if (action === 'APPROVE') {
+      await executor('SELECT id FROM citizens WHERE id = $1 FOR UPDATE', [
+        application.citizen_id,
+      ]);
+      const eligibility = await assessEligibility(application.citizen_id, executor, {
+        ignorePendingApplicationId: application.id,
+      });
+      const requestedType = String(
+        application.data?.formData?.pensionType || ''
+      ).trim().toUpperCase();
+      if (!eligibility.eligible || eligibility.category !== requestedType) {
+        const error = new Error(
+          eligibility.eligible
+            ? 'The eligible pension type no longer matches this application.'
+            : eligibility.message
+        );
+        error.statusCode = 409;
+        throw error;
+      }
+
+      const rule = (await pensionRepository.findRulesForCategory(executor))
+        .find((item) => item.pension_type === requestedType);
+      const monthlyAmount = Number(rule?.monthly_amount);
+      if (!rule || !Number.isFinite(monthlyAmount) || monthlyAmount <= 0) {
+        const error = new Error(
+          'The monthly amount for this pension type is not configured. Pensions staff must resolve the policy configuration before approval.'
+        );
+        error.statusCode = 409;
+        throw error;
+      }
+
+      approvedPension = await pensionRepository.create({
+        citizenId: application.citizen_id,
+        pensionType: requestedType,
+        pensionNumber,
+        monthlyAmount,
+        nextPaymentDate: null,
+      }, executor);
+    }
+
+    await executor(
+      `UPDATE applications
+       SET status = $1, updated_at = NOW()
+       WHERE id = $2`,
+      [nextStatus, application.id]
+    );
+    await executor(
+      `INSERT INTO application_status_history (application_id, status, changed_by, notes)
+       VALUES ($1, $2, $3, $4)`,
+      [
+        application.id,
+        nextStatus,
+        staffUser.userId,
+        reason || (action === 'APPROVE' ? 'Pension application approved' : null),
+      ]
+    );
+    await client.query('COMMIT');
+  } catch (error) {
+    await client.query('ROLLBACK');
+    if (error.code === '23505') {
+      const conflict = new Error(
+        'A pension entitlement or pension number already exists. The one-pension rule prevents this approval.'
+      );
+      conflict.statusCode = 409;
+      throw conflict;
+    }
+    throw error;
+  } finally {
+    client.release();
+  }
+
+  await auditService.log({
+    userId: staffUser.userId,
+    username: staffUser.username,
+    action: `PENSION_APPLICATION_${nextStatus}`,
+    recordType: 'APPLICATION',
+    recordId: application.id,
+    result: 'SUCCESS',
+  });
+  await notifyCitizen(
+    application.citizen_id,
+    `Pension application ${nextStatus.toLowerCase()}`,
+    action === 'APPROVE'
+      ? `Your pension application ${application.reference_number} was approved.`
+      : `Your pension application ${application.reference_number} was rejected. Reason: ${reason}`
+  );
+  return { status: nextStatus, pension: approvedPension || null };
+}
+
 async function checkDeathCertificate(nationalId) {
   const dc = await deathCertificateRepository.findByNationalId(nationalId);
   return dc ? { found: true, date: dc.date_of_death } : { found: false };
@@ -229,19 +573,19 @@ async function verifyExistence(citizenId, answer, user) {
     throw e;
   }
 
+  const pension = await pensionRepository.findByCitizen(citizenId);
+  if (!pension || !['ACTIVE', 'SUSPENDED'].includes(pension.payment_status)) {
+    const e = new Error('An active or suspended pension record is required for life verification.');
+    e.statusCode = 400;
+    throw e;
+  }
+
   const submitted = String(answer || '').trim().toLowerCase();
   const expected = String(citizen.place_of_birth || '').trim().toLowerCase();
   if (!submitted || !expected || submitted !== expected) {
     const e = new Error(
       'Your answer does not match our records. Check your place of birth and try again.'
     );
-    e.statusCode = 400;
-    throw e;
-  }
-
-  const eligibility = await assessEligibility(citizenId);
-  if (!eligibility.eligible) {
-    const e = new Error(eligibility.message);
     e.statusCode = 400;
     throw e;
   }
@@ -267,7 +611,7 @@ async function verifyExistence(citizenId, answer, user) {
     'Your pension existence check has been recorded.'
   );
 
-  return { verification, eligibility };
+  return { verification, pension };
 }
 
 async function getVerificationHistory(citizenId) {
@@ -294,6 +638,9 @@ module.exports = {
   assessEligibility,
   getRules,
   getPensionInfo,
+  submitPensionApplication,
+  getPensionApplications,
+  processPensionApplication,
   checkDeathCertificate,
   verifyExistence,
   getVerificationHistory,

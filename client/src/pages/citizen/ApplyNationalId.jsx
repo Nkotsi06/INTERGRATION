@@ -10,6 +10,7 @@ import SignaturePad from '../../components/signature/SignaturePad';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 // import DocumentUpload from '../../components/documents/DocumentUpload'; // OPTIONAL: uncomment to add a birth certificate upload
 import { useNotification } from '../../context/NotificationContext';
+import { submitNationalIdApplication } from '../../api/nationalIdApi';
 import apiClient from '../../api/apiClient';
 
 const STEPS = ['Eligibility', 'Your Details', 'Additional Info', 'Signature', 'Branch', 'Review'];
@@ -162,7 +163,7 @@ function ApplyNationalId() {
 
     setSubmitting(true);
     try {
-      await apiClient.post('/citizen/applications/national-id', {
+      await submitNationalIdApplication({
         reason: form.reason,
         phone: form.phone,
         signature: form.signature,

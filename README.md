@@ -94,6 +94,12 @@ Apply `020_citizen_finance_services.sql` after the existing migrations to enable
 
 Apply `021_transport_permit_category_length.sql` after the existing migrations to support all Traffic permit categories, including `PASSENGER` and `ABNORMAL`.
 
+Apply `022_remove_national_id_passport_photo_requirement.sql` after the existing migrations to remove obsolete passport-photo document requirements from National ID and passport services. National ID applications use the authorized Home Affairs biometric photo already associated with the citizen.
+
+Apply `023_use_finance_register_for_pension_employment.sql` after the existing migrations to remove self-reported employment history from the pension application form. Pension eligibility uses the Finance-owned government employee register.
+
+Apply `024_disable_passport_photo_uploads.sql` after the existing migrations to disable the obsolete passport-photo document type. The backend rejects any attempted upload of that type, while existing stored documents remain untouched.
+
 ---
 
 ## Technology Stack
@@ -126,6 +132,8 @@ Apply `021_transport_permit_category_length.sql` after the existing migrations t
 - **PostgreSQL 13+**
 - All tables, constraints, and indexes defined in a single `schema.sql`
 - All configurable data (colours, statuses, document types, languages) loaded from the database, not hardcoded
+
+`server/database/schema.sql` is for an empty, fresh database only. It now stops with an error if any managed relation already exists, rather than dropping existing application data. Use the numbered SQL migrations for existing databases; do not rerun the consolidated schema to repair migration errors.
 
 ---
 

@@ -62,6 +62,21 @@ async function getStaffVerifications(req, res, next) {
   catch (err) { next(err); }
 }
 
+async function getStaffApplications(req, res, next) {
+  try { res.json(await pensionsService.getPensionApplications(req.query)); }
+  catch (err) { next(err); }
+}
+
+async function processApplication(req, res, next) {
+  try {
+    res.json(await pensionsService.processPensionApplication(
+      req.params.id,
+      req.body,
+      req.user
+    ));
+  } catch (err) { next(err); }
+}
+
 async function processVerification(req, res, next) {
   try {
     await pensionsService.processVerification(req.params.id, req.body.action, req.user);
@@ -78,5 +93,7 @@ module.exports = {
   getVerificationHistory,
   checkDeathCertificate,
   getStaffVerifications,
+  getStaffApplications,
+  processApplication,
   processVerification,
 };

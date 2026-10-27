@@ -4,7 +4,9 @@ async function findByNationalId(nationalId) {
   const result = await query(
     `SELECT dc.* FROM death_certificates_new dc
      JOIN citizens c ON c.id = dc.citizen_id
-     WHERE c.national_id = $1 LIMIT 1`,
+     WHERE c.national_id = $1 AND dc.status = 'ISSUED'
+     ORDER BY dc.issued_at DESC NULLS LAST
+     LIMIT 1`,
     [nationalId]
   );
   return result.rows[0];
@@ -12,7 +14,10 @@ async function findByNationalId(nationalId) {
 
 async function findByCitizen(citizenId) {
   const result = await query(
-    'SELECT * FROM death_certificates_new WHERE citizen_id = $1 ORDER BY created_at DESC LIMIT 1',
+    `SELECT * FROM death_certificates_new
+     WHERE citizen_id = $1 AND status = 'ISSUED'
+     ORDER BY issued_at DESC NULLS LAST
+     LIMIT 1`,
     [citizenId]
   );
   return result.rows[0];

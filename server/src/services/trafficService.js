@@ -11,6 +11,8 @@ const signatureService = require('./signatureService');
 const paymentService = require('./paymentService');
 const userRepository = require('../repositories/userRepository');
 const branchRepository = require('../repositories/branchRepository');
+const serviceRepository = require('../repositories/serviceRepository');
+const feeScheduleService = require('./feeScheduleService');
 const { generateReference } = require('../utils/referenceGenerator');
 const auditService = require('./auditService');
 const { query } = require('../config/database');
@@ -280,11 +282,29 @@ async function approveTrafficApplication(applicationId, subType, staffUser, citi
 }
 
 async function processApplication(applicationId, action, body, staffUser) {
-  const status =
-    action === 'APPROVE' ? 'APPROVED' : action === 'REJECT' ? 'REJECTED' : 'UNDER_REVIEW';
-
+  if (!['APPROVE', 'REJECT', 'REQUEST_INFO'].includes(action)) {
+    throw badRequest('Choose a valid application action.');
+  }
+  const requestDetails = typeof body?.details === 'string' ? body.details.trim() : '';
+  const rejectionReason = typeof body?.reason === 'string' ? body.reason.trim() : '';
+  if (action === 'REQUEST_INFO' && requestDetails.length < 5) {
+    throw badRequest('Provide details about the information required.');
+  }
+  if (action === 'REQUEST_INFO' && requestDetails.length > 2000) {
+    throw badRequest('The information request must be 2000 characters or fewer.');
+  }
+  if (action === 'REJECT' && !rejectionReason) {
+    throw badRequest('A reason is required when rejecting an application.');
+  }
+  if (action === 'REJECT' && rejectionReason.length > 2000) {
+    throw badRequest('The rejection reason must be 2000 characters or fewer.');
+  }
   const app = await applicationRepository.findById(applicationId);
   if (!app) throw notFound('Application not found');
+  if (app.service !== 'TRAFFIC') throw notFound('Traffic application not found');
+  if (!['SUBMITTED', 'UNDER_REVIEW'].includes(app.status)) {
+    throw badRequest(`This application cannot be processed while it is ${app.status.toLowerCase().replace(/_/g, ' ')}.`);
+  }
 
   if (action === 'APPROVE' && (app.sub_type === 'DRIVING_LICENCE' || app.sub_type === 'PUBLIC_DRIVING_PERMIT')) {
     return approveTrafficApplication(
@@ -292,18 +312,71 @@ async function processApplication(applicationId, action, body, staffUser) {
     );
   }
 
-  await applicationRepository.updateStatus(applicationId, status, staffUser.userId, action);
+  const status = action === 'APPROVE'
+    ? 'APPROVED'
+    : action === 'REJECT'
+      ? 'REJECTED'
+      : 'INFO_REQUESTED';
+  const notes = action === 'REQUEST_INFO'
+    ? `Information requested: ${requestDetails}`
+    : action === 'REJECT'
+      ? `Rejection reason: ${rejectionReason}`
+      : 'Application approved.';
+  await applicationRepository.updateStatus(applicationId, status, staffUser.userId, notes);
 
   await auditService.log({
     userId: staffUser.userId, username: staffUser.username,
-    action: `TRAFFIC_APPLICATION_${status}`,
+    action: `TRAFFIC_APPLICATION_${action}`,
     recordType: 'APPLICATION', recordId: applicationId, result: 'SUCCESS',
   });
 
   await notifyCitizen(app.citizen_id, 'Traffic application update',
-    `Your application ${app.reference_number} is now ${status.toLowerCase()}.`);
+    action === 'REQUEST_INFO'
+      ? `More information is required for application ${app.reference_number}: ${requestDetails}`
+      : action === 'REJECT'
+        ? `Your application ${app.reference_number} was rejected. Reason: ${rejectionReason}`
+        : `Your application ${app.reference_number} has been approved.`);
 
   return { status };
+}
+
+async function submitTrafficInformationResponse(referenceNumber, citizenId, response, userId) {
+  const details = typeof response === 'string' ? response.trim() : '';
+  if (details.length < 2) {
+    throw badRequest('Enter the information requested by Traffic staff.');
+  }
+  if (details.length > 4000) {
+    throw badRequest('Your response must be 4000 characters or fewer.');
+  }
+  const app = await licenceApplicationRepository.findByReference(referenceNumber);
+  if (!app || app.citizen_id !== citizenId) {
+    throw notFound('Application not found');
+  }
+  if (app.status !== 'INFO_REQUESTED') {
+    throw badRequest('This application does not currently have an information request.');
+  }
+
+  await licenceApplicationRepository.updateStatus(
+    app.id,
+    'UNDER_REVIEW',
+    userId,
+    `Citizen information response: ${details}`
+  );
+  await notifyTrafficStaff(
+    'Traffic application information received',
+    `The citizen has responded to the information request for application ${app.reference_number}.`
+  );
+
+  return { status: 'UNDER_REVIEW' };
+}
+
+async function notifyTrafficStaff(title, message) {
+  const result = await query(
+    `SELECT id FROM users WHERE role = 'TRAFFIC' AND status = 'ACTIVE'`
+  );
+  await Promise.all(result.rows.map((staff) =>
+    notificationService.notify(staff.id, title, message)
+  ));
 }
 
 // ─── Vehicles ────────────────────────────────────────────────────────
@@ -460,23 +533,48 @@ async function applyVehicleLicence(citizenId, data, user) {
   if (!vehicle || vehicle.citizen_id !== citizenId) {
     throw notFound('Vehicle not found.');
   }
+  const serviceCode = 'MY_VEHICLE_LICENCES';
+  const service = await serviceRepository.findByCode('TRAFFIC', serviceCode);
+  if (!service || !service.is_enabled) {
+    throw badRequest('Vehicle licence applications are currently unavailable.');
+  }
+  const configuredFee = await feeScheduleService.getFeeForService('TRAFFIC', serviceCode);
+  const feeAmount = configuredFee
+    ? configuredFee.is_active ? Number(configuredFee.amount) : 0
+    : Number(service.fee);
+  if (!Number.isFinite(feeAmount) || feeAmount < 0) {
+    throw new Error('The configured vehicle licence fee is invalid.');
+  }
+
+  const method = String(data.method || '').trim().toUpperCase();
+  const mobile = typeof data.mobile === 'string' ? data.mobile.trim() : '';
+  if (feeAmount > 0) {
+    if (!['MOBILE_MONEY', 'BANK_TRANSFER', 'CARD'].includes(method)) {
+      throw badRequest('Choose a supported payment method.');
+    }
+    if (method === 'MOBILE_MONEY' && !/^[0-9+\-\s()]{6,30}$/.test(mobile)) {
+      throw badRequest('A valid mobile number is required for mobile money.');
+    }
+  }
+
   const referenceNumber = await generateReference('VEHICLE_LICENCE');
-  const feeAmount = data.feeAmount || 150.00;
   const created = await vehicleLicenceRepository.create({
     citizenId, vehicleId: data.vehicleId, referenceNumber, feeAmount,
     expiryDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10),
   });
 
-  await paymentService.recordPayment({
-    citizenId,
-    ministry: 'TRAFFIC',
-    service: 'VEHICLE_LICENCE',
-    applicationReference: referenceNumber,
-    amount: feeAmount,
-    method: data.method || 'MOBILE_MONEY',
-    mobile: data.mobile,
-    receivedBy: user.userId,
-  });
+  if (feeAmount > 0) {
+    await paymentService.recordPayment({
+      citizenId,
+      ministry: 'TRAFFIC',
+      service: serviceCode,
+      applicationReference: referenceNumber,
+      amount: feeAmount,
+      method,
+      mobile,
+      receivedBy: user.userId,
+    });
+  }
 
   await auditService.log({
     userId: user.userId, username: user.username,
@@ -681,7 +779,7 @@ async function getMyApplications(citizenId) {
 async function getApplicationByReference(referenceNumber, citizenId) {
   const app = await licenceApplicationRepository.findByReference(referenceNumber);
   if (!app) return null;
-  if (citizenId && app.citizen_id !== citizenId) return null;
+  if (!citizenId || app.citizen_id !== citizenId) return null;
   const history = await licenceApplicationRepository.getHistory(app.id);
   return { ...app, history };
 }
@@ -692,6 +790,7 @@ module.exports = {
   getPassedDrivingTests, processDrivingTest,
   getStaffDrivingTests,
   getStaffApplications, processApplication,
+  submitTrafficInformationResponse,
   getVehicles, registerVehicle, updateVehicle, deleteVehicle,
   bookInspection, getInspections, cancelInspection, getStaffInspections, processInspection,
   applyVehicleLicence, getVehicleLicences,

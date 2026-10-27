@@ -13,6 +13,10 @@ export const getStaffVerifications = (params) =>
   apiClient.get('/pensions/staff/verifications', { params });
 export const processVerification = (id, data) =>
   apiClient.put(`/pensions/staff/verifications/${id}`, data);
+export const getStaffPensionApplications = (params) =>
+  apiClient.get('/pensions/staff/applications', { params });
+export const processPensionApplication = (id, data) =>
+  apiClient.put(`/pensions/staff/applications/${id}`, data);
 export const checkDeathCertificate = (nationalId) =>
   apiClient.get('/pensions/death-check', { params: { nationalId } });
 export const getStaffStats = () => apiClient.get('/pensions/staff/stats');

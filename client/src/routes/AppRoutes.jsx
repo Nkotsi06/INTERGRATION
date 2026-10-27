@@ -105,6 +105,7 @@ import PensionVerificationSuccess from '../pages/pensions/VerificationSuccess';
 import VerificationHistory from '../pages/pensions/VerificationHistory';
 import PensionsStaffDashboard from '../pages/pensions/StaffDashboard';
 import ProcessVerification from '../pages/pensions/ProcessVerification';
+import PensionApplications from '../pages/pensions/PensionApplications';
 
 import PassportDashboard from '../pages/passport/PassportDashboard';
 import ApplyForPassport from '../pages/passport/ApplyForPassport';
@@ -260,6 +261,7 @@ function AppRoutes() {
       <Route path="/pensions/verify/success" element={<ProtectedRoute><PensionVerificationSuccess /></ProtectedRoute>} />
       <Route path="/pensions/history" element={<ProtectedRoute><VerificationHistory /></ProtectedRoute>} />
       <Route path="/pensions/staff" element={<RoleRoute roles={['PENSIONS']}><PensionsStaffDashboard /></RoleRoute>} />
+      <Route path="/pensions/applications" element={<RoleRoute roles={['PENSIONS']}><PensionApplications /></RoleRoute>} />
       <Route path="/pensions/process" element={<RoleRoute roles={['PENSIONS']}><ProcessVerification /></RoleRoute>} />
 
       {/* Passport */}

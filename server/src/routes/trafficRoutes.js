@@ -17,6 +17,7 @@ router.post('/licence/driving', authMiddleware, c.applyForDrivingLicence);
 router.post('/licence/pdp', authMiddleware, c.applyForPublicDrivingPermit);
 router.get('/applications', authMiddleware, c.getMyApplications);
 router.get('/applications/:reference', authMiddleware, c.getApplicationByReference);
+router.post('/applications/:reference/information-response', authMiddleware, c.submitInformationResponse);
 
 // Citizen — vehicles
 router.get('/vehicles', authMiddleware, c.getVehicles);

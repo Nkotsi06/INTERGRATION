@@ -1,6 +1,5 @@
 const citizenRepository = require('../repositories/citizenRepository');
 const userRepository = require('../repositories/userRepository');
-const documentRepository = require('../repositories/documentRepository');
 const auditService = require('./auditService');
 const { query } = require('../config/database');
 const { hashPassword, verifyPassword } = require('../utils/passwordHash');
@@ -18,16 +17,12 @@ async function getProfile(userId) {
   const citizen = await citizenRepository.findById(user.citizen_id);
   if (!citizen) throw new Error('Citizen not found');
 
-  const passportPhoto = await documentRepository.findLatestByType(
-    citizen.id,
-    'PASSPORT_PHOTO'
-  );
-
   const base = formatCitizen(citizen);
+  const photo = await findPhotoForCitizen(citizen.id);
   return {
     ...base,
-    photoUrl: passportPhoto
-      ? `/api/citizen/photo?v=${passportPhoto.uploaded_at}`
+    photoUrl: photo
+      ? `/api/citizen/photo?v=${photo.updatedAt || ''}`
       : null,
   };
 }
@@ -170,27 +165,17 @@ async function deleteApplication(applicationId, userId) {
 }
 
 // ─────────────────────────────────────────────────────────────────────
-// Locate a photo for a citizen. Prefers PASSPORT_PHOTO document, falls
-// back to the biometrics facial image.
+// The National ID photo is the facial image captured through Home Affairs.
 // ─────────────────────────────────────────────────────────────────────
 async function findPhotoForCitizen(citizenId) {
-  const passportPhoto = await documentRepository.findLatestByType(
-    citizenId,
-    'PASSPORT_PHOTO'
-  );
-  if (passportPhoto) {
-    return {
-      kind: 'document',
-      filePath: passportPhoto.file_path,
-      fileName: passportPhoto.file_name,
-      fileType: passportPhoto.file_type || 'image/jpeg',
-    };
-  }
-
   const biometricRepository = require('../repositories/biometricRepository');
   const bio = await biometricRepository.findByCitizen(citizenId);
   if (bio?.facial_image) {
-    return { kind: 'dataurl', dataUrl: bio.facial_image };
+    return {
+      kind: 'dataurl',
+      dataUrl: bio.facial_image,
+      updatedAt: bio.updated_at,
+    };
   }
   return null;
 }
