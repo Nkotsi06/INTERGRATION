@@ -21,6 +21,13 @@ export function registerProgressHandlers({ start, stop }) {
 
 apiClient.interceptors.request.use((config) => {
   onRequestStart();
+  if (typeof FormData !== 'undefined' && config.data instanceof FormData) {
+    if (typeof config.headers?.delete === 'function') {
+      config.headers.delete('Content-Type');
+    } else if (config.headers) {
+      delete config.headers['Content-Type'];
+    }
+  }
   try {
     const token = localStorage.getItem('token');
     if (token) {

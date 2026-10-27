@@ -228,6 +228,9 @@ describe('assessEligibility', () => {
         if (sql.includes('SELECT * FROM applications')) {
           return { rows: [pensionApplication] };
         }
+        if (sql.includes("nextval('pension_number_seq')")) {
+          return { rows: [{ pension_number: 'LS-PEN-2026-000001' }] };
+        }
         if (sql.includes('INSERT INTO applications')) {
           return { rows: [] };
         }
@@ -250,13 +253,13 @@ describe('assessEligibility', () => {
     pensionRepository.findRulesForCategory.mockResolvedValue([activeOldAgeRule]);
     pensionRepository.create.mockResolvedValue({
       id: 'pension-1',
-      pension_number: 'PEN-1',
+      pension_number: 'LS-PEN-2026-000001',
       monthly_amount: 1000,
     });
 
     const result = await pensionsService.processPensionApplication(
       'application-1',
-      { action: 'APPROVE', pensionNumber: 'PEN-1' },
+      { action: 'APPROVE' },
       { userId: 'staff-1', username: 'pensions-staff' }
     );
 
@@ -264,7 +267,7 @@ describe('assessEligibility', () => {
       expect.objectContaining({
         citizenId: 'citizen-1',
         pensionType: 'OLD_AGE',
-        pensionNumber: 'PEN-1',
+        pensionNumber: 'LS-PEN-2026-000001',
         monthlyAmount: 1000,
       }),
       expect.any(Function)
@@ -274,7 +277,7 @@ describe('assessEligibility', () => {
     expect(notificationService.notify).toHaveBeenCalledWith(
       'user-citizen-1',
       'Pension application approved',
-      'Your pension application APP-1 was approved.'
+      'Your pension application APP-1 was approved. Your pension number is LS-PEN-2026-000001.'
     );
   });
 });

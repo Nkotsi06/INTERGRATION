@@ -139,6 +139,7 @@ DROP SEQUENCE IF EXISTS driver_licence_number_seq;       -- ← was missing from
 
 CREATE SEQUENCE citizen_national_id_serial_seq START 1;
 CREATE SEQUENCE birth_certificate_number_seq START 1;
+CREATE SEQUENCE pension_number_seq START 1;
 CREATE SEQUENCE driving_test_reference_seq START 1;
 CREATE SEQUENCE passport_number_seq START 1;
 CREATE SEQUENCE driver_licence_number_seq START 1;

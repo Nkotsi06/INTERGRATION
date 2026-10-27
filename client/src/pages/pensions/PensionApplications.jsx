@@ -5,7 +5,6 @@ import StatusBadge from '../../components/common/StatusBadge';
 import Button from '../../components/common/Button';
 import EmptyState from '../../components/common/EmptyState';
 import Modal from '../../components/common/Modal';
-import Input from '../../components/common/Input';
 import Alert from '../../components/common/Alert';
 import { TableSkeleton } from '../../components/common/SkeletonLoader';
 import useFetch from '../../hooks/useFetch';
@@ -20,7 +19,6 @@ function PensionApplications() {
   const { data, loading, error: loadError, refetch } = useFetch(getStaffPensionApplications, []);
   const [selected, setSelected] = useState(null);
   const [action, setAction] = useState('APPROVE');
-  const [pensionNumber, setPensionNumber] = useState('');
   const [reason, setReason] = useState('');
   const [busy, setBusy] = useState(false);
   const { success, error: showError } = useNotification();
@@ -29,7 +27,6 @@ function PensionApplications() {
   const openAction = (application, selectedAction) => {
     setSelected(application);
     setAction(selectedAction);
-    setPensionNumber('');
     setReason('');
   };
 
@@ -40,10 +37,6 @@ function PensionApplications() {
 
   const submitAction = async () => {
     if (!selected) return;
-    if (action === 'APPROVE' && !pensionNumber.trim()) {
-      showError('Enter the authorized pension number.');
-      return;
-    }
     if (action === 'REJECT' && !reason.trim()) {
       showError('A reason is required when rejecting an application.');
       return;
@@ -53,7 +46,6 @@ function PensionApplications() {
     try {
       await processPensionApplication(selected.id, {
         action,
-        pensionNumber: pensionNumber.trim(),
         reason: reason.trim(),
       });
       success(action === 'APPROVE' ? 'Pension application approved' : 'Pension application rejected');
@@ -155,11 +147,9 @@ function PensionApplications() {
             {selected.data?.formData?.pensionType || 'Not specified'}
           </p>
           {action === 'APPROVE' ? (
-            <Input
-              label="Authorized pension number"
-              value={pensionNumber}
-              onChange={(event) => setPensionNumber(event.target.value)}
-              required
+            <Alert
+              type="info"
+              message="The system will assign a unique pension number automatically when this application is approved."
             />
           ) : (
             <div className="form-field">

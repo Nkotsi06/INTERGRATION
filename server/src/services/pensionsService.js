@@ -430,13 +430,6 @@ async function processPensionApplication(id, input, staffUser) {
     error.statusCode = 400;
     throw error;
   }
-  const pensionNumber = String(input.pensionNumber || '').trim();
-  if (action === 'APPROVE' && (!pensionNumber || pensionNumber.length > 50)) {
-    const error = new Error('Enter the authorized pension number before approval.');
-    error.statusCode = 400;
-    throw error;
-  }
-
   const client = await getClient();
   let application;
   let approvedPension;
@@ -495,6 +488,13 @@ async function processPensionApplication(id, input, staffUser) {
         throw error;
       }
 
+      const generatedNumber = await executor(
+        `SELECT 'LS-PEN-' || TO_CHAR(CURRENT_DATE, 'YYYY') || '-' ||
+           CASE WHEN serial < 1000000 THEN LPAD(serial::text, 6, '0')
+                ELSE serial::text END AS pension_number
+         FROM (SELECT nextval('pension_number_seq') AS serial) generated`
+      );
+      const pensionNumber = generatedNumber.rows[0].pension_number;
       approvedPension = await pensionRepository.create({
         citizenId: application.citizen_id,
         pensionType: requestedType,
@@ -517,7 +517,9 @@ async function processPensionApplication(id, input, staffUser) {
         application.id,
         nextStatus,
         staffUser.userId,
-        reason || (action === 'APPROVE' ? 'Pension application approved' : null),
+        action === 'APPROVE'
+          ? `Pension application approved. Assigned pension number ${approvedPension.pension_number}.`
+          : reason || null,
       ]
     );
     await client.query('COMMIT');
@@ -547,7 +549,7 @@ async function processPensionApplication(id, input, staffUser) {
     application.citizen_id,
     `Pension application ${nextStatus.toLowerCase()}`,
     action === 'APPROVE'
-      ? `Your pension application ${application.reference_number} was approved.`
+      ? `Your pension application ${application.reference_number} was approved. Your pension number is ${approvedPension.pension_number}.`
       : `Your pension application ${application.reference_number} was rejected. Reason: ${reason}`
   );
   return { status: nextStatus, pension: approvedPension || null };

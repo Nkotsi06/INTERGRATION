@@ -100,6 +100,8 @@ Apply `023_use_finance_register_for_pension_employment.sql` after the existing m
 
 Apply `024_disable_passport_photo_uploads.sql` after the existing migrations to disable the obsolete passport-photo document type. The backend rejects any attempted upload of that type, while existing stored documents remain untouched.
 
+Apply `025_generate_pension_numbers.sql` after the existing migrations to enable automatic, sequence-backed pension numbers in the `LS-PEN-YYYY-000001` format. The number is allocated by the backend only when Pensions staff approve an eligible application.
+
 ---
 
 ## Technology Stack
