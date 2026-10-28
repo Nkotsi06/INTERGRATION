@@ -14,7 +14,10 @@ function errorHandler(err, req, res, next) {
       ? err.message
       : 'An unexpected error occurred';
 
-  res.status(statusCode).json({ message });
+  res.status(statusCode).json({
+    ...(err.code ? { code: err.code } : {}),
+    message,
+  });
 }
 
 module.exports = errorHandler;

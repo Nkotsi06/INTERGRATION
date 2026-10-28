@@ -6,6 +6,22 @@ const logger = require('./utils/logger');
 
 const PORT = process.env.PORT || 5000;
 
+process.on('unhandledRejection', (reason) => {
+  logger.error('Unhandled promise rejection', {
+    message: reason instanceof Error ? reason.message : String(reason),
+  });
+  process.exit(1);
+});
+
+process.on('uncaughtException', (error) => {
+  logger.error('Uncaught exception', {
+    name: error.name,
+    message: error.message,
+    stack: error.stack,
+  });
+  process.exit(1);
+});
+
 async function start() {
   console.log('\n========================================');
   console.log('  Integrated Government Services System');

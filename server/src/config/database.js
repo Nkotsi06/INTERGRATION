@@ -26,21 +26,47 @@ const pool = new Pool({
 });
 
 pool.on('error', (err) => {
-  logger.error('Unexpected database error:', err);
+  logger.error('Unexpected database pool error:', {
+    code: err.code || null,
+    message: err.message,
+  });
 });
+
+function isConnectionTerminated(err) {
+  return [
+    '08000',
+    '08003',
+    '08006',
+    '57P01',
+    '57P02',
+    '57P03',
+    'ECONNRESET',
+    'EPIPE',
+    'ETIMEDOUT',
+  ].includes(err.code) || /connection terminated|socket hang up/i.test(err.message || '');
+}
 
 async function query(text, params) {
   const start = Date.now();
-  try {
-    const result = await pool.query(text, params);
-    const duration = Date.now() - start;
-    if (process.env.NODE_ENV === 'development' && duration > 1000) {
-      logger.warn(`Slow query (${duration}ms):`, text);
+  const readOnly = /^\s*(SELECT|SHOW|EXPLAIN)\b/i.test(text);
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    try {
+      const result = await pool.query(text, params);
+      const duration = Date.now() - start;
+      if (process.env.NODE_ENV === 'development' && duration > 1000) {
+        logger.warn(`Slow query (${duration}ms):`, text);
+      }
+      return result;
+    } catch (err) {
+      if (attempt === 0 && readOnly && isConnectionTerminated(err)) {
+        logger.warn('Retrying read-only query after terminated database connection', {
+          code: err.code || null,
+        });
+        continue;
+      }
+      logger.error('Database query error:', { text, error: err.message });
+      throw err;
     }
-    return result;
-  } catch (err) {
-    logger.error('Database query error:', { text, error: err.message });
-    throw err;
   }
 }
 

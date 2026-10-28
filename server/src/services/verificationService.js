@@ -6,9 +6,13 @@ const { verifyPassword } = require('../utils/passwordHash');
 const logger = require('../utils/logger');
 
 async function confirmIdentity({ password, user, ipAddress, userAgent }) {
+  if (!user?.userId || typeof password !== 'string' || password.length === 0) {
+    return { success: false, reason: 'invalid_input' };
+  }
+
   // Step 1 — verify the citizen's password
   const account = await userRepository.findById(user.userId);
-  if (!account || account.role !== 'CITIZEN') {
+  if (!account || account.role !== 'CITIZEN' || !account.password_hash) {
     return { success: false, reason: 'wrong_password' };
   }
 
@@ -69,7 +73,7 @@ async function confirmIdentity({ password, user, ipAddress, userAgent }) {
     userAgent,
   });
 
-  logger.info(`Identity confirmed for citizen ${citizen.national_id}`);
+  logger.info('Identity confirmation succeeded', { userId: user.userId });
 
   return {
     success: true,

@@ -8,6 +8,7 @@ const path = require('path');
 
 const errorHandler = require('./middleware/errorHandler');
 const rateLimitMiddleware = require('./middleware/rateLimitMiddleware');
+const requestAuditMiddleware = require('./middleware/requestAuditMiddleware');
 
 // Routes
 const authRoutes = require('./routes/authRoutes');
@@ -68,6 +69,7 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(cookieParser());
 
 app.use('/api', rateLimitMiddleware);
+app.use(['/api/pensions', '/api/verification'], requestAuditMiddleware);
 
 app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')));
 

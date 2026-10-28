@@ -7,6 +7,9 @@ async function hashPassword(password) {
 }
 
 async function verifyPassword(password, hash) {
+  if (typeof password !== 'string' || typeof hash !== 'string' || !hash) {
+    return false;
+  }
   return bcrypt.compare(password, hash);
 }
 
