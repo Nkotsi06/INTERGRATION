@@ -83,11 +83,11 @@ async function applyForPassport(citizenId, data, user) {
   }
 
   const biometric = isMinor ? null : await biometricRepository.findByCitizen(citizenId);
-
   const citizen = await citizenRepository.findById(citizenId);
   if (!citizen?.national_id) {
     throw badRequest('A Home Affairs National ID is required before applying for a passport.');
   }
+  
   if (!data.collectionOffice) {
     throw badRequest('Please choose a passport collection office.');
   }
@@ -112,9 +112,18 @@ async function applyForPassport(citizenId, data, user) {
       !data.guardianFullName || !data.guardianNationalId || !data.guardianRelationship)) {
     throw badRequest('Complete the child and guardian details before applying.');
   }
+  if (isMinor) {
+    if (typeof data.childPhoto !== 'string' || !data.childPhoto.startsWith('data:image/jpeg;base64,')) {
+        throw badRequest('A valid passport photograph is required for a minor.');
+    }
+    if (data.childPhoto.length > 5 * 1024 * 1024 * 1.33) {
+        throw badRequest('The passport photograph is too large.');
+    }
+  }
 
   const fee = await feeScheduleService.getFeeForService('PASSPORT', serviceCode);
   const amount = fee?.is_active ? Number(fee.amount) : 0;
+
   const referenceNumber = await generateReference('PASSPORT_APPLICATION');
 
   const application = await applicationRepository.create({
@@ -130,9 +139,7 @@ async function applyForPassport(citizenId, data, user) {
       nationalId: citizen.national_id,
       passportNumber: null,
       fee: amount,
-      previousPassportNumber: isRenewal
-        ? currentPassport.passport_number
-        : null,
+      previousPassportNumber: isRenewal ? currentPassport.passport_number : null,
       usesHomeAffairsPhoto: !isMinor && Boolean(biometric?.facial_image),
       formData: {
         circumstances: data.circumstances,
@@ -142,6 +149,7 @@ async function applyForPassport(citizenId, data, user) {
         childFullName: data.childFullName,
         childDateOfBirth: data.childDateOfBirth,
         childNationalId: data.childNationalId,
+        childPhoto: data.childPhoto,
         guardianFullName: data.guardianFullName,
         guardianNationalId: data.guardianNationalId,
         guardianRelationship: data.guardianRelationship,
@@ -166,9 +174,7 @@ async function applyForPassport(citizenId, data, user) {
     passportNumber: null,
     collectionOffice: data.collectionOffice,
     isRenewal,
-    previousPassportNumber: isRenewal
-      ? currentPassport.passport_number
-      : null,
+    previousPassportNumber: isRenewal ? currentPassport.passport_number : null,
   });
 
   await auditService.log({

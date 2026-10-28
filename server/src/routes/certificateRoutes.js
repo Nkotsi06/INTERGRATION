@@ -15,6 +15,13 @@ router.get(
   certificateController.listAll
 );
 
+// NEW: Route to get a photo for a minor passport application
+router.get(
+    '/passport/:id/photo',
+    roleMiddleware(['HOME_AFFAIRS', 'ADMIN', 'PASSPORT']),
+    certificateController.getPassportPhoto
+);
+
 // Single certificate (any logged-in user; service enforces ownership for citizens)
 router.get('/:type/:id', certificateController.getOne);
 router.get('/:type/:id/download', certificateController.download);
@@ -31,7 +38,6 @@ router.post(
   certificateController.reject
 );
 
-// Staff edit — previously missing, caused EditCertificate to 404 on save.
 router.put(
   '/:type/:id',
   roleMiddleware(['HOME_AFFAIRS', 'ADMIN']),

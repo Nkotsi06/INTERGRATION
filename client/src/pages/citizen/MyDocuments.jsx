@@ -43,6 +43,7 @@ function MyDocuments() {
     loading: profileLoading,
     error: profileError,
   } = useFetch(getProfile, []);
+
   const [selectedDoc, setSelectedDoc] = useState(null);
   const [showLicence, setShowLicence] = useState(false);
   const [photoUrl, setPhotoUrl] = useState(null);
@@ -56,17 +57,30 @@ function MyDocuments() {
   const handleView = async (cert) => {
     setSelectedDoc(cert);
     setPhotoError(null);
-    setPhotoUrl(cert.applicant_photo || null);
-    if (cert.certificate_type === 'ID_CARD' ||
-        (cert.certificate_type === 'PASSPORT' &&
-          !cert.applicant_photo && !cert.child_full_name)) {
-      try {
-        const blob = await apiClient.get('/citizen/photo', { responseType: 'blob' });
-        setPhotoUrl(URL.createObjectURL(blob));
-      } catch (err) {
-        setPhotoUrl(null);
-        setPhotoError(err.message || 'Could not load the document photo.');
-      }
+    setPhotoUrl(null);
+
+    if (cert.certificate_type === 'PASSPORT' && cert.child_full_name) {
+        try {
+            const response = await apiClient.get(`/certificates/passport/${cert.application_id}/photo`);
+            if (response.photo) {
+                setPhotoUrl(response.photo);
+            } else {
+                setPhotoError('Passport photograph not found for this application.');
+            }
+        } catch (err) {
+            setPhotoError(err.message || 'Could not load the passport photograph.');
+        }
+        return;
+    }
+    
+    if (cert.certificate_type === 'ID_CARD' || cert.certificate_type === 'PASSPORT') {
+        try {
+            const blob = await apiClient.get('/citizen/photo', { responseType: 'blob' });
+            setPhotoUrl(URL.createObjectURL(blob));
+        } catch (err) {
+            setPhotoUrl(null);
+            setPhotoError(err.message || 'Could not load the document photo.');
+        }
     }
   };
 

@@ -9,6 +9,8 @@ import SignaturePad from '../../components/signature/SignaturePad';
 import FormActions from '../../components/common/FormActions';
 import Alert from '../../components/common/Alert';
 import CitizenReadOnlyBlock from '../../components/ministry/CitizenReadOnlyBlock';
+import FacialCamera from '../../components/biometrics/FacialCamera';
+import Button from '../../components/common/Button';
 import useFetch from '../../hooks/useFetch';
 import useServiceFee from '../../hooks/useServiceFees';
 import { getProfile } from '../../api/citizenApi';
@@ -60,6 +62,7 @@ function ApplyForPassport() {
     guardianNationalId: '',
     guardianRelationship: '',
     signature: null,
+    childPhoto: null, // New state for the minor's photo
   });
   const [confirmed, setConfirmed] = useState(false);
   const [error, setError] = useState(null);
@@ -145,6 +148,10 @@ function ApplyForPassport() {
       setError('Complete the child and guardian details.');
       return;
     }
+    if (isMinor && !details.childPhoto) {
+      setError('A passport photograph must be captured for a minor.');
+      return;
+    }
     if (!confirmed) {
       setError('Please confirm the information before submitting.');
       return;
@@ -169,6 +176,14 @@ function ApplyForPassport() {
     }
   };
 
+  const capturePhoto = (imageSrc) => {
+    update('childPhoto', imageSrc);
+  };
+
+  const steps = isMinor
+    ? ['Review info', 'Applicant Details', 'Photograph', 'Review & submit']
+    : ['Review info', 'Application details', 'Review & submit'];
+
   return (
     <PageWrapper
       title={application.title}
@@ -177,13 +192,7 @@ function ApplyForPassport() {
       accentColour="#17A2B8"
     >
       <h1>{application.title}</h1>
-
-      <StepIndicator
-        current={step}
-        total={3}
-        labels={['Review info', 'Application details', 'Review & submit']}
-      />
-
+      <StepIndicator current={step} total={steps.length} labels={steps} />
       {error && <Alert type="error" message={error} />}
       {branchError && <Alert type="error" message={branchError} />}
       {caseError && <Alert type="error" message={caseError} />}
@@ -310,42 +319,12 @@ function ApplyForPassport() {
 
             {isMinor && (
               <>
-                <Input
-                  label="Child's full name"
-                  value={details.childFullName}
-                  onChange={(event) => update('childFullName', event.target.value)}
-                  required
-                />
-                <Input
-                  label="Child's date of birth"
-                  type="date"
-                  value={details.childDateOfBirth}
-                  onChange={(event) => update('childDateOfBirth', event.target.value)}
-                  required
-                />
-                <Input
-                  label="Child's National ID (if issued)"
-                  value={details.childNationalId}
-                  onChange={(event) => update('childNationalId', event.target.value)}
-                />
-                <Input
-                  label="Parent or guardian full name"
-                  value={details.guardianFullName}
-                  onChange={(event) => update('guardianFullName', event.target.value)}
-                  required
-                />
-                <Input
-                  label="Parent or guardian National ID"
-                  value={details.guardianNationalId}
-                  onChange={(event) => update('guardianNationalId', event.target.value)}
-                  required
-                />
-                <Input
-                  label="Relationship to child"
-                  value={details.guardianRelationship}
-                  onChange={(event) => update('guardianRelationship', event.target.value)}
-                  required
-                />
+                <Input label="Child's full name" value={details.childFullName} onChange={(event) => update('childFullName', event.target.value)} required />
+                <Input label="Child's date of birth" type="date" value={details.childDateOfBirth} onChange={(event) => update('childDateOfBirth', event.target.value)} required />
+                <Input label="Child's National ID (if issued)" value={details.childNationalId} onChange={(event) => update('childNationalId', event.target.value)} />
+                <Input label="Parent or guardian full name" value={details.guardianFullName} onChange={(event) => update('guardianFullName', event.target.value)} required />
+                <Input label="Parent or guardian National ID" value={details.guardianNationalId} onChange={(event) => update('guardianNationalId', event.target.value)} required />
+                <Input label="Relationship to child" value={details.guardianRelationship} onChange={(event) => update('guardianRelationship', event.target.value)} required />
               </>
             )}
 
@@ -394,13 +373,37 @@ function ApplyForPassport() {
             primaryDisabled={branchLoading || branches.length === 0 ||
               (application.code === 'PASSPORT_LOST' &&
                 (caseLoading || eligibleCases.length === 0))}
-            onPrimary={() => setStep(3)}
+            onPrimary={() => setStep(isMinor ? 3 : 4)}
             onSecondary={() => setStep(1)}
           />
         </>
       )}
 
-      {step === 3 && (
+      {step === 3 && isMinor && (
+        <>
+          <div className="form-section">
+            <h3 className="form-section-title">Passport Photograph</h3>
+            <p className="text-muted">Capture a clear passport-style photograph of the minor.</p>
+            {!details.childPhoto ? (
+              <FacialCamera settings={{ allowOverride: true }} onCapture={capturePhoto} onCancel={() => setStep(2)} />
+            ) : (
+              <div className="facial-review">
+                <h4 className="facial-label">Confirm the photo</h4>
+                <img src={details.childPhoto} alt="Captured face" className="facial-image facial-image-large" />
+                <div className="facial-actions">
+                  <Button variant="secondary" onClick={() => update('childPhoto', null)}>Retake</Button>
+                  <Button variant="primary" onClick={() => setStep(4)}>Accept photo</Button>
+                </div>
+              </div>
+            )}
+          </div>
+          {details.childPhoto && (
+            <FormActions primaryLabel="Continue" onPrimary={() => setStep(4)} onSecondary={() => update('childPhoto', null)} />
+          )}
+        </>
+      )}
+
+      {step === 4 && (
         <>
           <div className="card card-flat">
             <h3>Application summary</h3>
@@ -420,7 +423,12 @@ function ApplyForPassport() {
                   : ''}
               />
               <ReadOnly label="Signature" value={details.signature ? 'Provided' : 'Missing'} />
-              {isMinor && <ReadOnly label="Child" value={details.childFullName} />}
+              {isMinor && (
+                <>
+                  <ReadOnly label="Child" value={details.childFullName} />
+                  <ReadOnly label="Photograph" value={details.childPhoto ? 'Captured' : 'Missing'} />
+                </>
+              )}
               {application.code === 'PASSPORT_LOST' && (
                 <ReadOnly label="Police case" value={details.policeCaseNumber} />
               )}
@@ -428,6 +436,12 @@ function ApplyForPassport() {
                 <ReadOnly label="Application fee" value={formatCurrency(fee, currency)} />
               )}
             </div>
+            {isMinor && details.childPhoto && (
+              <div style={{ marginTop: '1rem' }}>
+                <h4 style={{ marginBottom: '0.5rem' }}>Passport Photograph Preview</h4>
+                <img src={details.childPhoto} alt="Passport photograph preview" style={{ width: '150px', height: '150px', objectFit: 'cover', borderRadius: '8px', border: '1px solid #ccc' }} />
+              </div>
+            )}
           </div>
 
           <Checkbox
@@ -440,7 +454,7 @@ function ApplyForPassport() {
             primaryLabel="Submit application"
             primaryLoading={submitting}
             onPrimary={handleSubmit}
-            onSecondary={() => setStep(2)}
+            onSecondary={() => setStep(isMinor ? 3 : 2)}
           />
         </>
       )}

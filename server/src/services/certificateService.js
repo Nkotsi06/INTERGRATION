@@ -16,9 +16,6 @@ const SERVICE_TO_TYPE = {
   DIVORCE_CERTIFICATE_APPLY: 'DIVORCE',
 };
 
-// Services that eventually produce a National ID card. The card row
-// is inserted by homeAffairsApplicationService when the application
-// reaches the COLLECTED state.
 const NATIONAL_ID_SERVICE_CODES = new Set([
   'NATIONAL_ID_APPLY',
   'NATIONAL_ID_REPLACE',
@@ -35,8 +32,6 @@ async function recordCertificateApplication({ application, formData, citizenId }
 
   const certificateNumber = await generateReference(`${type}_CERTIFICATE`);
 
-  // For a birth certificate, copy the applicant's own National ID onto
-  // the row so the printed PDF shows the ID Number line.
   let childNationalId = null;
   if (type === 'BIRTH' && citizenId) {
     const citizen = await citizenRepository.findById(citizenId);
@@ -192,8 +187,6 @@ async function listAll(filters = {}) {
       )
   );
 
-  // ID cards are not certificate-table rows; add them separately when
-  // the caller asked for them (or asked for everything).
   if (!filters.type || filters.type === 'ID_CARD') {
     const cardFilters = [];
     const params = [];
@@ -349,16 +342,12 @@ async function reject(type, id, reason, staffUser) {
 }
 
 // ─── National ID cards ──────────────────────────────────────────────
-// Called by homeAffairsApplicationService when the officer marks the
-// National ID application as COLLECTED. Creates the persistent card
-// row so it appears in My Documents.
 async function createNationalIdCardFromApplication({ application, staffUser }) {
   if (!NATIONAL_ID_SERVICE_CODES.has(application.data?.serviceCode)) return null;
 
   const citizen = await citizenRepository.findById(application.citizen_id);
   if (!citizen?.national_id) return null;
 
-  // Guard against duplicate rows.
   const existing = await query(
     'SELECT id FROM national_id_cards WHERE application_id = $1 LIMIT 1',
     [application.id]
@@ -497,6 +486,16 @@ async function getPendingCount() {
   return result.rows[0].pending || 0;
 }
 
+async function getPhotoForMinorPassportApplication(applicationId) {
+    const result = await query(
+        `SELECT data->'formData'->>'childPhoto' as child_photo
+         FROM applications
+         WHERE id = $1 AND service = 'PASSPORT'`,
+        [applicationId]
+    );
+    return result.rows[0]?.child_photo || null;
+}
+
 module.exports = {
   recordCertificateApplication,
   listForCitizen,
@@ -510,6 +509,7 @@ module.exports = {
   createNationalIdCardFromApplication,
   issueNationalIdCard,
   rejectNationalIdCard,
+  getPhotoForMinorPassportApplication,
   SERVICE_TO_TYPE,
   NATIONAL_ID_SERVICE_CODES,
 };

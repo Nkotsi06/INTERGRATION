@@ -37,7 +37,6 @@ async function getOne(req, res, next) {
     const type = checkType(req);
     const cert = await certificateService.getById(type, req.params.id);
     if (!cert) return res.status(404).json({ message: 'Certificate not found' });
-    // Ownership check for citizens.
     if (req.user.role === 'CITIZEN') {
       const ownerCitizenId = req.user.verifiedCitizenId || req.user.citizenId;
       if (cert.citizen_id && cert.citizen_id !== ownerCitizenId) {
@@ -87,4 +86,26 @@ async function download(req, res, next) {
   } catch (err) { next(err); }
 }
 
-module.exports = { listMine, listAll, getOne, update, issue, reject, download };
+async function getPassportPhoto(req, res, next) {
+  try {
+    const { id } = req.params;
+    const photoDataUrl = await certificateService.getPhotoForMinorPassportApplication(id);
+    if (!photoDataUrl) {
+      return res.status(404).json({ message: 'No minor passport photo found for this application.' });
+    }
+    res.json({ photo: photoDataUrl });
+  } catch (err) {
+    next(err);
+  }
+}
+
+module.exports = { 
+    listMine, 
+    listAll, 
+    getOne, 
+    update, 
+    issue, 
+    reject, 
+    download,
+    getPassportPhoto,
+};

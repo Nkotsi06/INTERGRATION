@@ -44,6 +44,9 @@ function ProcessApplication() {
   const [collecting, setCollecting] = useState(false);
   const { success, error: showError } = useNotification();
 
+  const [reviewModalOpen, setReviewModalOpen] = useState(false);
+  const [reviewingApplication, setReviewingApplication] = useState(null);
+
   const filtered = useMemo(() => {
     if (!data) return [];
     return data.filter((a) => {
@@ -55,19 +58,20 @@ function ProcessApplication() {
 
   const hasActive = !!(statusFilter || dateFilter);
 
-  const handle = async (id, action) => {
+  const handle = async (id, action, details = {}) => {
     setActiveRequestId(id);
     try {
-      await processApplication(id, { action });
+      await processApplication(id, { action, ...details });
       success(`Application ${action.toLowerCase()}`);
       await refetch();
+      setReviewModalOpen(false);
     } catch (err) {
       showError(err.message || 'Could not process this application.');
     } finally {
       setActiveRequestId(null);
     }
   };
-
+  
   const handleMarkReady = async (application) => {
     setActiveRequestId(application.id);
     try {
@@ -79,6 +83,11 @@ function ProcessApplication() {
     } finally {
       setActiveRequestId(null);
     }
+  };
+
+  const openReviewModal = (application) => {
+    setReviewingApplication(application);
+    setReviewModalOpen(true);
   };
 
   const closeCollectionModal = () => {
@@ -105,7 +114,6 @@ function ProcessApplication() {
       setCollectionError('Capture and save the citizen’s signature.');
       return;
     }
-
     setCollecting(true);
     try {
       await recordCollection(selectedApplication.id, {
@@ -139,52 +147,17 @@ function ProcessApplication() {
       render: (r) => (
         <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
           {['SUBMITTED', 'UNDER_REVIEW'].includes(r.status) && (
-            <>
-              <Button
-                variant="success"
-                size="small"
-                disabled={activeRequestId === r.id}
-                onClick={() => handle(r.id, 'APPROVE')}
-              >
-                Approve
-              </Button>
-              <Button
-                variant="secondary"
-                size="small"
-                disabled={activeRequestId === r.id}
-                onClick={() => handle(r.id, 'REQUEST_INFO')}
-              >
-                Request info
-              </Button>
-              <Button
-                variant="danger"
-                size="small"
-                disabled={activeRequestId === r.id}
-                onClick={() => handle(r.id, 'REJECT')}
-              >
-                Reject
-              </Button>
-            </>
+            <Button variant="primary" size="small" onClick={() => openReviewModal(r)}>
+              Review
+            </Button>
           )}
           {r.status === 'APPROVED' && (
-            <Button
-              variant="success"
-              size="small"
-              disabled={activeRequestId === r.id}
-              onClick={() => handleMarkReady(r)}
-            >
-              Mark Ready for Collection
+            <Button variant="success" size="small" disabled={activeRequestId === r.id} onClick={() => handleMarkReady(r)}>
+              Mark Ready
             </Button>
           )}
           {r.status === 'READY_FOR_COLLECTION' && (
-            <Button
-              variant="primary"
-              size="small"
-              onClick={() => {
-                setCollectionError(null);
-                setSelectedApplication(r);
-              }}
-            >
+            <Button variant="primary" size="small" onClick={() => { setCollectionError(null); setSelectedApplication(r); }}>
               Record Collection
             </Button>
           )}
@@ -192,28 +165,19 @@ function ProcessApplication() {
       ),
     },
   ];
+  
+  const isMinorApplication = reviewingApplication?.data?.serviceCode === 'PASSPORT_MINOR';
 
   return (
-    <PageWrapper
-      title="Process Passport Application"
-      showBack
-      backPath="/passport/staff"
-      accentColour="#17A2B8"
-    >
+    <PageWrapper title="Process Passport Application" showBack backPath="/passport/staff" accentColour="#17A2B8">
       <h1>Process passport application</h1>
-      <p className="text-muted">
-        Only citizens verified by Home Affairs appear here.
-      </p>
-
+      <p className="text-muted">Only citizens verified by Home Affairs appear here.</p>
+      
       <div className="filter-bar">
         <div className="filter-controls">
           <div className="filter-dropdown">
             <label className="filter-label">Status</label>
-            <select
-              className="filter-select"
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-            >
+            <select className="filter-select" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
               <option value="">All</option>
               <option value="SUBMITTED">Submitted</option>
               <option value="UNDER_REVIEW">Under review</option>
@@ -225,42 +189,65 @@ function ProcessApplication() {
           </div>
           <div className="filter-dropdown">
             <label className="filter-label">From date</label>
-            <input
-              type="date"
-              className="filter-date-input"
-              value={dateFilter}
-              onChange={(e) => setDateFilter(e.target.value)}
-            />
+            <input type="date" className="filter-date-input" value={dateFilter} onChange={(e) => setDateFilter(e.target.value)} />
           </div>
         </div>
-        {hasActive && (
-          <button
-            type="button"
-            className="clear-filters"
-            onClick={() => {
-              setStatusFilter('');
-              setDateFilter('');
-            }}
-          >
-            Clear filters
-          </button>
-        )}
+        {hasActive && (<button type="button" className="clear-filters" onClick={() => { setStatusFilter(''); setDateFilter(''); }}>Clear filters</button>)}
       </div>
 
       {loading && <TableSkeleton rows={6} columns={6} />}
       {!loading && error && <Alert type="error" message={error} />}
+      {!loading && !error && filtered.length === 0 && <EmptyState title="No applications match" message="Change the filters to see more." />}
+      {!loading && !error && filtered.length > 0 && <Table columns={columns} data={filtered} />}
 
-      {!loading && !error && filtered.length === 0 && (
-        <EmptyState
-          title="No applications match"
-          message="Change the filters to see more."
-        />
+      {/* Review Modal */}
+      {reviewModalOpen && reviewingApplication && (
+        <Modal isOpen onClose={() => setReviewModalOpen(false)} title={`Review Application: ${reviewingApplication.referenceNumber}`} size="large">
+          <h4>Applicant Details</h4>
+          <div className="form-grid">
+            <ReadOnly label="Name" value={reviewingApplication.citizenName} />
+            <ReadOnly label="National ID" value={reviewingApplication.nationalId} />
+            <ReadOnly label="Service Type" value={reviewingApplication.data?.serviceName || 'Passport'} />
+          </div>
+          
+          {isMinorApplication && (
+            <>
+              <hr/>
+              <h4>Minor's Details</h4>
+              <div className="form-grid">
+                <ReadOnly label="Child's Name" value={reviewingApplication.data.formData.childFullName} />
+                <ReadOnly label="Child's DOB" value={formatDate(reviewingApplication.data.formData.childDateOfBirth)} />
+                <ReadOnly label="Guardian's Name" value={reviewingApplication.data.formData.guardianFullName} />
+                <ReadOnly label="Guardian's National ID" value={reviewingApplication.data.formData.guardianNationalId} />
+              </div>
+              <h4>Passport Photograph</h4>
+              {reviewingApplication.data.formData.childPhoto ? (
+                <div style={{ textAlign: 'center', marginBottom: '1rem' }}>
+                  <img src={reviewingApplication.data.formData.childPhoto} alt="Minor's Passport Photograph" style={{ maxWidth: '200px', maxHeight: '200px', border: '1px solid #ccc', borderRadius: '4px' }} />
+                </div>
+              ) : (
+                <Alert type="warning" message="No photograph was submitted with this application." />
+              )}
+            </>
+          )}
+
+          <hr/>
+          <h4>Processing Actions</h4>
+          <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+            <Button variant="success" disabled={activeRequestId === reviewingApplication.id} onClick={() => handle(reviewingApplication.id, 'APPROVE')}>
+              Approve Application
+            </Button>
+            <Button variant="secondary" disabled={activeRequestId === reviewingApplication.id} onClick={() => handle(reviewingApplication.id, 'REQUEST_INFO', { details: 'Please replace the passport photograph with a new one.' })}>
+              Request Photo Replacement
+            </Button>
+            <Button variant="danger" disabled={activeRequestId === reviewingApplication.id} onClick={() => handle(reviewingApplication.id, 'REJECT', { reason: 'Application rejected by Passport staff.' })}>
+              Reject Application
+            </Button>
+          </div>
+        </Modal>
       )}
 
-      {!loading && !error && filtered.length > 0 && (
-        <Table columns={columns} data={filtered} />
-      )}
-
+      {/* Collection Modal */}
       <Modal
         isOpen={!!selectedApplication}
         onClose={closeCollectionModal}
@@ -315,6 +302,15 @@ function ProcessApplication() {
         )}
       </Modal>
     </PageWrapper>
+  );
+}
+
+function ReadOnly({ label, value }) {
+  return (
+    <div className="form-field">
+      <label className="form-label">{label}</label>
+      <div className="form-input form-input-readonly">{value || '—'}</div>
+    </div>
   );
 }
 
